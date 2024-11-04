@@ -11,6 +11,14 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <style>
+        #app,
+        .v-data-table>.v-data-table__wrapper>table 
+        {
+            color: #7191ad;
+            background-color: #30353a;
+        }
+    </style>
 </head>
 
 <body>
@@ -81,7 +89,7 @@
                         <v-card-text style="padding: 0; height:90vh;">
                             <!-- 在這裡添加iframe -->
                             <iframe v-if="selectedItem"
-                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type}.html`"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
                                 width="80%"
                                 frameborder="0"
                                 style="padding: 0; height:80vh;">

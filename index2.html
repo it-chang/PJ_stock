@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>check by date</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <style>
+        #app,
+        .v-data-table>.v-data-table__wrapper>table 
+        {
+            color: #7191ad;
+            background-color: #30353a;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <!-- Vuetify DataTable -->
+                <v-data-table :headers="headers" :items="filteredData" :items-per-page="-1" item-key="id"
+                    :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                    <!-- 自訂第一個欄位為超連結 -->
+                    <template v-slot:item.stock_number="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.stock_number }}
+                        </v-btn>
+                    </template>
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(6)"
+                        :key="header.value">
+                        <span>
+                            <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
+                        </span>
+                    </template>
+                </v-data-table>
+                <!-- 弹出窗口 -->
+                <v-dialog v-model="dialog" max-width="90vw">
+                    <v-card>
+                        <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
+                        <v-card-text style="padding: 0; height:90vh;">
+                            <!-- 在這裡添加iframe -->
+                            <iframe v-if="selectedItem"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                width="80%" frameborder="0" style="padding: 0; height:80vh;">
+                            </iframe>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </v-container>
+        </v-app>
+    </div>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    //url: 'http://localhost/IT/Html/Html_' + new Date().toISOString().split('T')[0] + '/',
+                    url: 'http://localhost/IT/Html/Html/',
+                    jsonData: [],
+                    headers: [],
+                    filters: {},
+                    uniqueValues: {},
+                    sortBy: [],
+                    sortDesc: false,
+                    dialog: false,
+                    selectedItem: null,
+                };
+            },
+            created() {
+                this.loadExcelData();
+            },
+            computed: {
+                filteredData() {
+                    return this.jsonData.filter(item => {
+                        return Object.keys(this.filters).every(key => {
+                            const filterValues = this.filters[key];
+
+                            if (!filterValues || filterValues.length === 0) return true;
+                            const value = item[key] ? item[key].toString() : '';
+                            const a = this.isNumberField(key);
+
+                            if (Array.isArray(filterValues) && a) {
+                                //if (Array.isArray(filterValues)) {
+                                const [min, max] = filterValues;
+                                const numericValue = parseFloat(value);
+                                return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
+                            } else {
+                                return filterValues.includes(value);
+                            }
+                        });
+                    });
+                }
+            },
+            methods: {
+                openDialog(item) {
+                    this.selectedItem = item;
+                    this.dialog = true;
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                loadExcelData() {
+                    fetch('check.xlsx')
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                //Excel data to json 
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+
+                                var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
+                                dates.unshift('change_quote');
+                                dates.unshift('Volume_Price_Change_sum');
+                                dates.unshift('Type2');
+                                dates.unshift('Type1');
+                                dates.unshift('Type');
+                                dates.unshift('stock_number');
+
+                                this.headers = dates.map(header => ({ text: header, value: header }));
+                                // 你要显示的日期列表
+                                const datesToShow = [...new Set(this.jsonData.map(x => x.日期))].sort();
+
+                                // 转换数据
+                                const transformedData = this.jsonData.map((item, index) => {
+                                    const transformedItem = {
+                                        //id: index, // 使用索引或其他唯一值作为唯一标识
+                                        stock_number: item.stock_number,
+                                        Type2: item.Type2,
+                                        Type1: item.Type1,
+                                        Type: item.Type,
+                                        change_quote: item.change_quote,
+                                        Volume_Price_Change_sum:item.Volume_Price_Change_sum
+                                    };
+
+                                    this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
+                                        datesToShow.forEach(date => {
+                                            transformedItem[date] = ff.日期 === date | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
+
+                                        });
+                                    });
+                                    return transformedItem;
+                                });
+                                //this.jsonData =transformedData
+                                this.jsonData = Array.from(
+                                    new Map(transformedData.map(item => [item.stock_number, item])).values()
+                                );
+                            }
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>
