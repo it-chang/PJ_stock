@@ -63,7 +63,8 @@
                 </v-expansion-panels>
 
                 <!-- Vuetify DataTable -->
-                <v-data-table :headers="headers"
+                <v-data-table disable-pagination fixed-header height="100vh" hide-default-footer
+                    :headers="headers"
                     :items="filteredData"
                     :items-per-page="-1"
                     item-key="id"
@@ -113,7 +114,7 @@
             data() {
                 return {
                     //url: 'http://localhost/IT/Html/Html_' + new Date().toISOString().split('T')[0] + '/',
-                    url: 'http://localhost/IT/Html/Html/',
+                    url: 'http://localhost/IT/Html/',
                     jsonData: [],
                     headers: [],
                     filters: {},

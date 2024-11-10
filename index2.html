@@ -26,7 +26,12 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <!-- Vuetify DataTable -->
-                <v-data-table :headers="headers" :items="filteredData" :items-per-page="-1" item-key="id"
+                
+                <v-data-table 
+                disable-pagination
+                fixed-header height="100vh"
+                hide-default-footer
+                :headers="headers" :items="filteredData" :items-per-page="-1" item-key="id"
                     :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
@@ -34,7 +39,7 @@
                             {{ item.stock_number }}
                         </v-btn>
                     </template>
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(6)"
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(7)"
                         :key="header.value">
                         <span>
                             <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
@@ -68,7 +73,7 @@
             data() {
                 return {
                     //url: 'http://localhost/IT/Html/Html_' + new Date().toISOString().split('T')[0] + '/',
-                    url: 'http://localhost/IT/Html/Html/',
+                    url: 'http://localhost/IT/Html/',
                     jsonData: [],
                     headers: [],
                     filters: {},
@@ -138,6 +143,7 @@
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                 dates.unshift('change_quote');
                                 dates.unshift('Volume_Price_Change_sum');
+                                dates.unshift('日期');
                                 dates.unshift('Type2');
                                 dates.unshift('Type1');
                                 dates.unshift('Type');
@@ -149,6 +155,7 @@
 
                                 // 转换数据
                                 const transformedData = this.jsonData.map((item, index) => {
+                                    debugger;
                                     const transformedItem = {
                                         //id: index, // 使用索引或其他唯一值作为唯一标识
                                         stock_number: item.stock_number,
@@ -156,7 +163,9 @@
                                         Type1: item.Type1,
                                         Type: item.Type,
                                         change_quote: item.change_quote,
-                                        Volume_Price_Change_sum:item.Volume_Price_Change_sum
+                                        Volume_Price_Change_sum:item.Volume_Price_Change_sum,
+                                        日期:item['日期']
+
                                     };
 
                                     this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
