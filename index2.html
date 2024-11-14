@@ -139,7 +139,7 @@
                                 });
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
-                                dates.unshift('change_quote');
+                                dates.unshift('diff_quote');
                                 dates.unshift('遠交易量');
                                 dates.unshift('日期');
                                 dates.unshift('Type2');
@@ -160,7 +160,7 @@
                                         Type2: item.Type2,
                                         Type1: item.Type1,
                                         Type: item.Type,
-                                        change_quote: item.change_quote,
+                                        diff_quote: item.diff_quote,
                                         遠交易量:item['遠交易量'],
                                         日期:item['日期']
 
