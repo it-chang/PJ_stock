@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 讀取與 Vuetify DataTable 複選過濾示例</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <style>
+        #app,
+        .v-data-table>.v-data-table__wrapper>table {
+            color: #7191ad;
+            background-color: #30353a;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <!-- 篩選區域
+                <v-expansion-panels>
+                    <v-expansion-panel>
+                        <v-expansion-panel-header>
+                            <v-icon>mdi-filter</v-icon>
+                            篩選條件
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                            <v-form>
+                                <v-row>
+                                    <v-col v-for="(header, index) in headers" :key="index" cols="12" md="4">
+                                        {{ header.text }}
+                                        <v-select v-if="!isNumberField(header.value)" v-model="filters[header.value]"
+                                            :items="uniqueValues[header.value]" item-value="value" item-text="text"
+                                            multiple solo>
+                                        </v-select>
+                                        <v-range-slider v-else v-model="filters[header.value]" :label="header.text"
+                                            :min="getMinValue(header.value)" :max="getMaxValue(header.value)"
+                                            hide-details ticks="always" tick-size="4" thumb-label>
+                                        </v-range-slider>
+                                    </v-col>
+                                </v-row>
+                            </v-form>
+                        </v-expansion-panel-content>
+                    </v-expansion-panel>
+                </v-expansion-panels> -->
+                <div v-for="(type, index) in distinct_type">
+                    {{type.Type1}}      {{type.Volume_Price_Change_sum}} 
+                    <br>
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
+                        :items="filteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                        <template v-slot:item.stock_number="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.stock_number }}
+                            </v-btn>
+                        </template>
+                        <template v-slot:column.data="{ item, column }">
+                            {{ item[column.value] }}
+                        </template>
+                    </v-data-table>
+                </div>
+               
+
+                        <!-- 弹出窗口 -->
+                        <v-dialog v-model="dialog" max-width="90vw">
+                            <v-card>
+                                <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
+                                <v-card-text style="padding: 0; height:90vh;">
+                                    <!-- 在這裡添加iframe -->
+                                    <iframe v-if="selectedItem"
+                                        :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                        width="80%" frameborder="0" style="padding: 0; height:80vh;">
+                                    </iframe>
+                                </v-card-text>
+                                <v-card-actions>
+                                    <v-spacer></v-spacer>
+                                    <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                                </v-card-actions>
+                            </v-card>
+                        </v-dialog>
+
+            </v-container>
+        </v-app>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    //url: 'http://localhost/IT/Html/Html_' + new Date().toISOString().split('T')[0] + '/',
+                    url: 'http://localhost/IT/Html/',
+                    jsonData: [],
+                    headers: [],
+                    filters: {},
+                    uniqueValues: {},
+                    //sortBy: [],
+                    //sortDesc: false,
+                    sortBy: '總市值',
+
+                    sortDesc: true,
+                    dialog: false,
+                    selectedItem: null,
+                };
+            },
+            created() {
+                this.loadExcelData();
+            },
+            computed: {
+                distinct_type() {
+                    var result = [];
+                    this.jsonData.reduce(function (res, value) {
+                        if (!res[value.Type1]) {
+                            res[value.Type1] = { Type1: value.Type1, Volume_Price_Change_sum: 0 };
+                            result.push(res[value.Type1])
+                        }
+                        res[value.Type1].Volume_Price_Change_sum += Number(value.Volume_Price_Change_sum);
+                        return res;
+                    }, {});
+                    result.sort(function (a, b) {
+                        return -(a.Volume_Price_Change_sum - b.Volume_Price_Change_sum);
+                    });
+                    return result
+                }
+            },
+            methods: {
+                filteredData(x) {
+                    return this.jsonData.filter(y => y.Type1 == x)
+                },
+                openDialog(item) {
+                    console.log(item.stock_number )
+                    this.selectedItem = item;
+                    this.dialog = true;
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                getMinValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.min(...values) : 0;
+                },
+                getMaxValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.max(...values) : 100;
+                },
+                loadExcelData() {
+                    fetch('check.xlsx')
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+
+                                this.headers.forEach(header => {
+                                    if (this.isNumberField(header.value)) {
+                                        this.$set(this.filters, header.value, [
+                                            this.getMinValue(header.value),
+                                            this.getMaxValue(header.value),
+                                        ]);
+                                    } else {
+                                        this.$set(this.filters, header.value, []);
+                                    }
+                                    this.$set(this.uniqueValues, header.value, []);
+                                });
+
+                                this.jsonData.forEach(row => {
+                                    this.headers.forEach(header => {
+                                        const value = row[header.value];
+                                        if (value != null) {
+                                            const strValue = value.toString();
+                                            if (!this.uniqueValues[header.value].includes(strValue)) {
+                                                this.uniqueValues[header.value].push(strValue);
+                                            } else {
+
+
+                                            }
+                                        }
+                                    });
+                                });
+
+
+                                Object.keys(this.uniqueValues).forEach(key => {
+                                    this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
+                                    this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
