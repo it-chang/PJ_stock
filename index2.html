@@ -38,7 +38,7 @@
                             {{ item.stock_number }}
                         </v-btn>
                     </template>
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(8)"
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(10)"
                         :key="header.value">
                         <span>
                             <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
@@ -140,22 +140,24 @@
                                 });
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
+                                dates.unshift('count');
                                 dates.unshift('diff_quote');
                                 dates.unshift('change_quote');
                                 dates.unshift('遠交易量');
+                                dates.unshift('短交易量');
                                 dates.unshift('日期');
                                 dates.unshift('Type2');
                                 dates.unshift('Type1');
                                 dates.unshift('Type');
                                 dates.unshift('stock_number');
+                                
 
                                 this.headers = dates.map(header => ({ text: header, value: header }));
-                                // 你要显示的日期列表
+                                // 显示的日期列表
                                 const datesToShow = [...new Set(this.jsonData.map(x => x.日期))].sort();
 
                                 // 转换数据
                                 const transformedData = this.jsonData.map((item, index) => {
-                                    debugger;
                                     const transformedItem = {
                                         //id: index, // 使用索引或其他唯一值作为唯一标识
                                         stock_number: item.stock_number,
@@ -165,6 +167,7 @@
                                         change_quote: item.change_quote,
                                         diff_quote: item.diff_quote,
                                         遠交易量:item['遠交易量'],
+                                        短交易量:item['短交易量'],
                                         日期:item['日期']
 
                                     };
@@ -175,12 +178,18 @@
 
                                         });
                                     });
+
                                     return transformedItem;
                                 });
+
                                 //this.jsonData =transformedData
                                 this.jsonData = Array.from(
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
+                                this.jsonData.forEach(item => {
+                                     item.count= Object.keys(item).filter(key => item[key] === "1").length
+                                    });
+
                             }
                         })
                         .catch(error => console.error('Error loading Excel file:', error));

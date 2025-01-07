@@ -160,7 +160,20 @@
                     return values.length ? Math.max(...values) : 100;
                 },
                 loadExcelData() {
-                    fetch('check1.xlsx')
+                    let urlParams = new URLSearchParams(window.location.search);
+                    file='check1.xlsx'
+                    if (urlParams.has('d')){
+                       
+                        if(urlParams.get('d')=='A'){
+                            file='checkall.xlsx'
+                        }
+
+                    }
+                    
+                  
+                
+
+                    fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
                             const workbook = XLSX.read(data, { type: 'array' });
