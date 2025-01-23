@@ -114,16 +114,20 @@
             },
             created() {
                 this.loadExcelData();
+            
+                this.url=window.location.href.split('/').slice(0,4).join('/')+'/Html/'
+                console.log( this.url)
             },
             computed: {
                 distinct_type() {
                     var result = [];
                     this.jsonData.reduce(function (res, value) {
-                        if (!res[value.Type1]) {
-                            res[value.Type1] = { Type1: value.Type1, Volume_Price_Change_sum: 0 };
-                            result.push(res[value.Type1])
+                        var key=value.Type1//+value.Trend
+                        if (!res[key]) {
+                            res[key] = { Type1: key, Volume_Price_Change_sum: 0 };
+                            result.push(res[key])
                         }
-                        res[value.Type1].Volume_Price_Change_sum += Number(value.Volume_Price_Change_sum);
+                        res[key].Volume_Price_Change_sum += Number(value.Volume_Price_Change_sum);
                         return res;
                     }, {});
                     result.sort(function (a, b) {

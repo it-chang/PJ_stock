@@ -110,6 +110,7 @@
             },
             created() {
                 this.loadExcelData();
+                this.url=window.location.href.split('/').slice(0,4).join('/')+'/Html/'
             },
             computed: {
                 filteredData() {
