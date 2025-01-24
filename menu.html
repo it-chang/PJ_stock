@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 讀取與 Vuetify DataTable 複選過濾示例</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <style>
+        #app,
+        .v-data-table>.v-data-table__wrapper>table {
+            color: #7191ad;
+            background-color: #30353a;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <!-- Vuetify DataTable -->
+                <v-data-table hide-default-footer :headers="headers" :items="paths" style="white-space: nowrap;">
+                    <!-- 自訂第一個欄位為超連結 -->
+                    <template v-slot:item.url="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.url }}
+                        </v-btn>
+                    </template>
+                </v-data-table>
+            </v-container>
+        </v-app>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    model:[],
+                    urldomain: 'https://itchang0615.github.io/PJ_stock/',
+                    paths: [
+                        { title: '近期表現佳', url: 'index.html', file: 'check.xlsx' , desc: '' },
+                        { title: '近期表現佳太陽圖', url: 'index2.html', file: 'check.xlsx' , desc: '' },
+                        { title: '本日ALL', url: 'index.html?d=A', file: 'checkall.xlsx' , desc: '' },
+                        { title: '本日資金分類流向(all)', url: 'index3.html?d=A', file: 'checkall.xlsx' , desc: '' },
+                        { title: '本日資金分類流向', url: 'index3.html', file: 'check1.xlsx' , desc: '' },
+                        { title: '本日表現佳', url: 'index.html?d=T', file: 'check1.xlsx' , desc: '' },
+                        { title: '特別觀察', url: 'index.html?d=S', file: 'check2.xlsx' , desc: '' },
+                        { title: '我的', url: 'index.html?d=M', file: 'check3.xlsx' , desc: '' },
+                        { title: '指定日', url: 'index.html?d=C&date=2025-01-21', file: '2025-01-21.xlsx' , desc: '' }
+                    ],
+                    headers: [
+                        {text: 'Title',value: 'title',align: 'left',sortable: true},
+                        {text: 'Url',value: 'url',align: 'left',sortable: true},
+                        {text: 'File',value: 'file',align: 'left',sortable: true},
+                        {text: 'Desc',value: 'desc',align: 'left',sortable: true},
+                    ],
+                };
+            },
+            created() {
+                  this.urldomain=window.location.href.split('/').slice(0,4).join('/')+'/'
+            },
+            computed: {
+            },
+            methods: {
+                openDialog(item) {  
+                    url=this.urldomain+item.url;
+                    var newTab = window.open(url, '_blank');
+                    newTab.location;
+                },
+            },
+        });
+    </script>
+</body>
+
+</html>
