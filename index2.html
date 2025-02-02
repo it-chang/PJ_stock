@@ -123,10 +123,10 @@
                 loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
 
-                    file='check.xlsx'
+                    file='./Result/check.xlsx'
                     if (urlParams.has('d')){
                          if(urlParams.get('d')=='H'){
-                            file='checkH.xlsx'
+                            file='./Result/checkH.xlsx'
                         }
                     }
 

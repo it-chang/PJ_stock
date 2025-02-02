@@ -159,25 +159,25 @@
                 },
                 loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-                    file='check.xlsx'
+                    file='./Result/check.xlsx'
                     if (urlParams.has('d')){
                          if(urlParams.get('d')=='T'){
-                            file='check1.xlsx'
+                            file='./Result/check1.xlsx'
                         }
                         if(urlParams.get('d')=='S'){
-                            file='check2.xlsx'
+                            file='./Result/check2.xlsx'
                         }
                         if(urlParams.get('d')=='M'){
-                            file='checkmy.xlsx'
+                            file='./Result/checkmy.xlsx'
                         }
                         if(urlParams.get('d')=='O'){
-                            file='check3.xlsx'
+                            file='./Result/check3.xlsx'
                         }
                         if(urlParams.get('d')=='H'){
-                            file='check4.xlsx'
+                            file='./Result/check4.xlsx'
                         }
                         if(urlParams.get('d')=='A'){
-                            file='checkall.xlsx'
+                            file='./Result/checkall.xlsx'
                         }
                         if(urlParams.get('d')=='C'){ 
                             file='./Result/checkall/'+urlParams.get('date')+'.xlsx'
