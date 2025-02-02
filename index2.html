@@ -38,7 +38,7 @@
                             {{ item.stock_number }}
                         </v-btn>
                     </template>
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(10)"
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(12)"
                         :key="header.value">
                         <span>
                             <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
@@ -121,7 +121,17 @@
                     });
                 },
                 loadExcelData() {
-                    fetch('check.xlsx')
+                    let urlParams = new URLSearchParams(window.location.search);
+
+                    file='check.xlsx'
+                    if (urlParams.has('d')){
+                         if(urlParams.get('d')=='H'){
+                            file='checkH.xlsx'
+                        }
+                    }
+
+
+                    fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
                             const workbook = XLSX.read(data, { type: 'array' });
@@ -146,6 +156,8 @@
                                 dates.unshift('change_quote');
                                 dates.unshift('遠交易量');
                                 dates.unshift('短交易量');
+                                dates.unshift('highlight');
+                                dates.unshift('highlight_date');
                                 dates.unshift('日期');
                                 dates.unshift('Type2');
                                 dates.unshift('Type1');
@@ -169,6 +181,8 @@
                                         diff_quote: item.diff_quote,
                                         遠交易量:item['遠交易量'],
                                         短交易量:item['短交易量'],
+                                        highlight:item['highlight'],  
+                                        highlight_date:item['highlight_date'],
                                         日期:item['日期']
 
                                     };
