@@ -8,20 +8,11 @@
     <!-- 引入 Vuetify 和 Vue.js -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+	<link href="./Content/base.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
-    <style>
-        #app,
-        .v-data-table>.v-data-table__wrapper>table 
-        {
-            color: #7191ad;
-            background-color: #30353a;
-        }
-        .v-data-table>.v-data-table__wrapper>table>tbody>tr>td {
-            padding:0 5px
-        }
-    </style>
+	<script src="./Content/common.js"></script>
 </head>
 
 <body>
@@ -80,8 +71,9 @@
                     headers: [],
                     filters: {},
                     uniqueValues: {},
-                    sortBy: [],
-                    sortDesc: false,
+                    //sortBy: [],
+                    sortBy: 'highlight_date',
+                    sortDesc: true,
                     dialog: false,
                     selectedItem: null,
                 };

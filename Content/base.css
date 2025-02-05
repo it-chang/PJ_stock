@@ -1,0 +1,19 @@
+html {
+    position: fixed; 
+    overflow-y: scroll;
+    width: 100%;
+}
+body {
+    font-family: "Source Sans Pro","Helvetica Neue", "Helvetica", "Arial,sans-serif", "Microsoft JhengHei", "Microsoft YaHei";
+    font-size: 12pt;
+}
+
+
+#app,
+.v-data-table>.v-data-table__wrapper>table {
+	color: #7191ad;
+	background-color: #30353a;
+}
+.v-data-table>.v-data-table__wrapper>table>tbody>tr>td {
+	padding:0 5px
+}
