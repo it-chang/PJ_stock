@@ -8,11 +8,12 @@
     <!-- 引入 Vuetify 和 Vue.js -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
-	<link href="./Content/base.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
-	<script src="./Content/common.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
 </head>
 
 <body>
@@ -54,15 +55,53 @@
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }}
+                            {{ item.stock_number }} {{ item.Type0 }}
+                        </v-btn>
+                    </template>
+                    <template v-slot:item.now_price="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
+                            </span>
+                            {{ item.now_price }}
+                            <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.a}}|
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.f}}
+                            </span>
+                        </v-btn>
+                    </template>
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1 )*100).toFixed(1)}}
+                            </span>
+                    </template>
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(parseFloat(item.成交股數) /realtimedata.filter(x=>x.c==item.stock_number)[0]?.v).toFixed(1)}}
+
+                                
+                            </span>
+                    </template>
+
+                    <template v-slot:item.成交股數="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.成交股數 }} <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
                         </v-btn>
                     </template>
 
-                    <template v-slot:column.data="{ item, column }">
+
+                    <template v-slot:column.data="{ item, colmun }">
                         {{ item[column.value] }}
                     </template>
                 </v-data-table>
-
                 <!-- 弹出窗口 -->
                 <v-dialog v-model="dialog" max-width="90vw">
                     <v-card>
@@ -91,24 +130,24 @@
             vuetify: new Vuetify(),
             data() {
                 return {
-                    //url: 'http://localhost/IT/Html/Html_' + new Date().toISOString().split('T')[0] + '/',
                     url: 'http://localhost/IT/Html/',
                     jsonData: [],
                     headers: [],
                     filters: {},
                     uniqueValues: {},
-                    //sortBy: [],
                     sortBy: 'highlight_date',
                     sortDesc: true,
                     dialog: false,
                     selectedItem: null,
+                    realtimedata: []
                 };
             },
             created() {
-                this.loadExcelData();
-                this.url=window.location.href.split('/').slice(0,4).join('/')+'/Html/'
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                this.init();
             },
             computed: {
+
                 filteredData() {
                     return this.jsonData.filter(item => {
                         return Object.keys(this.filters).every(key => {
@@ -131,6 +170,25 @@
                 }
             },
             methods: {
+                async init() {
+                    await this.loadExcelData();
+                    this.sync_realtime();
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.filteredData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+
                 openDialog(item) {
                     this.selectedItem = item;
                     this.dialog = true;
@@ -153,38 +211,34 @@
                         .filter(value => !isNaN(value));
                     return values.length ? Math.max(...values) : 100;
                 },
-                loadExcelData() {
+                async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-                    file='./Result/check.xlsx'
-                    if (urlParams.has('d')){
-                         if(urlParams.get('d')=='T'){
-                            file='./Result/check1.xlsx'
+                    file = './Result/check.xlsx'
+                    if (urlParams.has('d')) {
+                        if (urlParams.get('d') == 'T') {
+                            file = './Result/check1.xlsx'
                         }
-                        if(urlParams.get('d')=='S'){
-                            file='./Result/check2.xlsx'
+                        if (urlParams.get('d') == 'S') {
+                            file = './Result/check2.xlsx'
                         }
-                        if(urlParams.get('d')=='M'){
-                            file='./Result/checkmy.xlsx'
+                        if (urlParams.get('d') == 'M') {
+                            file = './Result/checkmy.xlsx'
                         }
-                        if(urlParams.get('d')=='O'){
-                            file='./Result/check3.xlsx'
+                        if (urlParams.get('d') == 'O') {
+                            file = './Result/check3.xlsx'
                         }
-                        if(urlParams.get('d')=='H'){
-                            file='./Result/check4.xlsx'
+                        if (urlParams.get('d') == 'H') {
+                            file = './Result/check4.xlsx'
                         }
-                        if(urlParams.get('d')=='A'){
-                            file='./Result/checkall.xlsx'
+                        if (urlParams.get('d') == 'A') {
+                            file = './Result/checkall.xlsx'
                         }
-                        if(urlParams.get('d')=='C'){ 
-                            file='./Result/checkall/'+urlParams.get('date')+'.xlsx'
+                        if (urlParams.get('d') == 'C') {
+                            file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
                             // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
                         }
                     }
-                    
-                  
-                
-
-                    fetch(file)
+                    await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
                             const workbook = XLSX.read(data, { type: 'array' });

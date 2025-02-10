@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fetch API Example</title>
+	<link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+	<script src="./Content/common.js"></script>
+</head>
+
+<body>
+	<div id="app">
+		<v-app>
+			<v-container>
+				<h1>Posts Data</h1>
+				<v-data-table :headers="headerss" :items="postsdata" :items-per-page="5"
+					class="elevation-1"></v-data-table>
+			</v-container>
+		</v-app>
+	</div>
+	<script>
+		var app = new Vue({
+			el: '#app',
+			vuetify: new Vuetify(),
+			data() {
+				return {
+					cors: 'https://cors-anywhere.herokuapp.com/',
+					apiurl: "",
+					postsdata: [],
+					rawdata: [],
+					headers: [],
+					jsonData: [],
+					filters: {},
+					uniqueValues: {},
+					headerss: [
+						{ text: 'Company', align: 'start', sortable: true, value: 'nf' },
+						{ text: '揭示買量', value: 'g' },
+						{ text: '揭示買價', value: 'b' },
+						{ text: '揭示賣價', value: 'a' },
+						{ text: '揭示賣量', value: 'f' },
+						{ text: '累積成交量', value: 'v' },
+					],
+				};
+			},
+			created() {
+				this.init();
+			},
+			computed: {
+				async init() {
+					await this.loadExcelData();
+					this.main();
+				},
+
+				filteredData() {
+					return this.jsonData.filter(item => {
+						return Object.keys(this.filters).every(key => {
+							const filterValues = this.filters[key];
+
+							if (!filterValues || filterValues.length === 0) return true;
+							const value = item[key] ? item[key].toString() : '';
+							const a = this.isNumberField(key);
+
+							if (Array.isArray(filterValues) && a) {
+								//if (Array.isArray(filterValues)) {
+								const [min, max] = filterValues;
+								const numericValue = parseFloat(value);
+								return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
+							} else {
+								return filterValues.includes(value);
+							}
+						});
+					});
+				}
+			},
+			methods: {
+				async main() {
+					var vm = this;
+					var data = vm.filteredData;
+					var _baseInfo = data.map(header => ({ stock_number: header.stock_number, Type: header.Type2 }));
+					var urllist = vm.generateStockApiUrls(_baseInfo, 60);
+
+					for (let index = 0; index < urllist.length; index++) {
+						let url = urllist[index];
+						let fullUrl = vm.cors + url.replace(' ', '');
+
+						// 取得資料
+						var d = await vm.getData(fullUrl);
+
+						// 合併資料
+						vm.postsdata = vm.postsdata.concat(d);
+
+						// 等待 5 秒後再繼續下一次呼叫
+						if (index < urllist.length - 1) {
+							await vm.sleep(5000);
+						}
+					}
+				},
+				generateStockApiUrls(data, size) {
+					var vm = this
+					let x = [];
+					targets = data.filter(zz => zz.Type == "上市").map(zz => zz.stock_number)
+					vm.batch_size(targets, size).forEach(i => {
+						x.push(vm.buildStockApiUrl (i, 'tse'));
+					})
+					targets = data.filter(zz => zz.Type != "上市").map(zz => zz.stock_number)
+					vm.batch_size(targets, size).forEach(i => {
+						x.push(vm.buildStockApiUrl (i, 'otc'));
+					})
+					return x
+				},
+				buildStockApiUrl (targets, type_tse_otc) {
+					let endpoint = 'https://mis.twse.com.tw/stock/api/getStockInfo.jsp';
+					let today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+					let channels = targets.map(target => `${type_tse_otc}_${target}.tw_${today}`).join('|');
+					return `${endpoint}?ex_ch=${channels}`;
+				},
+				// sleep function
+				sleep(ms) {
+					return new Promise(resolve => setTimeout(resolve, ms));
+				},
+
+				async getData(url) {
+					var vm = this;
+					var _data = [];
+
+					try {
+						let response = await fetch(url);
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						let data = await response.json();
+						let newArray = data['msgArray'] || [];
+
+						_data = _data.concat(newArray);
+						_data.forEach(x => {
+							x.g = x.g.split('_')[0];
+							x.b = parseFloat(x.b.split('_')[0]);
+							x.a = parseFloat(x.a.split('_')[0]);
+							x.f = x.f.split('_')[0];
+							x.v = x.v.split('_')[0];
+						});
+					} catch (error) {
+						console.error('There has been a problem with your fetch operation:', error);
+					}
+					return _data;
+				},
+				batch_size(dataList, batchSize) {
+					let result = [];
+					// 計算總共需要多少個批次
+					const numBatches = Math.ceil(dataList.length / batchSize);
+
+					// 迴圈遍歷每個批次
+					for (let i = 0; i < numBatches; i++) {
+						const startIndex = i * batchSize;
+						const endIndex = Math.min((i + 1) * batchSize, dataList.length);
+						result.push(dataList.slice(startIndex, endIndex));
+					}
+					return result;
+				},
+				async loadExcelData() {
+					let urlParams = new URLSearchParams(window.location.search);
+					let file = './Result/check.xlsx';
+
+					if (urlParams.has('d')) {
+						const dValue = urlParams.get('d');
+						const dateValue = urlParams.get('date');
+						const fileMap = {
+							'T': './Result/check1.xlsx',
+							'S': './Result/check2.xlsx',
+							'M': './Result/checkmy.xlsx',
+							'O': './Result/check3.xlsx',
+							'H': './Result/check4.xlsx',
+							'A': './Result/checkall.xlsx',
+							'C': `./Result/checkall/${dateValue}.xlsx`
+						};
+						if (fileMap[dValue]) {
+							file = fileMap[dValue];
+						}
+					}
+					try {
+						const response = await fetch(file);
+						const data = await response.arrayBuffer();
+						const workbook = XLSX.read(data, { type: 'array' });
+						const sheetName = workbook.SheetNames[0];
+						const worksheet = workbook.Sheets[sheetName];
+						const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+						if (json.length > 0) {
+							this.headers = json[0].map(header => ({ text: header, value: header }));
+							this.jsonData = json.slice(1).map(row => {
+								const rowData = {};
+								this.headers.forEach((header, i) => {
+									rowData[header.value] = row[i];
+								});
+								return rowData;
+							});
+						}
+					} catch (error) {
+						console.error('Error loading Excel file:', error);
+					}
+				},
+			},
+		});
+	</script>
+</body>
+
+</html>

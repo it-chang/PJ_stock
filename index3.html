@@ -8,11 +8,12 @@
     <!-- 引入 Vuetify 和 Vue.js -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
-	<link href="./Content/base.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
-	<script src="./Content/common.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
 </head>
 
 <body>
@@ -47,40 +48,81 @@
                     </v-expansion-panel>
                 </v-expansion-panels> -->
                 <div v-for="(type, index) in distinct_type">
-                    {{type.Type1}}      {{type.Volume_Price_Change_sum}} 
+                    {{type.Type1}} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
                         :items="filteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                         :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
-                                {{ item.stock_number }}
+                                {{ item.stock_number }} {{ item.Type0 }}
                             </v-btn>
                         </template>
+                        <template v-slot:item.now_price="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
+                                </span>
+                                {{ item.now_price }}
+                                <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.a}}|
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.f}}
+                                </span>
+                            </v-btn>
+                        </template>
+
+                        <template v-slot:item.rt_price="{ item }">
+                            <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                    {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1 )*100).toFixed(1)}}
+                                </span>
+                        </template>
+                        <template v-slot:item.rt_量="{ item }">
+                            <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                    {{(parseFloat(item.成交股數) /realtimedata.filter(x=>x.c==item.stock_number)[0]?.v).toFixed(1)}}
+    
+                                    
+                                </span>
+                        </template>
+
+                        <template v-slot:item.成交股數="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.成交股數 }} <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                    ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
+                            </v-btn>
+                        </template>
+
+
                         <template v-slot:column.data="{ item, column }">
                             {{ item[column.value] }}
                         </template>
                     </v-data-table>
                 </div>
-               
 
-                        <!-- 弹出窗口 -->
-                        <v-dialog v-model="dialog" max-width="90vw">
-                            <v-card>
-                                <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
-                                <v-card-text style="padding: 0; height:90vh;">
-                                    <!-- 在這裡添加iframe -->
-                                    <iframe v-if="selectedItem"
-                                        :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
-                                        width="80%" frameborder="0" style="padding: 0; height:80vh;">
-                                    </iframe>
-                                </v-card-text>
-                                <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn color="primary" text @click="dialog = false">Close</v-btn>
-                                </v-card-actions>
-                            </v-card>
-                        </v-dialog>
+
+                <!-- 弹出窗口 -->
+                <v-dialog v-model="dialog" max-width="90vw">
+                    <v-card>
+                        <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
+                        <v-card-text style="padding: 0; height:90vh;">
+                            <!-- 在這裡添加iframe -->
+                            <iframe v-if="selectedItem"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                width="80%" frameborder="0" style="padding: 0; height:80vh;">
+                            </iframe>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
 
             </v-container>
         </v-app>
@@ -92,32 +134,27 @@
             vuetify: new Vuetify(),
             data() {
                 return {
-                    //url: 'http://localhost/IT/Html/Html_' + new Date().toISOString().split('T')[0] + '/',
                     url: 'http://localhost/IT/Html/',
                     jsonData: [],
                     headers: [],
                     filters: {},
                     uniqueValues: {},
-                    //sortBy: [],
-                    //sortDesc: false,
                     sortBy: 'highlight_date',
-
                     sortDesc: true,
                     dialog: false,
                     selectedItem: null,
+                    realtimedata: []
                 };
             },
             created() {
-                this.loadExcelData();
-            
-                this.url=window.location.href.split('/').slice(0,4).join('/')+'/Html/'
-                console.log( this.url)
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                this.init();
             },
             computed: {
                 distinct_type() {
                     var result = [];
                     this.jsonData.reduce(function (res, value) {
-                        var key=value.Type1//+value.Trend
+                        var key = value.Type1//+value.Trend
                         if (!res[key]) {
                             res[key] = { Type1: key, Volume_Price_Change_sum: 0 };
                             result.push(res[key])
@@ -132,11 +169,30 @@
                 }
             },
             methods: {
+                async init() {
+                    await this.loadExcelData();
+                    this.sync_realtime();   
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.jsonData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+
                 filteredData(x) {
                     return this.jsonData.filter(y => y.Type1 == x)
                 },
                 openDialog(item) {
-                    console.log(item.stock_number )
+                    console.log(item.stock_number)
                     this.selectedItem = item;
                     this.dialog = true;
                 },
@@ -158,21 +214,21 @@
                         .filter(value => !isNaN(value));
                     return values.length ? Math.max(...values) : 100;
                 },
-                loadExcelData() {
+                async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-                    file='./Result/check1.xlsx'
-                    if (urlParams.has('d')){
-                       
-                        if(urlParams.get('d')=='A'){
-                            file='./Result/checkall.xlsx'
+                    file = './Result/check1.xlsx'
+                    if (urlParams.has('d')) {
+
+                        if (urlParams.get('d') == 'A') {
+                            file = './Result/checkall.xlsx'
                         }
 
                     }
-                    
-                  
-                
 
-                    fetch(file)
+
+
+
+                    await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
                             const workbook = XLSX.read(data, { type: 'array' });
