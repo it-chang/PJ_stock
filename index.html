@@ -48,9 +48,38 @@
                     </v-expansion-panel>
                 </v-expansion-panels>
 
-                <!-- Vuetify DataTable -->
+                <!-- Vuetify DataTable  -->
+                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer 
+                    :headers="appheaderData"
+                     v-show="appmode"
+                    :items="appfilteredData"
+                    :items-per-page="-1" item-key="id" :sort-by.sync="sortBy" :sort-desc.sync="sortDesc"
+                    :mobile-breakpoint="0" 
+                    style="white-space: nowrap;">
+                    <template v-slot:item.stock_number="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.stock_number }} {{ item.Type0 }}
+                        </v-btn>
+                    </template>
+
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                            )*100).toFixed(1)}}
+                        </span>
+                    </template>
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                        </span>
+                    </template>
+                </v-data-table>
+                  
+                    
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
-                    :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                    :items="filteredData"  
+                     v-show="!appmode"
+                    :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
@@ -62,7 +91,6 @@
                         <v-btn text @click="openDialog(item)">
                             <span style="color: burlywood;"
                                 v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
-
                                 {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
                                 {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
                             </span>
@@ -75,18 +103,15 @@
                         </v-btn>
                     </template>
                     <template v-slot:item.rt_price="{ item }">
-                        <span style="color: burlywood;"
-                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                                {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1 )*100).toFixed(1)}}
-                            </span>
+                        <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                            )*100).toFixed(1)}}
+                        </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
-                        <span style="color: burlywood;"
-                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                                {{(parseFloat(item.成交股數) /realtimedata.filter(x=>x.c==item.stock_number)[0]?.v).toFixed(1)}}
-
-                                
-                            </span>
+                        <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                        </span>
                     </template>
 
                     <template v-slot:item.成交股數="{ item }">
@@ -96,11 +121,11 @@
                                 ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
                         </v-btn>
                     </template>
-
-
-                    <template v-slot:column.data="{ item, colmun }">
+                    <!--
+                    <template v-slot:column.data="{ item, colmun }" >
                         {{ item[column.value] }}
                     </template>
+                    -->
                 </v-data-table>
                 <!-- 弹出窗口 -->
                 <v-dialog v-model="dialog" max-width="90vw">
@@ -130,9 +155,11 @@
             vuetify: new Vuetify(),
             data() {
                 return {
+                    appmode: false,
                     url: 'http://localhost/IT/Html/',
                     jsonData: [],
                     headers: [],
+                    appheaderscol: ['stock_number','_quote','rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
                     filters: {},
                     uniqueValues: {},
                     sortBy: 'highlight_date',
@@ -144,10 +171,26 @@
             },
             created() {
                 this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('mode')) {
+                    // &mode=app 
+                    this.appmode = urlParams.get('mode') == 'app';
+                }
                 this.init();
             },
             computed: {
-
+                appheaderData() {
+                    return  this.headers.filter(x => this.appheaderscol.includes(x.text))
+                },
+                appfilteredData() {
+                    let cols= this.appheaderscol.slice() // 創造一個新的陣列副本
+                    cols.push('Type0')
+                    cols.push('Type')
+                    cols.push('成交股數')
+                    cols.push('now_price')
+                    
+                    return this.filteredData.map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
+                },
                 filteredData() {
                     return this.jsonData.filter(item => {
                         return Object.keys(this.filters).every(key => {
@@ -248,6 +291,8 @@
 
                             if (json.length > 0) {
                                 this.headers = json[0].map(header => ({ text: header, value: header }));
+                                
+
                                 this.jsonData = json.slice(1).map(row => {
                                     const rowData = {};
                                     this.headers.forEach((header, i) => {

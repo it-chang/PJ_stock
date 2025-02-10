@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
 	<script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
 </head>
 
 <body>
@@ -32,12 +33,29 @@
                             {{ item.stock_number }}
                         </v-btn>
                     </template>
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(12)"
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(16)"
                         :key="header.value">
                         <span>
                             <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
                         </span>
                     </template>
+
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1 )*100).toFixed(1)}}
+                            </span>
+                    </template>
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                            </span>
+                    </template>
+
+
+         
+
                 </v-data-table>
                 <!-- 弹出窗口 -->
                 <v-dialog v-model="dialog" max-width="90vw">
@@ -71,18 +89,37 @@
                     headers: [],
                     filters: {},
                     uniqueValues: {},
-                    //sortBy: [],
                     sortBy: 'highlight_date',
                     sortDesc: true,
                     dialog: false,
                     selectedItem: null,
+                    realtimedata: []
                 };
             },
             created() {
-                this.loadExcelData();
+               // this.loadExcelData();
                 this.url=window.location.href.split('/').slice(0,4).join('/')+'/Html/'
+                this.init();
             },
             computed: {
+                async init() {
+                    await this.loadExcelData();
+                    this.sync_realtime();   
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.jsonData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
                 filteredData() {
                     return this.jsonData.filter(item => {
                         return Object.keys(this.filters).every(key => {
@@ -115,7 +152,7 @@
                         return value != null && !isNaN(parseFloat(value)) && isFinite(value);
                     });
                 },
-                loadExcelData() {
+                async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
 
                     file='./Result/check.xlsx'
@@ -126,7 +163,7 @@
                     }
 
 
-                    fetch(file)
+                   await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
                             const workbook = XLSX.read(data, { type: 'array' });
@@ -147,9 +184,13 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                 dates.unshift('count');
+                                dates.unshift('rt_量');
+                                dates.unshift('成交股數');
+                                dates.unshift('rt_price');
+                                dates.unshift('now_price');
                                 dates.unshift('diff_quote');
                                 dates.unshift('change_quote');
-                                dates.unshift('遠交易量');
+                                dates.unshift('遠交易量o');
                                 dates.unshift('短交易量');
                                 dates.unshift('highlight');
                                 dates.unshift('highlight_date');
@@ -158,7 +199,7 @@
                                 dates.unshift('Type1');
                                 dates.unshift('Type');
                                 dates.unshift('stock_number');
-                                
+                                 
 
                                 this.headers = dates.map(header => ({ text: header, value: header }));
                                 // 显示的日期列表
@@ -174,11 +215,15 @@
                                         Type: item.Type,
                                         change_quote: item.change_quote,
                                         diff_quote: item.diff_quote,
-                                        遠交易量:item['遠交易量'],
+                                        遠交易量o:item['遠交易量o'],
                                         短交易量:item['短交易量'],
                                         highlight:item['highlight'],  
                                         highlight_date:item['highlight_date'],
-                                        日期:item['日期']
+                                        日期:item['日期'],
+                                        成交股數:item['成交股數'],
+                                        now_price:item['now_price'],
+                                        rt_price:item['rt_price'],
+                                        rt_量:item['rt_量']
 
                                     };
 

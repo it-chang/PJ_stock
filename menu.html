@@ -26,7 +26,11 @@
                         <v-btn text @click="openDialog(item)">
                             {{ item.url }}
                         </v-btn>
+                        <v-btn text @click="openappDialog(item)">
+                            app mode
+                        </v-btn>
                     </template>
+                  
                 </v-data-table>
             </v-container>
         </v-app>
@@ -41,12 +45,12 @@
                     model:[],
                     urldomain: 'https://itchang0615.github.io/PJ_stock/',
                     paths: [
-                        { title: '近期表現佳', url: 'index.html', file: 'check.xlsx' , desc: '' },
-                        { title: '近期表現佳太陽圖', url: 'index2.html', file: 'check.xlsx' , desc: '' },
+                        { title: '近期表現佳', url: 'index.html?', file: 'check.xlsx' , desc: '' },
+                        { title: '近期表現佳太陽圖', url: 'index2.html?', file: 'check.xlsx' , desc: '' },
                         { title: '近期表現佳太陽圖', url: 'index2.html?d=H', file: 'checkH.xlsx' , desc: '' },
                         { title: '本日ALL', url: 'index.html?d=A', file: 'checkall.xlsx' , desc: '' },
                         { title: '本日資金分類流向(all)', url: 'index3.html?d=A', file: 'checkall.xlsx' , desc: '' },
-                        { title: '本日資金分類流向', url: 'index3.html', file: 'check1.xlsx' , desc: '' },
+                        { title: '本日資金分類流向', url: 'index3.html?', file: 'check1.xlsx' , desc: '' },
                         { title: '本日表現佳', url: 'index.html?d=T', file: 'check1.xlsx' , desc: '' },
                         { title: '特別觀察', url: 'index.html?d=S', file: 'check2.xlsx' , desc: '' },
                         { title: 'highlight', url: 'index.html?d=H', file: 'check4.xlsx' , desc: '' },
@@ -71,6 +75,11 @@
             methods: {
                 openDialog(item) {  
                     url=this.urldomain+item.url;
+                    var newTab = window.open(url, '_blank');
+                    newTab.location;
+                },
+                openappDialog(item) {  
+                    url=this.urldomain+item.url+'&mode=app';
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },

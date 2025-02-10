@@ -47,7 +47,33 @@
                         </v-expansion-panel-content>
                     </v-expansion-panel>
                 </v-expansion-panels> -->
-                <div v-for="(type, index) in distinct_type">
+
+                <div v-for="(type, index) in distinct_type"  v-show="appmode" >
+                    {{type.Type1}} {{type.Volume_Price_Change_sum}}
+                    <br>
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
+                        :items="appfilteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                        <template v-slot:item.stock_number="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.stock_number }} {{ item.Type0 }}
+                            </v-btn>
+                        </template>
+                        <template v-slot:item.rt_price="{ item }">
+                            <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                                )*100).toFixed(1)}}
+                            </span>
+                        </template>
+                        <template v-slot:item.rt_量="{ item }">
+                            <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                            </span>
+                        </template>
+                    </v-data-table>
+                </div>
+
+                <div v-for="(type, index) in distinct_type"  v-show="!appmode" >
                     {{type.Type1}} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
@@ -84,9 +110,7 @@
                         <template v-slot:item.rt_量="{ item }">
                             <span style="color: burlywood;"
                                     v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                                    {{(parseFloat(item.成交股數) /realtimedata.filter(x=>x.c==item.stock_number)[0]?.v).toFixed(1)}}
-    
-                                    
+                                    {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                                 </span>
                         </template>
 
@@ -134,9 +158,11 @@
             vuetify: new Vuetify(),
             data() {
                 return {
+                    appmode: false,
                     url: 'http://localhost/IT/Html/',
                     jsonData: [],
                     headers: [],
+                    appheaderscol: ['stock_number','_quote','rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
                     filters: {},
                     uniqueValues: {},
                     sortBy: 'highlight_date',
@@ -148,6 +174,11 @@
             },
             created() {
                 this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('mode')) {
+                    // &mode=app 
+                    this.appmode = urlParams.get('mode') == 'app';
+                }
                 this.init();
             },
             computed: {
@@ -166,7 +197,10 @@
                         return -(a.Volume_Price_Change_sum - b.Volume_Price_Change_sum);
                     });
                     return result
-                }
+                },
+                appheaderData() {
+                    return  this.headers.filter(x => this.appheaderscol.includes(x.text))
+                },
             },
             methods: {
                 async init() {
@@ -190,6 +224,15 @@
 
                 filteredData(x) {
                     return this.jsonData.filter(y => y.Type1 == x)
+                },
+                appfilteredData(x) {
+                    let cols= this.appheaderscol.slice() // 創造一個新的陣列副本
+                    cols.push('Type0')
+                    cols.push('Type')
+                    cols.push('成交股數')
+                    cols.push('now_price')
+                    
+                    return this.jsonData.filter(y => y.Type1 == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
                 },
                 openDialog(item) {
                     console.log(item.stock_number)
