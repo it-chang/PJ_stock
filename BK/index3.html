@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 讀取與 Vuetify DataTable 複選過濾示例</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <a href="JavaScript: location.reload(true);">Refresh page</a>
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <!-- 篩選區域
+                <v-expansion-panels>
+                    <v-expansion-panel>
+                        <v-expansion-panel-header>
+                            <v-icon>mdi-filter</v-icon>
+                            篩選條件
+                        </v-expansion-panel-header>
+                        <v-expansion-panel-content>
+                            <v-form>
+                                <v-row>
+                                    <v-col v-for="(header, index) in headers" :key="index" cols="12" md="4">
+                                        {{ header.text }}
+                                        <v-select v-if="!isNumberField(header.value)" v-model="filters[header.value]"
+                                            :items="uniqueValues[header.value]" item-value="value" item-text="text"
+                                            multiple solo>
+                                        </v-select>
+                                        <v-range-slider v-else v-model="filters[header.value]" :label="header.text"
+                                            :min="getMinValue(header.value)" :max="getMaxValue(header.value)"
+                                            hide-details ticks="always" tick-size="4" thumb-label>
+                                        </v-range-slider>
+                                    </v-col>
+                                </v-row>
+                            </v-form>
+                        </v-expansion-panel-content>
+                    </v-expansion-panel>
+                </v-expansion-panels> -->
+
+                <div v-for="(type, index) in distinct_type"  v-show="appmode" >
+                    {{type.Type1}} {{type.Volume_Price_Change_sum}}
+                    <br>
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
+                        :items="appfilteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                        <template v-slot:item.stock_number="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.stock_number }} {{ item.Type0 }}
+                            </v-btn>
+                        </template>
+                        <template v-slot:item.rt_price="{ item }">
+                            <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                                )*100).toFixed(1)}}
+                            </span>
+                        </template>
+                        <template v-slot:item.rt_量="{ item }">
+                            <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                            </span>
+                        </template>
+                    </v-data-table>
+                </div>
+
+                <div v-for="(type, index) in distinct_type"  v-show="!appmode" >
+                    {{type.Type1}} {{type.Volume_Price_Change_sum}}
+                    <br>
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
+                        :items="filteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                        <template v-slot:item.stock_number="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.stock_number }} {{ item.Type0 }}
+                            </v-btn>
+                        </template>
+                        <template v-slot:item.now_price="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
+                                </span>
+                                {{ item.now_price }}
+                                <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.a}}|
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.f}}
+                                </span>
+                            </v-btn>
+                        </template>
+
+                        <template v-slot:item.rt_price="{ item }">
+                            <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                    {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1 )*100).toFixed(1)}}
+                                </span>
+                        </template>
+                        <template v-slot:item.rt_量="{ item }">
+                            <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                    {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                                </span>
+                        </template>
+
+                        <template v-slot:item.成交股數="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.成交股數 }} <span style="color: burlywood;"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                    ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
+                            </v-btn>
+                        </template>
+
+
+                        <template v-slot:column.data="{ item, column }">
+                            {{ item[column.value] }}
+                        </template>
+                    </v-data-table>
+                </div>
+
+
+                <!-- 弹出窗口 -->
+                <v-dialog v-model="dialog" max-width="90vw">
+                    <v-card>
+                        <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
+                        <v-card-text style="padding: 0; height:90vh;">
+                            <!-- 在這裡添加iframe -->
+                            <iframe v-if="selectedItem"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                width="80%" frameborder="0" style="padding: 0; height:80vh;">
+                            </iframe>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+
+            </v-container>
+        </v-app>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    appmode: false,
+                    url: 'http://localhost/IT/Html/',
+                    jsonData: [],
+                    headers: [],
+                    appheaderscol: ['stock_number','_quote','rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
+                    filters: {},
+                    uniqueValues: {},
+                    sortBy: 'highlight_date',
+                    sortDesc: true,
+                    dialog: false,
+                    selectedItem: null,
+                    realtimedata: []
+                };
+            },
+            created() {
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('mode')) {
+                    // &mode=app 
+                    this.appmode = urlParams.get('mode') == 'app';
+                }
+                this.init();
+            },
+            computed: {
+                distinct_type() {
+                    var result = [];
+                    this.jsonData.reduce(function (res, value) {
+                        var key = value.Type1//+value.Trend
+                        if (!res[key]) {
+                            res[key] = { Type1: key, Volume_Price_Change_sum: 0 };
+                            result.push(res[key])
+                        }
+                        res[key].Volume_Price_Change_sum += Number(value.Volume_Price_Change_sum);
+                        return res;
+                    }, {});
+                    result.sort(function (a, b) {
+                        return -(a.Volume_Price_Change_sum - b.Volume_Price_Change_sum);
+                    });
+                    return result
+                },
+                appheaderData() {
+                    return  this.headers.filter(x => this.appheaderscol.includes(x.text))
+                },
+            },
+            methods: {
+                async init() {
+                    await this.loadExcelData();
+                    this.sync_realtime();   
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.jsonData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+
+                filteredData(x) {
+                    return this.jsonData.filter(y => y.Type1 == x)
+                },
+                appfilteredData(x) {
+                    let cols= this.appheaderscol.slice() // 創造一個新的陣列副本
+                    cols.push('Type0')
+                    cols.push('Type')
+                    cols.push('成交股數')
+                    cols.push('now_price')
+                    
+                    return this.jsonData.filter(y => y.Type1 == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
+                },
+                openDialog(item) {
+                    console.log(item.stock_number)
+                    this.selectedItem = item;
+                    this.dialog = true;
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                getMinValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.min(...values) : 0;
+                },
+                getMaxValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.max(...values) : 100;
+                },
+                async loadExcelData() {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    file = './Result/check1.xlsx'
+                    if (urlParams.has('d')) {
+
+                        if (urlParams.get('d') == 'A') {
+                            file = './Result/checkall.xlsx'
+                        }
+
+                    }
+
+
+
+
+                    await fetch(file)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+
+                                this.headers.forEach(header => {
+                                    if (this.isNumberField(header.value)) {
+                                        this.$set(this.filters, header.value, [
+                                            this.getMinValue(header.value),
+                                            this.getMaxValue(header.value),
+                                        ]);
+                                    } else {
+                                        this.$set(this.filters, header.value, []);
+                                    }
+                                    this.$set(this.uniqueValues, header.value, []);
+                                });
+
+                                this.jsonData.forEach(row => {
+                                    this.headers.forEach(header => {
+                                        const value = row[header.value];
+                                        if (value != null) {
+                                            const strValue = value.toString();
+                                            if (!this.uniqueValues[header.value].includes(strValue)) {
+                                                this.uniqueValues[header.value].push(strValue);
+                                            } else {
+
+
+                                            }
+                                        }
+                                    });
+                                });
+
+
+                                Object.keys(this.uniqueValues).forEach(key => {
+                                    this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
+                                    this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

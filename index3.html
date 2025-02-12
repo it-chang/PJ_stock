@@ -48,7 +48,7 @@
                     </v-expansion-panel>
                 </v-expansion-panels> -->
 
-                <div v-for="(type, index) in distinct_type"  v-show="appmode" >
+                <div v-for="(type, index) in distinct_type" v-show="appmode">
                     {{type.Type1}} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
@@ -60,20 +60,22 @@
                             </v-btn>
                         </template>
                         <template v-slot:item.rt_price="{ item }">
-                            <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                                 {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                                 )*100).toFixed(1)}}
                             </span>
                         </template>
                         <template v-slot:item.rt_量="{ item }">
-                            <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            <span style="color: burlywood;"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                                 {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                             </span>
                         </template>
                     </v-data-table>
                 </div>
 
-                <div v-for="(type, index) in distinct_type"  v-show="!appmode" >
+                <div v-for="(type, index) in distinct_type" v-show="!appmode">
                     {{type.Type1}} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
@@ -103,15 +105,16 @@
 
                         <template v-slot:item.rt_price="{ item }">
                             <span style="color: burlywood;"
-                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                                    {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1 )*100).toFixed(1)}}
-                                </span>
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                                )*100).toFixed(1)}}
+                            </span>
                         </template>
                         <template v-slot:item.rt_量="{ item }">
                             <span style="color: burlywood;"
-                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                                    {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
-                                </span>
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                            </span>
                         </template>
 
                         <template v-slot:item.成交股數="{ item }">
@@ -159,10 +162,10 @@
             data() {
                 return {
                     appmode: false,
-                    url: 'http://localhost/IT/Html/',
+                    url: '',
                     jsonData: [],
                     headers: [],
-                    appheaderscol: ['stock_number','_quote','rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
+                    appheaderscol: ['stock_number', '_quote', 'rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
                     filters: {},
                     uniqueValues: {},
                     sortBy: 'highlight_date',
@@ -199,13 +202,14 @@
                     return result
                 },
                 appheaderData() {
-                    return  this.headers.filter(x => this.appheaderscol.includes(x.text))
+                    return this.headers.filter(x => this.appheaderscol.includes(x.text))
                 },
             },
             methods: {
                 async init() {
                     await this.loadExcelData();
-                    this.sync_realtime();   
+                    await this.sync_realtime();
+                    this.loadExcelData();
                 },
                 async sync_realtime() {
                     var vm = this
@@ -226,16 +230,15 @@
                     return this.jsonData.filter(y => y.Type1 == x)
                 },
                 appfilteredData(x) {
-                    let cols= this.appheaderscol.slice() // 創造一個新的陣列副本
+                    let cols = this.appheaderscol.slice() // 創造一個新的陣列副本
                     cols.push('Type0')
                     cols.push('Type')
                     cols.push('成交股數')
                     cols.push('now_price')
-                    
+
                     return this.jsonData.filter(y => y.Type1 == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
                 },
                 openDialog(item) {
-                    console.log(item.stock_number)
                     this.selectedItem = item;
                     this.dialog = true;
                 },
@@ -257,6 +260,14 @@
                         .filter(value => !isNaN(value));
                     return values.length ? Math.max(...values) : 100;
                 },
+                sync_data() {
+                    this.jsonData.forEach(item => {
+                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a
+                        item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
+                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
+                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
+                    })
+                },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
                     file = './Result/check1.xlsx'
@@ -267,10 +278,6 @@
                         }
 
                     }
-
-
-
-
                     await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
@@ -288,6 +295,9 @@
                                     });
                                     return rowData;
                                 });
+                                if (this.realtimedata.length > 0) {
+                                    this.sync_data()
+                                }
 
                                 this.headers.forEach(header => {
                                     if (this.isNumberField(header.value)) {
