@@ -18,10 +18,12 @@
 
 <body>
     <div id="app">
-        <a href="JavaScript: location.reload(true);">Refresh page</a>
+
         <v-app>
             <v-container style="max-width: 95%;">
+                <a href="JavaScript: location.reload(true);">Refresh page</a>
                 <!-- 篩選區域 -->
+                 <!--
                 <v-expansion-panels>
                     <v-expansion-panel>
                         <v-expansion-panel-header>
@@ -47,9 +49,10 @@
                         </v-expansion-panel-content>
                     </v-expansion-panel>
                 </v-expansion-panels>
+                -->
 
                 <!-- Vuetify DataTable  -->
-                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="appheaderData"
+                <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="appheaderData"
                     v-show="appmode" :items="appfilteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" :mobile-breakpoint="0" style="white-space: nowrap;">
                     <template v-slot:item.stock_number="{ item }">
