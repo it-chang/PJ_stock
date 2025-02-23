@@ -18,10 +18,11 @@
 
 <body>
     <div id="app">
-
         <v-app>
             <v-container style="max-width: 95%;">
                 <a href="JavaScript: location.reload(true);">Refresh page</a>
+
+                data count {{filteredData.map(x=>x.stock_number).length}}
                 <!-- 篩選區域 -->
                  <!--
                 <v-expansion-panels>
