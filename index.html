@@ -21,10 +21,15 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <a href="JavaScript: location.reload(true);">Refresh page</a>
-
+                <v-btn color="primary" @click="openNextPage(-1)">
+                    last
+                </v-btn>
                 data count {{filteredData.map(x=>x.stock_number).length}}
+                <v-btn color="primary" @click="openNextPage(1)">
+                    Next
+                </v-btn>
                 <!-- 篩選區域 -->
-                 <!--
+                <!--
                 <v-expansion-panels>
                     <v-expansion-panel>
                         <v-expansion-panel-header>
@@ -161,7 +166,8 @@
                     sortDesc: true,
                     dialog: false,
                     selectedItem: null,
-                    realtimedata: []
+                    realtimedata: [],
+                    paraDate: null,
                 };
             },
             created() {
@@ -231,6 +237,15 @@
                     this.selectedItem = item;
                     this.dialog = true;
                 },
+
+                openNextPage(i) {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    const date = this.paraDate;
+                    date.setDate(date.getDate() + i);
+                    const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const url =window.location.href.replace(urlParams.get('date'),nextDateStr);
+                    window.open(url, '_blank');
+                },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];
@@ -261,30 +276,38 @@
                     let urlParams = new URLSearchParams(window.location.search);
                     file = './Result/check.xlsx'
                     if (urlParams.has('d')) {
-                        if (urlParams.get('d') == 'T') {
-                            file = './Result/check1.xlsx'
-                        }
-                        /*if (urlParams.get('d') == 'NT') {
-                            file = './Result/check1_N.xlsx'
-                        }*/
                         if (urlParams.get('d') == 'S') {
                             file = './Result/check2.xlsx'
                         }
                         if (urlParams.get('d') == 'M') {
                             file = './Result/checkmy.xlsx'
                         }
+                        /*if (urlParams.get('d') == 'NT') {
+                            file = './Result/check1_N.xlsx'
+                        }*/
+                        if (urlParams.get('d') == 'T') {
+                            //file = './Result/check1.xlsx'
+                            file = './Result/check1/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
+                        }
+                        
                         if (urlParams.get('d') == 'O') {
-                            file = './Result/check3.xlsx'
+                            //file = './Result/check3.xlsx'
+                            file = './Result/check3/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
                         }
                         if (urlParams.get('d') == 'H') {
                             file = './Result/check4.xlsx'
                         }
-                        if (urlParams.get('d') == 'A') {
-                            file = './Result/checkall.xlsx'
-                        }
+                        /**********************/
                         if (urlParams.get('d') == 'C') {
                             file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
                             // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
+                        }
+                        
+                        if (urlParams.get('d') == 'A') {
+                            file = './Result/checkall.xlsx'
                         }
                     }
                     await fetch(file)

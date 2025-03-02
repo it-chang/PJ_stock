@@ -18,10 +18,16 @@
 
 <body>
     <div id="app">
-        <a href="JavaScript: location.reload(true);">Refresh page</a>
-        data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}
         <v-app>
             <v-container style="max-width: 95%;">
+                <a href="JavaScript: location.reload(true);">Refresh page</a>
+                <v-btn color="primary" @click="openNextPage(-1)">
+                    last
+                </v-btn>
+                data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}
+                <v-btn color="primary" @click="openNextPage(1)">
+                    Next
+                </v-btn>
                 <!-- 篩選區域
                 <v-expansion-panels>
                     <v-expansion-panel>
@@ -50,10 +56,10 @@
                 </v-expansion-panels> -->
 
                 <div v-for="(type, index) in distinct_type" v-show="appmode">
-                    {{type.Type1}} {{type.Volume_Price_Change_sum}}
+                    {{type.Typelevel }} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
-                        :items="appfilteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :items="appfilteredData(type.Typelevel )" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                         :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
@@ -77,10 +83,10 @@
                 </div>
 
                 <div v-for="(type, index) in distinct_type" v-show="!appmode">
-                    {{type.Type1}} {{type.Volume_Price_Change_sum}}
+                    {{type.Typelevel }} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
-                        :items="filteredData(type.Type1)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :items="filteredData(type.Typelevel )" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                         :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
@@ -173,7 +179,8 @@
                     sortDesc: true,
                     dialog: false,
                     selectedItem: null,
-                    realtimedata: []
+                    realtimedata: [],
+                    paraDate: null,
                 };
             },
             created() {
@@ -189,9 +196,9 @@
                 distinct_type() {
                     var result = [];
                     this.jsonData.reduce(function (res, value) {
-                        var key = value.Type1//+value.Trend
+                        var key = value.Typelevel  // Typelevel //+value.Trend
                         if (!res[key]) {
-                            res[key] = { Type1: key, Volume_Price_Change_sum: 0 };
+                            res[key] = { Typelevel : key, Volume_Price_Change_sum: 0 };
                             result.push(res[key])
                         }
                         res[key].Volume_Price_Change_sum += Number(value.Volume_Price_Change_sum);
@@ -228,7 +235,7 @@
                 },
 
                 filteredData(x) {
-                    return this.jsonData.filter(y => y.Type1 == x)
+                    return this.jsonData.filter(y => y.Typelevel  == x)
                 },
                 appfilteredData(x) {
                     let cols = this.appheaderscol.slice() // 創造一個新的陣列副本
@@ -237,12 +244,22 @@
                     cols.push('成交股數')
                     cols.push('now_price')
 
-                    return this.jsonData.filter(y => y.Type1 == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
+                    return this.jsonData.filter(y => y.Typelevel  == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
                 },
                 openDialog(item) {
                     this.selectedItem = item;
                     this.dialog = true;
                 },
+                openNextPage(i) {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    const date = this.paraDate;
+                    date.setDate(date.getDate() + i);
+                    const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const url =window.location.href.replace(urlParams.get('date'),nextDateStr);
+                    window.open(url, '_blank');
+                },
+
+
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];
@@ -271,12 +288,17 @@
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-                    file = './Result/check1.xlsx'
+                    
                     if (urlParams.has('d')) {
-
                         if (urlParams.get('d') == 'A') {
-                            file = './Result/checkall.xlsx'
+                            //file = './Result/checkall.xlsx'
+                            file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
                         }
+                    }else{
+                        //file = './Result/check1.xlsx'
+                        file = './Result/check1/' + urlParams.get('date') + '.xlsx'
+                        this.paraDate = new Date(urlParams.get('date'))
 
                     }
                     await fetch(file)

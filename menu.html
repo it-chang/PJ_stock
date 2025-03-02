@@ -8,11 +8,11 @@
     <!-- 引入 Vuetify 和 Vue.js -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
-	<link href="./Content/base.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
-	<script src="./Content/common.js"></script>
+    <script src="./Content/common.js"></script>
 </head>
 
 <body>
@@ -20,7 +20,8 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <!-- Vuetify DataTable -->
-                <v-data-table hide-default-footer :headers="headers" :items="paths" style="white-space: nowrap;" :items-per-page="30">
+                <v-data-table hide-default-footer :headers="headers" :items="paths" style="white-space: nowrap;"
+                    :items-per-page="30">
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.url="{ item }">
                         <v-btn text @click="openDialog(item)">
@@ -30,7 +31,7 @@
                             app mode
                         </v-btn>
                     </template>
-                  
+
                 </v-data-table>
             </v-container>
         </v-app>
@@ -42,53 +43,78 @@
             vuetify: new Vuetify(),
             data() {
                 return {
-                    model:[],
+                    model: [],
                     urldomain: 'https://itchang0615.github.io/PJ_stock/',
                     paths: [
-                        { title: '近期表現佳', url: 'index.html?', file: 'check.xlsx' , desc: '' },
-                        { title: '近期表現佳-本日', url: 'index.html?d=T', file: 'check1.xlsx' , desc: '' },
+                        
+                        /*{ title: '近期表現佳-本日', url: 'index.html?d=T', file: 'check1.xlsx', desc: '' },*/
                         /*{ title: '近期表現佳-本日(反集)', url: 'index.html?d=NT', file: 'check1_N.xlsx' , desc: '' },*/
-                        
-                        
-                        { title: '近期表現佳_太陽圖', url: 'index2.html?', file: 'check.xlsx' , desc: '' },
-                        { title: '近期表現佳+highlight_太陽圖', url: 'index2.html?d=H', file: 'checkH.xlsx' , desc: '' },
-                        { title: '近期表現佳-本日資金分類流向', url: 'index3.html?', file: 'check1.xlsx' , desc: '' },
 
-                        { title: 'highlight', url: 'index.html?d=H', file: 'check4.xlsx' , desc: '' },
-                        { title: '近期表現佳+highlight+Trend_change Up', url: 'index.html?d=S', file: 'check2.xlsx' , desc: '' },
+                        { title: '近期表現佳', url: 'index.html?', file: 'check.xlsx', desc: '' },
+                        { title: 'highlight', url: 'index.html?d=H', file: 'check4.xlsx', desc: '' },
+                        { title: '近期表現佳+highlight+Trend_change Up', url: 'index.html?d=S', file: 'check2.xlsx', desc: '' },
 
-                        { title: 'ALL-本日', url: 'index.html?d=A', file: 'checkall.xlsx' , desc: '' },
-                        { title: 'ALL-本日資金分類流向', url: 'index3.html?d=A', file: 'checkall.xlsx' , desc: '' },
+                        { title: '太陽圖-近期表現佳', url: 'index2.html?', file: 'check.xlsx', desc: '' },
+                        { title: '太陽圖-近期表現佳+highlight', url: 'index2.html?d=H', file: 'checkH.xlsx', desc: '' },
 
-                        { title: '自訂-關注', url: 'index.html?d=O', file: 'check3.xlsx' , desc: '' },
-                        { title: '自訂-持有', url: 'index.html?d=M', file: 'checkmy.xlsx' , desc: '' },
-                        { title: '指定日', url: 'index.html?d=C&date=2025-02-11', file: '2025-01-21.xlsx' , desc: '123' },
-                        
+                        //{ title: '近期表現佳-本日資金分類流向', url: 'index3.html?', file: 'check1.xlsx' , desc: '' },
+                        { title: '指定日-資金分類流向-當日近期表現佳', url: 'index3.html?date=', file: 'check1.xlsx', desc: '' },
+                        { title: '指定日-資金分類流向-All', url: 'index3.html?d=A&date=', file: 'checkall.xlsx', desc: '' },
+
+                        //{ title: '自訂-關注', url: 'index.html?d=O', file: 'check3.xlsx' , desc: '' },
+                        //{ title: 'ALL-本日', url: 'index.html?d=A', file: 'checkall.xlsx', desc: '' },
+                        { title: '指定日-近期表現佳', url: 'index.html?d=T&date=', file: 'check1.xlsx', desc: '' },
+                        { title: '指定日-關注', url: 'index.html?d=O&date=', file: '2025-02-26.xlsx', desc: '' },
+                        { title: '指定日-All', url: 'index.html?d=C&date=', file: '2025-02-26.xlsx', desc: '123' },
+
+                        { title: '自訂-持有', url: 'index.html?d=M', file: 'checkmy.xlsx', desc: '' },
                     ],
                     headers: [
-                        {text: 'Title',value: 'title',align: 'left',sortable: true},
-                        {text: 'Url',value: 'url',align: 'left',sortable: true},
-                        {text: 'File',value: 'file',align: 'left',sortable: true},
-                        {text: 'Desc',value: 'desc',align: 'left',sortable: true},
+                        { text: 'Title', value: 'title', align: 'left', sortable: true },
+                        { text: 'Url', value: 'url', align: 'left', sortable: true },
+                        { text: 'File', value: 'file', align: 'left', sortable: true },
+                        { text: 'Desc', value: 'desc', align: 'left', sortable: true },
                     ],
                 };
             },
             created() {
-                  this.urldomain=window.location.href.split('/').slice(0,4).join('/')+'/'
+                this.urldomain = window.location.href.split('/').slice(0, 4).join('/') + '/'
+                this.paths.forEach(x => {
+                    x.url=x.url.replace("date=", "date="+ this.getPreviousWorkingDay());
+                });
             },
             computed: {
             },
             methods: {
-                openDialog(item) {  
-                    url=this.urldomain+item.url;
+                openDialog(item) {
+                    url = this.urldomain + item.url;
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },
-                openappDialog(item) {  
-                    url=this.urldomain+item.url+'&mode=app';
+                openappDialog(item) {
+                    url = this.urldomain + item.url + '&mode=app';
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },
+                getPreviousWorkingDay(date = new Date()) {
+                    const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+                    if (day === 0) {
+                        // Sunday → move back to Friday
+                        date.setDate(date.getDate() - 2);
+                    } else if (day === 6) {
+                        // Saturday → move back to Friday
+                        date.setDate(date.getDate() - 1);
+                    } else if (day === 1) {
+                        // Monday → move back to Friday
+                        date.setDate(date.getDate() - 3);
+                    } else {
+                        // Any other weekday → move back one day
+                        date.setDate(date.getDate() - 1);
+                    }
+
+                    return date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                }
             },
         });
     </script>
