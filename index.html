@@ -20,14 +20,22 @@
     <div id="app">
         <v-app>
             <v-container style="max-width: 95%;">
-                <a href="JavaScript: location.reload(true);">Refresh page</a>
-                <v-btn color="primary" @click="openNextPage(-1)">
-                    last
-                </v-btn>
-                data count {{filteredData.map(x=>x.stock_number).length}}
-                <v-btn color="primary" @click="openNextPage(1)">
-                    Next
-                </v-btn>
+                <v-row  no-gutters>
+                    <v-col col="6">
+                        <!--<a href="JavaScript: location.reload(true);">Refresh page</a>-->
+                        <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
+                        <span>data count {{filteredData.map(x=>x.stock_number).length}}</span>
+                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate" >Next</v-btn>
+                    </v-col>
+                    <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
+                        <v-text-field v-model="filter1" label="rt_price"  style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="rt_量"  style="max-width: 150px;"></v-text-field>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                    </v-col>
+                </v-row>
+                
                 <!-- 篩選區域 -->
                 <!--
                 <v-expansion-panels>
@@ -156,6 +164,7 @@
             data() {
                 return {
                     appmode: false,
+                    sync: false,
                     url: '',
                     jsonData: [],
                     headers: [],
@@ -168,6 +177,8 @@
                     selectedItem: null,
                     realtimedata: [],
                     paraDate: null,
+                    filter1: 1,
+                    filter2: 0.4,
                 };
             },
             created() {
@@ -177,6 +188,10 @@
                     // &mode=app 
                     this.appmode = urlParams.get('mode') == 'app';
                 }
+                if (urlParams.has('sync')) {
+                    this.sync = urlParams.get('sync') == 'Y';
+                }
+
                 this.init();
             },
             computed: {
@@ -216,7 +231,10 @@
             methods: {
                 async init() {
                     await this.loadExcelData();
-                    await this.sync_realtime();
+                    if(this.sync){
+                        await this.sync_realtime();
+                    }
+                        
                     this.loadExcelData();
                 },
                 async sync_realtime() {
@@ -245,6 +263,10 @@
                     const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
                     const url =window.location.href.replace(urlParams.get('date'),nextDateStr);
                     window.open(url, '_blank');
+                },
+                actionFilter(i) {
+                    var vm=this
+                    vm.jsonData=vm.jsonData.filter(x=>x.rt_price>vm.filter1 &&x.rt_量>vm.filter2 )
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {

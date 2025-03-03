@@ -18,13 +18,23 @@
 
 <body>
     <div id="app">
-        <a href="JavaScript: location.reload(true);">Refresh page</a>
-        
-        data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
+
         <v-app>
-            
             <v-container style="max-width: 95%;">
-                <!-- Vuetify DataTable -->
+                <v-row  no-gutters>
+                    <v-col col="2">
+                        <a href="JavaScript: location.reload(true);">Refresh page</a>
+                        data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}
+                    </v-col>
+                    <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
+                        <v-text-field v-model="filter1" label="rt_price"  style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="rt_量"  style="max-width: 150px;"></v-text-field>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                    </v-col>
+                </v-row>
+                
 
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
@@ -84,6 +94,7 @@
             vuetify: new Vuetify(),
             data() {
                 return {
+                    sync: false,
                     url: '',
                     jsonData: [],
                     headers: [],
@@ -94,11 +105,17 @@
                     sortDesc: true,
                     dialog: false,
                     selectedItem: null,
-                    realtimedata: []
+                    realtimedata: [],
+                    filter1: 1,
+                    filter2: 0.4,
                 };
             },
             created() {
                 this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/';
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('sync')) {
+                    this.sync = urlParams.get('sync') == 'Y';
+                }
                 this.init();
             },
             computed: {
@@ -125,7 +142,10 @@
             methods: {
                 async init() {
                     await this.loadExcelData();
-                    await this.sync_realtime();
+                    if(this.sync){
+                        await this.sync_realtime();
+                    }
+                        
                     this.loadExcelData();
                 },
                 async sync_realtime() {
@@ -146,6 +166,10 @@
                 openDialog(item) {
                     this.selectedItem = item;
                     this.dialog = true;
+                },
+                actionFilter(i) {
+                    var vm=this
+                    vm.jsonData=vm.jsonData.filter(x=>x.rt_price>vm.filter1 &&x.rt_量>vm.filter2 )
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {

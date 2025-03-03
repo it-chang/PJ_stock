@@ -27,9 +27,15 @@
                         <v-btn text @click="openDialog(item)">
                             {{ item.url }}
                         </v-btn>
-                        <v-btn text @click="openappDialog(item)">
+                    </template>
+                    <template v-slot:item.action="{ item }">
+                        <v-btn text @click="openappDialog(item,'app')">
                             app mode
                         </v-btn>
+                        <v-btn text @click="openappDialog(item,'sync')">
+                            sync mode
+                        </v-btn>
+                        
                     </template>
 
                 </v-data-table>
@@ -73,6 +79,7 @@
                         { text: 'Title', value: 'title', align: 'left', sortable: true },
                         { text: 'Url', value: 'url', align: 'left', sortable: true },
                         { text: 'File', value: 'file', align: 'left', sortable: true },
+                        { text: 'Action', value: 'action', align: 'left', sortable: true },
                         { text: 'Desc', value: 'desc', align: 'left', sortable: true },
                     ],
                 };
@@ -91,8 +98,15 @@
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },
-                openappDialog(item) {
-                    url = this.urldomain + item.url + '&mode=app';
+                openappDialog(item,mode) {
+                    url = this.urldomain + item.url + '&'
+                    if(mode=='app'){
+                        url +='mode=app';
+                    }
+                    if(mode=="sync"){
+                        url +='sync=Y';
+                    }
+                    
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },
