@@ -75,14 +75,14 @@
                             </v-btn>
                         </template>
                         <template v-slot:item.rt_price="{ item }">
-                            <span style="color: burlywood;"
+                            <span style="color: rgb(124, 169, 173);"
                                 v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                                 {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                                 )*100).toFixed(1)}}
                             </span>
                         </template>
                         <template v-slot:item.rt_量="{ item }">
-                            <span style="color: burlywood;"
+                            <span style="color: rgb(124, 169, 173);"
                                 v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                                 {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                             </span>
@@ -103,14 +103,14 @@
                         </template>
                         <template v-slot:item.now_price="{ item }">
                             <v-btn text @click="openDialog(item)">
-                                <span style="color: burlywood;"
+                                <span style="color: rgb(124, 169, 173);"
                                     v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
 
                                     {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
                                     {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
                                 </span>
                                 {{ item.now_price }}
-                                <span style="color: burlywood;"
+                                <span style="color: rgb(124, 169, 173);"
                                     v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
                                     {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.a}}|
                                     {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.f}}
@@ -119,14 +119,14 @@
                         </template>
 
                         <template v-slot:item.rt_price="{ item }">
-                            <span style="color: burlywood;"
+                            <span style="color: rgb(124, 169, 173);"
                                 v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                                 {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                                 )*100).toFixed(1)}}
                             </span>
                         </template>
                         <template v-slot:item.rt_量="{ item }">
-                            <span style="color: burlywood;"
+                            <span style="color: rgb(124, 169, 173);"
                                 v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                                 {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                             </span>
@@ -134,7 +134,7 @@
 
                         <template v-slot:item.成交股數="{ item }">
                             <v-btn text @click="openDialog(item)">
-                                {{ item.成交股數 }} <span style="color: burlywood;"
+                                {{ item.成交股數 }} <span style="color: rgb(124, 169, 173);"
                                     v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
                                     ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
                             </v-btn>

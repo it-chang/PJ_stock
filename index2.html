@@ -24,7 +24,7 @@
                 <v-row  no-gutters>
                     <v-col col="2">
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
-                        data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}
+                        data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
                     </v-col>
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
                         <v-text-field v-model="filter1" label="rt_price"  style="max-width: 150px;"></v-text-field>
@@ -53,13 +53,13 @@
                     </template>
 
                     <template v-slot:item.rt_price="{ item }">
-                        <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                             )*100).toFixed(1)}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
-                        <span style="color: burlywood;" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
@@ -213,7 +213,7 @@
                                 });
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
-                                var arr = ['stock_number', 'Type', 'Type1', 'Type2','LevelArea', '貝他值', '日期', 'highlight_date', 'over_%','均價_%','MACD_%','短交易量o', '遠交易量o','Trend_change', 'change_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
+                                var arr = ['stock_number', 'Type', 'Type1', 'Type2','LevelArea', '貝他值', '日期', 'highlight_date', 'over_%','均價_%','MACD_%','短交易量o', '遠交易量o','Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
                                 this.arrcount = arr.length
                                 arr.reverse().forEach(element => {
                                     dates.unshift(element)

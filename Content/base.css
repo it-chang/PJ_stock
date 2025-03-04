@@ -12,11 +12,19 @@ body {
 #app,
 .v-data-table>.v-data-table__wrapper>table {
 	color: #7191ad;
-	background-color: #43474b;
+	background-color: #a494944d;
 }
 .v-data-table>.v-data-table__wrapper>table>tbody>tr>td {
 	padding:0 5px
 }
 .theme--light.v-data-table.v-data-table--fixed-header thead th {
-    background: #43474b;
+    background: #a494944d;
+}
+
+.textwordwrap{
+	
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 30px;
 }
