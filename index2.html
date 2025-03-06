@@ -21,20 +21,24 @@
 
         <v-app>
             <v-container style="max-width: 95%;">
-                <v-row  no-gutters>
+                <v-row no-gutters>
                     <v-col col="2">
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
                         data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
                     </v-col>
+                    <!--
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price"  style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量"  style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                    </v-col>-->
+                    <v-col col="1">
+                        <v-btn color="primary" @click="funcSortBy(6)">Sort</v-btn>
                     </v-col>
                 </v-row>
-                
+
 
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
@@ -53,13 +57,15 @@
                     </template>
 
                     <template v-slot:item.rt_price="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                             )*100).toFixed(1)}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
@@ -101,8 +107,8 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    sortBy: 'highlight_date',
-                    sortDesc: true,
+                    sortBy: ['highlight_date'],
+                    sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
@@ -117,6 +123,7 @@
                     this.sync = urlParams.get('sync') == 'Y';
                 }
                 this.init();
+
             },
             computed: {
                 filteredData() {
@@ -142,10 +149,10 @@
             methods: {
                 async init() {
                     await this.loadExcelData();
-                    if(this.sync){
-                        await this.sync_realtime();
+                    if (this.sync) {
+                       // await this.sync_realtime();
                     }
-                        
+
                     this.loadExcelData();
                 },
                 async sync_realtime() {
@@ -168,8 +175,8 @@
                     this.dialog = true;
                 },
                 actionFilter(i) {
-                    var vm=this
-                    vm.jsonData=vm.jsonData.filter(x=>x.rt_price>vm.filter1 &&x.rt_量>vm.filter2 )
+                    var vm = this
+                    vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
@@ -184,6 +191,13 @@
                         var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
                         item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
                     })
+                },
+
+                funcSortBy(i) {
+                    this.sortBy = this.headers.slice(-1 * i).reverse().map(x => x.value)
+                    this.sortDesc = Array(i).fill(true)
+                    var dat=this.headers.slice(-1).map(x=>x.value)[0]
+                    this.jsonData=this.jsonData.filter(x=>x[dat]=="1")
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
@@ -213,7 +227,8 @@
                                 });
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
-                                var arr = ['stock_number', 'Type', 'Type1', 'Type2','LevelArea', '貝他值', '日期', 'highlight_date', 'over_%','均價_%','MACD_%','短交易量o', '遠交易量o','Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
+                                //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
+                                var arr = ['Type', 'Type1', 'Type2', '貝他值', 'stock_number',  '日期', 'diff_quote', 'highlight_date',  'count']
                                 this.arrcount = arr.length
                                 arr.reverse().forEach(element => {
                                     dates.unshift(element)
