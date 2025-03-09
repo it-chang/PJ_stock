@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>check by date</title>
+    <title>太陽圖</title>
     <!-- 引入 Vuetify 和 Vue.js -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
@@ -46,7 +46,7 @@
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }}
+                            {{ item.stock_number }} {{ item.Type }}
                         </v-btn>
                     </template>
                     <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(arrcount)"
@@ -59,8 +59,8 @@
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);"
                             v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                            {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
-                            )*100).toFixed(1)}}
+                            {{
+                            ((realtimedata.filter(x=>x.c==item.stock_number)[0]?.b/parseFloat(realtimedata.filter(x=>x.c==item.stock_number)[0]?.y)-1)*100).toFixed(2)}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
@@ -103,6 +103,7 @@
                     sync: false,
                     url: '',
                     jsonData: [],
+                    dummydata: [],
                     headers: [],
                     filters: {},
                     arrcount: 0,
@@ -150,7 +151,7 @@
                 async init() {
                     await this.loadExcelData();
                     if (this.sync) {
-                       // await this.sync_realtime();
+                        await this.sync_realtime();
                     }
 
                     this.loadExcelData();
@@ -175,7 +176,7 @@
                     this.dialog = true;
                 },
                 actionFilter(i) {
-                    var vm = this
+                    var vm = thisindex.html
                     vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
                 },
                 isNumberField(field) {
@@ -187,7 +188,8 @@
                 sync_data() {
                     this.jsonData.forEach(item => {
                         var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a
-                        item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
+                        // item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
+                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.b / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2)
                         var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
                         item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
                     })
@@ -196,8 +198,8 @@
                 funcSortBy(i) {
                     this.sortBy = this.headers.slice(-1 * i).reverse().map(x => x.value)
                     this.sortDesc = Array(i).fill(true)
-                    var dat=this.headers.slice(-1).map(x=>x.value)[0]
-                    this.jsonData=this.jsonData.filter(x=>x[dat]=="1")
+                    var dat = this.headers.slice(-1).map(x => x.value)[0]
+                    this.jsonData = this.jsonData.filter(x => x[dat] == "1")
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
@@ -217,6 +219,7 @@
 
                             if (json.length > 0) {
                                 this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
                                 //Excel data to json 
                                 this.jsonData = json.slice(1).map(row => {
                                     const rowData = {};
@@ -228,7 +231,7 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                 //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
-                                var arr = ['Type', 'Type1', 'Type2', '貝他值', 'stock_number',  '日期', 'diff_quote', 'highlight_date',  'count']
+                                var arr = ['Type1', 'Type2','stock_number',  '貝他值', '箱型力量', '箱型力量_5均','rt_price', '日期', 'diff_quote', 'highlight_date', 'count']
                                 this.arrcount = arr.length
                                 arr.reverse().forEach(element => {
                                     dates.unshift(element)
@@ -245,19 +248,32 @@
                                     this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
                                         datesToShow.forEach(date => {
                                             transformedItem[date] = ff.日期 === date | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
-
                                         });
                                     });
-
                                     return transformedItem;
                                 });
 
-                                this.jsonData = Array.from(
+                                var dummydata = Array.from(
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
-                                this.jsonData.forEach(item => {
-                                    item.count = Object.keys(item).filter(key => item[key] === "1").length
+
+                                dummydata.map((item, index) => {
+                                    const dummydataItem = item
+                                    const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
+                                    const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
+                                    const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
+
+                                    dummydataItem.箱型力量 = maxdateitem.箱型力量
+                                    dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
+
+                                    dummydataItem.count = maxdata.length;
+
+                                    return dummydataItem;
                                 });
+
+
+                                this.jsonData = dummydata
+
                             }
 
                             if (this.realtimedata.length > 0) {

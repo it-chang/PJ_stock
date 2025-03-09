@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel 讀取與 Vuetify DataTable 複選過濾示例</title>
+    <title>分類解析</title>
     <!-- 引入 Vuetify 和 Vue.js -->
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
@@ -14,6 +14,12 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
     <script src="./Content/common.js"></script>
     <script src="./Content/getRealTime.js"></script>
+    <style>
+        .custom-table .v-data-table__wrapper {
+            max-height: 350px; /* 控制資料區域高度，讓 headers 固定 */
+            overflow-y: auto; /* 讓資料可以垂直捲動 */
+        }
+        </style>
 </head>
 
 <body>
@@ -68,7 +74,7 @@
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
                         :items="appfilteredData(type.Typelevel )" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
-                        :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                        :sort-desc.sync="sortDesc"  style="white-space: nowrap; " >
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
                                 {{ item.stock_number }} {{ item.Type0 }}
@@ -90,12 +96,22 @@
                     </v-data-table>
                 </div>
 
-                <div v-for="(type, index) in distinct_type" v-show="!appmode">
-                    {{type.Typelevel }} {{type.Volume_Price_Change_sum}}
+                <div v-for="(type, index) in distinct_type" v-show="!appmode" style="max-height: 400px; overflow-x: auto;">
+                    {{ type.Typelevel }} {{ type.Volume_Price_Change_sum }}
                     <br>
-                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
-                        :items="filteredData(type.Typelevel )" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
-                        :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                    <v-data-table
+                        disable-pagination
+                        fixed-header
+                        hide-default-footer
+                        :headers="headers"
+                        :items="filteredData(type.Typelevel)"
+                        :items-per-page="-1"
+                        item-key="id"
+                        :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc"
+                        style="white-space: nowrap; min-width: 100%; max-height: 400px;"
+                        class="custom-table"
+                    >
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
                                 {{ item.stock_number }} {{ item.Type0 }}
@@ -331,6 +347,7 @@
 
                             if (json.length > 0) {
                                 this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
                                 this.jsonData = json.slice(1).map(row => {
                                     const rowData = {};
                                     this.headers.forEach((header, i) => {

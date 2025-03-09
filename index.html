@@ -20,22 +20,22 @@
     <div id="app">
         <v-app>
             <v-container style="max-width: 95%;">
-                <v-row  no-gutters>
+                <v-row no-gutters>
                     <v-col col="6">
                         <!--<a href="JavaScript: location.reload(true);">Refresh page</a>-->
                         <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
                         <span>data count {{filteredData.map(x=>x.stock_number).length}}</span>
-                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate" >Next</v-btn>
+                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
                     </v-col>
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price"  style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量"  style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
                     </v-col>
                 </v-row>
-                
+
                 <!-- 篩選區域 -->
                 <!--
                 <v-expansion-panels>
@@ -76,23 +76,23 @@
                     </template>
 
                     <template v-slot:item.rt_price="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                             )*100).toFixed(1)}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
 
                 </v-data-table>
-
-
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" v-show="!appmode" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
-                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">              
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
@@ -116,13 +116,15 @@
                     </template>
 
                     <template v-slot:item.rt_price="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
                             )*100).toFixed(1)}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
@@ -207,6 +209,7 @@
 
                     return this.filteredData.map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
                 },
+            
                 filteredData() {
                     return this.jsonData.filter(item => {
                         return Object.keys(this.filters).every(key => {
@@ -229,12 +232,19 @@
                 }
             },
             methods: {
+                getHeaderStyle(headerText) {
+                    const specialHeaders = ['盤後量','成交量','淨值倍率','貝他值','價能'];
+                    if (specialHeaders.includes(headerText)) {
+                        return 'background-color: #ffeb3b; color: #000;';
+                    }
+                    return '';
+                },
                 async init() {
                     await this.loadExcelData();
-                    if(this.sync){
+                    if (this.sync) {
                         await this.sync_realtime();
                     }
-                        
+
                     this.loadExcelData();
                 },
                 async sync_realtime() {
@@ -261,12 +271,12 @@
                     const date = this.paraDate;
                     date.setDate(date.getDate() + i);
                     const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
-                    const url =window.location.href.replace(urlParams.get('date'),nextDateStr);
+                    const url = window.location.href.replace(urlParams.get('date'), nextDateStr);
                     window.open(url, '_blank');
                 },
                 actionFilter(i) {
-                    var vm=this
-                    vm.jsonData=vm.jsonData.filter(x=>x.rt_price>vm.filter1 &&x.rt_量>vm.filter2 )
+                    var vm = this
+                    vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
@@ -304,6 +314,13 @@
                         if (urlParams.get('d') == 'M') {
                             file = './Result/checkmy.xlsx'
                         }
+                        if (urlParams.get('d') == 'dangchong') {
+                            file = './Result/checkdangchong.xlsx'
+                        }
+
+                        if (urlParams.get('d') == 'Temp') {
+                            file = './Result/checktemp.xlsx'
+                        }
                         /*if (urlParams.get('d') == 'NT') {
                             file = './Result/check1_N.xlsx'
                         }*/
@@ -312,7 +329,7 @@
                             file = './Result/check1/' + urlParams.get('date') + '.xlsx'
                             this.paraDate = new Date(urlParams.get('date'))
                         }
-                        
+
                         if (urlParams.get('d') == 'O') {
                             //file = './Result/check3.xlsx'
                             file = './Result/check3/' + urlParams.get('date') + '.xlsx'
@@ -327,7 +344,7 @@
                             this.paraDate = new Date(urlParams.get('date'))
                             // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
                         }
-                        
+
                         if (urlParams.get('d') == 'A') {
                             file = './Result/checkall.xlsx'
                         }
@@ -342,6 +359,7 @@
 
                             if (json.length > 0) {
                                 this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
                                 this.jsonData = json.slice(1).map(row => {
                                     const rowData = {};
                                     this.headers.forEach((header, i) => {
