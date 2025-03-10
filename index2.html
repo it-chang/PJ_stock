@@ -35,6 +35,14 @@
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
                     </v-col>-->
                     <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['日期','箱型力量_5均']">Sort日期</v-btn>
+                    </v-col>
+                    
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['highlight_date','箱型力量_5均']">Sortbyhighlight</v-btn>
+                    </v-col>
+                    
+                    <v-col col="1">
                         <v-btn color="primary" @click="funcSortBy(6)">Sort</v-btn>
                     </v-col>
                 </v-row>
@@ -196,6 +204,7 @@
                 },
 
                 funcSortBy(i) {
+                    debugger;
                     this.sortBy = this.headers.slice(-1 * i).reverse().map(x => x.value)
                     this.sortDesc = Array(i).fill(true)
                     var dat = this.headers.slice(-1).map(x => x.value)[0]
