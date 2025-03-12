@@ -240,7 +240,7 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                 //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
-                                var arr = ['Type1', 'Type2','stock_number',  '貝他值', '箱型力量', '箱型力量_5均','rt_price', '日期', 'diff_quote', 'highlight_date', 'count']
+                                var arr = ['Type1', 'Type2','stock_number',  '貝他值','成交量','rt_price', '日期', 'diff_quote', 'highlight_date', 'count']
                                 this.arrcount = arr.length
                                 arr.reverse().forEach(element => {
                                     dates.unshift(element)
