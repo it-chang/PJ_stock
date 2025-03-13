@@ -61,6 +61,11 @@
                         :key="header.value">
                         <span>
                             <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
+                           
+                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
+                                {{ data.量能.split('.')[0] }} <!-- 確認這裡只取所需的屬性 -->
+                            </template>
+                            <!-- {{item.遠交易量}}-->
                         </span>
                     </template>
 
@@ -268,7 +273,9 @@
 
                                 dummydata.map((item, index) => {
                                     const dummydataItem = item
+                                    
                                     const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
+                                    dummydataItem.datalist=maxdata
                                     const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
                                     const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
 
