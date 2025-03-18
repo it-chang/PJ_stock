@@ -60,12 +60,35 @@
                     <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(arrcount)"
                         :key="header.value">
                         <span>
-                            <v-icon v-if="item[header.value]" color="#a9a260">mdi-weather-sunny </v-icon>
-                           
+                            <!--{{ item.datalist.filter(x => x.日期 === header.value) }}-->
+                             <!--&& item.datalist.filter(x => x.日期 === header.value)?.flag =='Y'   -->
+                             
+                            <v-icon v-if="item[header.value]  " color="#a9a260">mdi-weather-sunny </v-icon>
+                            
                             <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
-                                {{ data.量能.split('.')[0] }} <!-- 確認這裡只取所需的屬性 -->
+                                <span :style="{ 
+                                    color: parseInt(data.量能.split('.')[0]) > 90 ? 'red' : 
+                                           parseInt(data.量能.split('.')[0]) > 20 ? 'orange' : 
+                                           '#7594af' 
+                                }">
+                                    {{ data.量能.split('.')[0] }} 
+                                </span>
+                                <BR/>
+                                    <span :style="{ 
+                                        color: parseInt(data._quote) > 5 ? 'red' : 
+                                               parseInt(data._quote) > 2 ? 'orange' : 
+                                               '#7594af' 
+                                    }"
+                                    style="font-size: xx-small;">
+                                        {{data._quote}}
+                                    
+                                </span>
                             </template>
-                            <!-- {{item.遠交易量}}-->
+                               <!-- 
+                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
+                                {{ data.量能.split('.')[0] }} 
+                            </template>-->
+                         
                         </span>
                     </template>
 
@@ -222,6 +245,9 @@
                         if (urlParams.get('d') == 'H') {
                             file = './Result/checkH.xlsx'
                         }
+                        if (urlParams.get('d') == 'sun') {
+                            file = './Result/checksun.xlsx'
+                        }
                     }
                     await fetch(file)
                         .then(response => response.arrayBuffer())
@@ -245,7 +271,7 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                 //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
-                                var arr = ['Type1', 'Type2','stock_number',  '貝他值','成交量','rt_price', '日期', 'diff_quote', 'highlight_date', 'count']
+                                var arr = ['殖利率',  '貝他值','成交量','Type1', 'Type2','stock_number', 'rt_price','遠交易量', '起始日期', 'diff_quote', 'highlight_date', 'count']
                                 this.arrcount = arr.length
                                 arr.reverse().forEach(element => {
                                     dates.unshift(element)
@@ -261,7 +287,7 @@
 
                                     this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
                                         datesToShow.forEach(date => {
-                                            transformedItem[date] = ff.日期 === date | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
+                                            transformedItem[date] = ( ff.日期 === date && ff.flag=='Y') | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
                                         });
                                     });
                                     return transformedItem;
@@ -272,18 +298,24 @@
                                 );
 
                                 dummydata.map((item, index) => {
+                                  
                                     const dummydataItem = item
-                                    
-                                    const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
-                                    dummydataItem.datalist=maxdata
-                                    const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
-                                    const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
+                                    if(!!!item.datalist){
+                                        const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
+                                        dummydataItem.datalist=maxdata
+                                        const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
+                                        const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
 
-                                    dummydataItem.箱型力量 = maxdateitem.箱型力量
-                                    dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
+                                        debugger;
+                                        dummydataItem.箱型力量 = maxdateitem.箱型力量
+                                        dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
+                                        dummydataItem.highlight_date= maxdateitem.highlight_date
+                                        dummydataItem.遠交易量= maxdateitem.遠交易量
 
-                                    dummydataItem.count = maxdata.length;
-
+                                        dummydataItem.起始日期 = dummydataItem.datalist.filter(y=>y.flag=='Y').map(x => x.日期).reduce((a, b) => a < b ? a : b)
+                                        //dummydataItem.count = maxdata.length;
+                                        dummydataItem.count =  dummydataItem.datalist.filter(y=>y.flag=='Y').length; 
+                                    }
                                     return dummydataItem;
                                 });
 
