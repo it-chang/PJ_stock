@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>太陽圖</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
+</head>
+
+<body>
+    <div id="app">
+
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <v-row no-gutters>
+                    <v-col col="2">
+                        <a href="JavaScript: location.reload(true);">Refresh page</a>
+                        data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
+                    </v-col>
+                    <!--
+                    <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
+                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                    </v-col>-->
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['日期','箱型力量_5均']">Sort日期</v-btn>
+                    </v-col>
+                    
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['highlight_date','箱型力量_5均']">Sortbyhighlight</v-btn>
+                    </v-col>
+                    
+                    <v-col col="1">
+                        <v-btn color="primary" @click="funcSortBy(6)">Sort</v-btn>
+                    </v-col>
+                </v-row>
+
+
+                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
+                    :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                    <!-- 自訂第一個欄位為超連結 -->
+                    <template v-slot:item.stock_number="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.stock_number }} {{ item.Type }}
+                        </v-btn>
+                    </template>
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(arrcount)"
+                        :key="header.value">
+                        <span>
+                            <!--{{ item.datalist.filter(x => x.日期 === header.value) }}-->
+                             <!--&& item.datalist.filter(x => x.日期 === header.value)?.flag =='Y'   -->
+                             
+                            <v-icon v-if="item[header.value]  " color="#a9a260">mdi-weather-sunny </v-icon>
+                            
+                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
+                                <span :style="{ 
+                                    color: parseInt(data.量能.split('.')[0]) > 90 ? 'red' : 
+                                           parseInt(data.量能.split('.')[0]) > 20 ? 'orange' : 
+                                           '#7594af' 
+                                }">
+                                    {{ data.量能.split('.')[0] }} 
+                                </span>
+                                <BR/>
+                                    <span :style="{ 
+                                        color: parseInt(data._quote) > 5 ? 'red' : 
+                                               parseInt(data._quote) > 2 ? 'orange' : 
+                                               '#7594af' 
+                                    }"
+                                    style="font-size: xx-small;">
+                                        {{data._quote}}
+                                    
+                                </span>
+                            </template>
+                               <!-- 
+                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
+                                {{ data.量能.split('.')[0] }} 
+                            </template>-->
+                         
+                        </span>
+                    </template>
+
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{
+                            ((realtimedata.filter(x=>x.c==item.stock_number)[0]?.b/parseFloat(realtimedata.filter(x=>x.c==item.stock_number)[0]?.y)-1)*100).toFixed(2)}}
+                        </span>
+                    </template>
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                        </span>
+                    </template>
+
+
+
+
+                </v-data-table>
+                <!-- 弹出窗口 -->
+                <v-dialog v-model="dialog" max-width="90vw">
+                    <v-card>
+                        <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
+                        <v-card-text style="padding: 0; height:90vh;">
+                            <!-- 在這裡添加iframe -->
+                            <iframe v-if="selectedItem"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                width="80%" frameborder="0" style="padding: 0; height:80vh;">
+                            </iframe>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </v-container>
+        </v-app>
+    </div>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    sync: false,
+                    url: '',
+                    jsonData: [],
+                    dummydata: [],
+                    headers: [],
+                    filters: {},
+                    arrcount: 0,
+                    uniqueValues: {},
+                    sortBy: ['highlight_date'],
+                    sortDesc: [true],
+                    dialog: false,
+                    selectedItem: null,
+                    realtimedata: [],
+                    filter1: 1,
+                    filter2: 0.4,
+                };
+            },
+            created() {
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/';
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('sync')) {
+                    this.sync = urlParams.get('sync') == 'Y';
+                }
+                this.init();
+
+            },
+            computed: {
+                filteredData() {
+                    return this.jsonData.filter(item => {
+                        return Object.keys(this.filters).every(key => {
+                            const filterValues = this.filters[key];
+
+                            if (!filterValues || filterValues.length === 0) return true;
+                            const value = item[key] ? item[key].toString() : '';
+                            const a = this.isNumberField(key);
+
+                            if (Array.isArray(filterValues) && a) {
+                                const [min, max] = filterValues;
+                                const numericValue = parseFloat(value);
+                                return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
+                            } else {
+                                return filterValues.includes(value);
+                            }
+                        });
+                    });
+                }
+            },
+            methods: {
+                async init() {
+                    await this.loadExcelData();
+                    if (this.sync) {
+                        await this.sync_realtime();
+                    }
+
+                    this.loadExcelData();
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.jsonData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+
+                openDialog(item) {
+                    this.selectedItem = item;
+                    this.dialog = true;
+                },
+                actionFilter(i) {
+                    var vm = thisindex.html
+                    vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                sync_data() {
+                    this.jsonData.forEach(item => {
+                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a
+                        // item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
+                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.b / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2)
+                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
+                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
+                    })
+                },
+
+                funcSortBy(i) {
+                    debugger;
+                    this.sortBy = this.headers.slice(-1 * i).reverse().map(x => x.value)
+                    this.sortDesc = Array(i).fill(true)
+                    var dat = this.headers.slice(-1).map(x => x.value)[0]
+                    this.jsonData = this.jsonData.filter(x => x[dat] == "1")
+                },
+                async loadExcelData() {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    file = './Result/check.xlsx'
+                    if (urlParams.has('d')) {
+                        if (urlParams.get('d') == 'H') {
+                            file = './Result/checkH.xlsx'
+                        }
+                        if (urlParams.get('d') == 'sun') {
+                            file = './Result/checksun.xlsx'
+                        }
+                    }
+                    await fetch(file)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
+                                //Excel data to json 
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+
+                                var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
+                                //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
+                                var arr = ['殖利率',  '貝他值','成交量','Type1', 'Type2','stock_number', 'rt_price','遠交易量', '起始日期', 'diff_quote', 'highlight_date', 'count']
+                                this.arrcount = arr.length
+                                arr.reverse().forEach(element => {
+                                    dates.unshift(element)
+                                });
+
+                                this.headers = dates.map(header => ({ text: header, value: header }));
+                                // 显示的日期列表
+                                const datesToShow = [...new Set(this.jsonData.map(x => x.日期))].sort();
+
+                                // 转换数据
+                                const transformedData = this.jsonData.map((item, index) => {
+                                    const transformedItem = item
+
+                                    this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
+                                        datesToShow.forEach(date => {
+                                            transformedItem[date] = ( ff.日期 === date && ff.flag=='Y') | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
+                                        });
+                                    });
+                                    return transformedItem;
+                                });
+
+                                var dummydata = Array.from(
+                                    new Map(transformedData.map(item => [item.stock_number, item])).values()
+                                );
+
+                                dummydata.map((item, index) => {
+                                  
+                                    const dummydataItem = item
+                                    if(!!!item.datalist){
+                                        const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
+                                        dummydataItem.datalist=maxdata
+                                        const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
+                                        const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
+
+                                        debugger;
+                                        dummydataItem.箱型力量 = maxdateitem.箱型力量
+                                        dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
+                                        dummydataItem.highlight_date= maxdateitem.highlight_date
+                                        dummydataItem.遠交易量= maxdateitem.遠交易量
+
+                                        dummydataItem.起始日期 = dummydataItem.datalist.filter(y=>y.flag=='Y').map(x => x.日期).reduce((a, b) => a < b ? a : b)
+                                        //dummydataItem.count = maxdata.length;
+                                        dummydataItem.count =  dummydataItem.datalist.filter(y=>y.flag=='Y').length; 
+                                    }
+                                    return dummydataItem;
+                                });
+
+
+                                this.jsonData = dummydata
+
+                            }
+
+                            if (this.realtimedata.length > 0) {
+                                this.sync_data();
+                            };
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>

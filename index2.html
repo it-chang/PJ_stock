@@ -26,24 +26,22 @@
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
                         data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
                     </v-col>
-                    <!--
-                    <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
-                    </v-col>
-                    <v-col col="1">
-                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
-                    </v-col>-->
                     <v-col col="1">
                         <v-btn color="primary" @click="sortBy=['日期','箱型力量_5均']">Sort日期</v-btn>
                     </v-col>
-                    
+
                     <v-col col="1">
                         <v-btn color="primary" @click="sortBy=['highlight_date','箱型力量_5均']">Sortbyhighlight</v-btn>
                     </v-col>
-                    
+
                     <v-col col="1">
                         <v-btn color="primary" @click="funcSortBy(6)">Sort</v-btn>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['漲跌_4','漲跌_3','漲跌_2','漲跌_1','漲跌']">漲跌</v-btn>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['漲跌_4','漲跌_3','漲跌_2','漲跌_1','漲跌'].slice().reverse();">漲跌</v-btn>
                     </v-col>
                 </v-row>
 
@@ -54,44 +52,40 @@
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type }}
+                            {{ item.stock_number }} {{ item.Type0 }}
                         </v-btn>
                     </template>
                     <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(arrcount)"
                         :key="header.value">
-                        <span>
-                            <!--{{ item.datalist.filter(x => x.日期 === header.value) }}-->
-                             <!--&& item.datalist.filter(x => x.日期 === header.value)?.flag =='Y'   -->
-                             
-                            <v-icon v-if="item[header.value]  " color="#a9a260">mdi-weather-sunny </v-icon>
-                            
-                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
+                        <v-icon v-if="item[header.value]  " color="#a9a260">mdi-weather-sunny </v-icon>
+                        <BR />
+                        <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
+                            :key="index">
+                            <div :style="{ backgroundColor:  
+                                        parseInt(data._quote) > 8 ? '#ff4d4d40' :  // 淡紅色
+                                        parseInt(data._quote) > 4 ? '#ffa50040' : // 淡橘色
+                                        parseInt(data._quote) > 2 ? '#4caf5040' : // 淡綠色
+                                        '' 
+                                  }">
                                 <span :style="{ 
-                                    color: parseInt(data.量能.split('.')[0]) > 90 ? 'red' : 
-                                           parseInt(data.量能.split('.')[0]) > 20 ? 'orange' : 
-                                           '#7594af' 
-                                }">
-                                    {{ data.量能.split('.')[0] }} 
+                                                color: parseInt(data.量能.split('.')[0]) > 90 ? 'red' : 
+                                                parseInt(data.量能.split('.')[0]) > 20 ? 'orange' : 
+                                                '#5d2f2f1f' 
+                                        }">
+                                    {{ data.量能.split('.')[0] }}
                                 </span>
-                                <BR/>
-                                    <span :style="{ 
-                                        color: parseInt(data._quote) > 5 ? 'red' : 
-                                               parseInt(data._quote) > 2 ? 'orange' : 
-                                               '#7594af' 
-                                    }"
-                                    style="font-size: xx-small;">
-                                        {{data._quote}}
-                                    
+                                <BR />
+                                <span :style="{ 
+                                                color: parseInt(data._quote) > 5 ? 'red' : 
+                                                    parseInt(data._quote) > 2 ? 'orange' : 
+                                                    '#5d2f2f1f' 
+                                            }" style="font-size: xx-small;">
+                                    {{data._quote}}
                                 </span>
-                            </template>
-                               <!-- 
-                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
-                                {{ data.量能.split('.')[0] }} 
-                            </template>-->
-                         
-                        </span>
-                    </template>
+                            </div>
+                        </template>
 
+                    </template>
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);"
                             v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
@@ -105,10 +99,6 @@
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
-
-
-
-
                 </v-data-table>
                 <!-- 弹出窗口 -->
                 <v-dialog v-model="dialog" max-width="90vw">
@@ -230,9 +220,7 @@
                         item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
                     })
                 },
-
                 funcSortBy(i) {
-                    debugger;
                     this.sortBy = this.headers.slice(-1 * i).reverse().map(x => x.value)
                     this.sortDesc = Array(i).fill(true)
                     var dat = this.headers.slice(-1).map(x => x.value)[0]
@@ -271,7 +259,10 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                 //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
-                                var arr = ['殖利率',  '貝他值','成交量','Type1', 'Type2','stock_number', 'rt_price','遠交易量', '起始日期', 'diff_quote', 'highlight_date', 'count']
+                                var arr = ['殖利率', '貝他值', '成交量', 'Type1', 'Type2', 'stock_number', 'rt_price', 'max量能', 'count量能', '遠交易量', '起始日期', 'diff_quote', 'highlight_date', 'count']
+                                if (!this.sync) {
+                                    arr = ['殖利率', '貝他值', '成交量', 'Type1', 'Type2', 'stock_number', '漲跌_7','漲跌_6','漲跌_5','漲跌_4','漲跌_3','漲跌_2','漲跌_1','漲跌', 'max量能', 'count量能', '遠交易量', '起始日期', 'diff_quote', 'highlight_date', 'count']
+                                }
                                 this.arrcount = arr.length
                                 arr.reverse().forEach(element => {
                                     dates.unshift(element)
@@ -287,7 +278,7 @@
 
                                     this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
                                         datesToShow.forEach(date => {
-                                            transformedItem[date] = ( ff.日期 === date && ff.flag=='Y') | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
+                                            transformedItem[date] = (ff.日期 === date && ff.flag == 'Y') | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
                                         });
                                     });
                                     return transformedItem;
@@ -298,32 +289,41 @@
                                 );
 
                                 dummydata.map((item, index) => {
-                                  
                                     const dummydataItem = item
-                                    if(!!!item.datalist){
+                                    
+                                    if (!!!item.datalist) {
                                         const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
-                                        dummydataItem.datalist=maxdata
+                                        dummydataItem.datalist = maxdata
                                         const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
                                         const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
 
-                                        debugger;
+                                        dummydataItem.max量能 = maxdata.map(x => parseInt(x.量能.split('.')[0])).reduce((a, b) => a > b ? a : b);
+                                        dummydataItem.count量能 = maxdata.map(x => parseInt(x.量能.split('.')[0])).filter(x => x > 20).length;
+
                                         dummydataItem.箱型力量 = maxdateitem.箱型力量
                                         dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
-                                        dummydataItem.highlight_date= maxdateitem.highlight_date
-                                        dummydataItem.遠交易量= maxdateitem.遠交易量
+                                        dummydataItem.highlight_date = maxdateitem.highlight_date
+                                        dummydataItem.遠交易量 = maxdateitem.遠交易量
 
-                                        dummydataItem.起始日期 = dummydataItem.datalist.filter(y=>y.flag=='Y').map(x => x.日期).reduce((a, b) => a < b ? a : b)
-                                        //dummydataItem.count = maxdata.length;
-                                        dummydataItem.count =  dummydataItem.datalist.filter(y=>y.flag=='Y').length; 
+
+                                        dummydataItem.起始日期 =  dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
+                                        dummydataItem.count = dummydataItem.datalist.filter(y => y.flag == 'Y')?.length;
+                                        if (!this.sync) {
+                                            dummydataItem.漲跌_7= maxdata.filter(x=>x.日期== this.headers.slice(-8)[0].text)[0]?._quote
+                                            dummydataItem.漲跌_6= maxdata.filter(x=>x.日期== this.headers.slice(-7)[0].text)[0]?._quote
+                                            dummydataItem.漲跌_5= maxdata.filter(x=>x.日期== this.headers.slice(-6)[0].text)[0]?._quote
+                                            dummydataItem.漲跌_4= maxdata.filter(x=>x.日期== this.headers.slice(-5)[0].text)[0]?._quote
+                                            dummydataItem.漲跌_3= maxdata.filter(x=>x.日期== this.headers.slice(-4)[0].text)[0]?._quote
+                                            dummydataItem.漲跌_2= maxdata.filter(x=>x.日期== this.headers.slice(-3)[0].text)[0]?._quote
+                                            dummydataItem.漲跌_1= maxdata.filter(x=>x.日期== this.headers.slice(-2)[0].text)[0]?._quote
+                                            dummydataItem.漲跌= maxdata.filter(x=>x.日期== this.headers.slice(-1)[0].text)[0]._quote
+                                        }
+                                        
                                     }
                                     return dummydataItem;
                                 });
-
-
                                 this.jsonData = dummydata
-
                             }
-
                             if (this.realtimedata.length > 0) {
                                 this.sync_data();
                             };
