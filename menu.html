@@ -21,7 +21,7 @@
             <v-container style="max-width: 95%;">
                 <!-- Vuetify DataTable -->
                 <v-data-table hide-default-footer :headers="headers" :items="paths" style="white-space: nowrap;"
-                    :items-per-page="30">
+                    :items-per-page="50">
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.url="{ item }">
                         <v-btn text @click="openDialog(item)">
@@ -35,7 +35,7 @@
                         <v-btn text @click="openappDialog(item,'sync')">
                             sync mode
                         </v-btn>
-                        
+
                     </template>
 
                 </v-data-table>
@@ -51,29 +51,32 @@
                 return {
                     model: [],
                     urldomain: 'https://itchang0615.github.io/PJ_stock/',
+                    otherstype: [],
                     paths: [
-                        
-                        /*{ title: '近期表現佳-本日', url: 'index.html?d=T', file: 'check1.xlsx', desc: '' },*/
                         /*{ title: '近期表現佳-本日(反集)', url: 'index.html?d=NT', file: 'check1_N.xlsx' , desc: '' },*/
 
-                        { title: '近期表現佳', url: 'index.html?', file: 'check.xlsx', desc: '' },
-                        { title: 'highlight', url: 'index.html?d=H', file: 'check4.xlsx', desc: '' },
+                        { title: '近期-表現佳', url: 'index.html?', file: 'check.xlsx', desc: '' },
+                        { title: '當日-highlight', url: 'index.html?d=H', file: 'check4.xlsx', desc: '' },
                         { title: '近期表現佳+highlight+Trend_change Up', url: 'index.html?d=S', file: 'check2.xlsx', desc: '' },
 
-                        { title: '太陽圖-近期表現佳', url: 'index2.html?', file: 'check.xlsx', desc: '' },
-                        { title: '太陽圖-近期表現佳+highlight', url: 'index2.html?d=sun', file: 'checksun.xlsx', desc: '' },
-                        { title: '太陽圖-近期表現佳+highlight', url: 'index2.html?d=H', file: 'checkH.xlsx', desc: '' },
-
-                        { title: '指定日-資金分類流向-當日近期表現佳', url: 'index3.html?date=', file: 'check1.xlsx', desc: '' },
-                        { title: '指定日-資金分類流向-All', url: 'index3.html?d=A&date=', file: 'checkall.xlsx', desc: '' },
+                        { title: '資金分類流向-近期表現佳', url: 'index3.html?date=', file: 'check1.xlsx', desc: '' },
+                        { title: '資金分類流向-All', url: 'index3.html?d=A&date=', file: 'checkall.xlsx', desc: '' },
 
                         { title: '指定日-近期表現佳', url: 'index.html?d=T&date=', file: 'check1.xlsx', desc: '' },
-                        { title: '指定日-關注', url: 'index.html?d=O&date=', file: '/Result/check3/', desc: '' },
                         { title: '指定日-All', url: 'index.html?d=C&date=', file: '/Result/checkall/', desc: '123' },
+                        { title: '指定日-關注', url: 'index.html?d=O&date=', file: '/Result/check3/', desc: '' },
 
                         { title: '自訂-持有', url: 'index.html?d=M', file: 'checkmy.xlsx', desc: '' },
                         { title: '自訂-Temp', url: 'index.html?d=Temp', file: 'checktemp.xlsx', desc: '' },
                         { title: '自訂-其他推薦', url: 'index.html?d=dangchong', file: 'checkdangchong.xlsx', desc: 'https://www.threads.net/@dangchongyanjiusuo?hl=zh-tw' },
+
+                        /*{ title: '太陽圖-近期表現佳', url: 'index2.html?', file: 'check.xlsx', desc: '' },*/
+                        { title: '太陽圖-近期表現佳', url: 'index2.html?d=sun', file: 'checksun.xlsx', desc: '' },
+                        { title: '太陽圖-highlight', url: 'index2.html?d=H', file: 'checkH.xlsx', desc: '' },
+                        { title: '太陽圖-近期表現佳+highlight', url: 'index2.html?d=HS', file: 'checkHS.xlsx', desc: '' },
+                        { title: '太陽圖-持有', url: 'index2.html?d=sunmy', file: 'checksunmy.xlsx', desc: '' },
+                        { title: '太陽圖-觀察', url: 'index2.html?d=yaya', file: 'checkyaya.xlsx', desc: '' },
+                        
                     ],
                     headers: [
                         { text: 'Title', value: 'title', align: 'left', sortable: true },
@@ -87,7 +90,36 @@
             created() {
                 this.urldomain = window.location.href.split('/').slice(0, 4).join('/') + '/'
                 this.paths.forEach(x => {
-                    x.url=x.url.replace("date=", "date="+ this.getPreviousWorkingDay());
+                    x.url = x.url.replace("date=", "date=" + this.getPreviousWorkingDay());
+                });
+                // 增加動態 Type 
+                const informationTechnology = ['資訊服務業', '數位雲端'];
+                const electronicsIndustry = [
+                    '通信網路業', '光電業', '其他電子業', '半導體業',
+                    '電器電纜', '電子通路業', '電子零組件業',
+                    '電機機械', '電腦及週邊設備業'
+                ];
+                const traditionalIndustries = [
+                    '化學工業', '塑膠工業', '建材營造', '文化創意業', '橡膠工業',
+                    '水泥工業', '汽車工業', '油電燃氣業', '玻璃陶瓷', '生技醫療業',
+                    '紡織纖維', '綠能環保', '航運業', '觀光事業', '貿易百貨',
+                    '造紙工業', '運動休閒', '食品工業'
+                ];
+                const financialSector = ['金融保險', '金融業'];
+                const otherCategories = ['居家生活', '其他'];
+                this.otherstype = [
+                    ...informationTechnology,
+                    ...electronicsIndustry,
+                    ...traditionalIndustries,
+                    ...financialSector,
+                    ...otherCategories
+                ];
+
+                this.otherstype.forEach(x => {
+                    var newdata ={ title: '太陽圖-分類', url: 'index2.html?d=type&type=', file: '/Result/checksun', desc: '##########' };
+                    newdata.url = newdata.url + x;
+                    newdata.title = newdata.title + '【' + x + '】';
+                    this.paths.push(newdata);
                 });
             },
             computed: {
@@ -98,15 +130,15 @@
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },
-                openappDialog(item,mode) {
+                openappDialog(item, mode) {
                     url = this.urldomain + item.url + '&'
-                    if(mode=='app'){
-                        url +='mode=app';
+                    if (mode == 'app') {
+                        url += 'mode=app';
                     }
-                    if(mode=="sync"){
-                        url +='sync=Y';
+                    if (mode == "sync") {
+                        url += 'sync=Y';
                     }
-                    
+
                     var newTab = window.open(url, '_blank');
                     newTab.location;
                 },

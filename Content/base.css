@@ -11,7 +11,7 @@ body {
 
 #app,
 .v-data-table>.v-data-table__wrapper>table {
-	color: #7191ad;
+	color: #16456d;
 	background-color: #a494944d;
 }
 .v-data-table>.v-data-table__wrapper>table>tbody>tr>td {
@@ -27,4 +27,10 @@ body {
     white-space: nowrap;
     overflow: hidden;
     max-width: 30px;
+}
+.hightlight_line{
+    border-left: dashed;
+}
+.hightlight_line_under {
+    border-bottom: dashed;
 }
