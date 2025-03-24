@@ -37,8 +37,8 @@
                     </v-col>
                 </v-row>
 
-                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
-                    :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer
+                    :headers="headers" :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
@@ -192,6 +192,7 @@
 
                 };
             },
+
             created() {
                 this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/';
                 let urlParams = new URLSearchParams(window.location.search);
@@ -199,6 +200,7 @@
                     this.sync = urlParams.get('sync') == 'Y';
                 }
                 this.init();
+                window.scrollTo({ left: document.body.scrollWidth, behavior: 'smooth' });
             },
             computed: {
                 filteredData() {
@@ -395,7 +397,7 @@
                                         dummydataItem.總量增縮 = differences.reduce((acc, current) => acc + current, 0);
 
                                         dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
-                                        dummydataItem.價_起始日期 = dummydataItem.價_起始日期==Infinity ?  '': dummydataItem.價_起始日期;
+                                        dummydataItem.價_起始日期 = dummydataItem.價_起始日期 == Infinity ? '' : dummydataItem.價_起始日期;
 
                                         dummydataItem.count = dummydataItem.datalist.filter(y => y.flag == 'Y')?.length;
 
