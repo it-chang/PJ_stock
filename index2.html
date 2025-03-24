@@ -56,8 +56,13 @@
                         <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
                             :key="index">
                             <div style="position: sticky;" :class="[
-                                      item.highlight_date == header.value ? 'hightlight_line' : '',
-                                     (item.highlight_date <= header.value && data.成交股數 > 5000) ? 'hightlight_line_under' : ''
+                                     (item.highlight_date == header.value) ? 'hightlight_line' : '',
+                                     (item.highlight_date <= header.value && data.成交股數 > 5000  ) ? 'hightlight_line_under' : '',
+
+                                     ( data.量能 >5  &&  data.量能差 >5  && data.成交股數 > 5000  )  ||
+                                      ( data._quote>6 &&  data.量能差 > 10   )  ||
+                                     (data.MA_break)
+                                     ? 'hightlight_line_box' : '',
                                     ].filter(Boolean)">
                                 <v-tooltip slot="append" bottom>
                                     <template v-slot:activator="{ on }">
@@ -93,7 +98,7 @@
                                                        parseInt(data.量能.split('.')[0]) > 5 ? '#b8080860' : 
                                                        '#5d2f2f1f' 
                                         }">
-                                        量能{{ data.量能.split('.')[0] }}
+                                        量能{{ data.量能.split('.')[0] }}({{data.量能差}})
                                     </span>
                                     <BR />
                                     <span :style="{ 
@@ -292,13 +297,9 @@
                         if (urlParams.get('d') == 'yaya') {
                             file = './Result/checkyaya.xlsx'
                         }
-                        
                         if (urlParams.get('d') == 'type') {
                             file = './Result/checksun/' + urlParams.get('type') + '.xlsx'
-
                         }
-
-
                     }
                     await fetch(file)
                         .then(response => response.arrayBuffer())
@@ -322,11 +323,11 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
 
-                                const baseFields = ['殖利率', '貝他值', '成交量', 'Type1', 'stock_number'];
+                                const baseFields = ['殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
                                 const trendFields = [];
                                 const volumeFields = ['遠交易量']; // '量','max量能', 'count量能', 
-                                const dateFields = ['highlight_date','價_起始日期', '量價差天'];
-                                const miscFields = ['diff_quote', 'count', 'type', '當日漲跌', '總價差', '總量增縮'];
+                                const dateFields = ['highlight_date', '價_起始日期', '量價差天'];
+                                const miscFields = ['diff_quote', 'count', '當日漲跌', '總價差', '總量增縮', 'type'];
 
                                 var arr = [...baseFields, ...trendFields, 'rt_price', ...volumeFields, ...dateFields, ...miscFields];
                                 if (!this.sync) {
@@ -394,8 +395,19 @@
                                         dummydataItem.總量增縮 = differences.reduce((acc, current) => acc + current, 0);
 
                                         dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
-                                        debugger;
+                                        dummydataItem.價_起始日期 = dummydataItem.價_起始日期==Infinity ?  '': dummydataItem.價_起始日期;
+
                                         dummydataItem.count = dummydataItem.datalist.filter(y => y.flag == 'Y')?.length;
+
+
+                                        dummydataItem.datalist.forEach((item, index) => {
+                                            if (index < dummydataItem.datalist.length - 1) {
+                                                item.量能差 = parseInt(item.量能 - dummydataItem.datalist[index + 1].量能);
+                                            } else {
+                                                item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
+                                            }
+                                        });
+
                                         /*
                                         if (!this.sync) {
                                             const headerSlice = this.headers.slice(-8);
@@ -411,12 +423,13 @@
                                         dummydataItem.當日漲跌 = datalist.find(x => x.日期 === this.headers.slice(-1)[0]?.text)?._quote;
 
 
-                                        const date1 = new Date( dummydataItem.highlight_date); // 開始日期
-                                        const date2 = new Date( dummydataItem.價_起始日期); // 結束日期
+                                        const date1 = new Date(dummydataItem.highlight_date); // 開始日期
+                                        const date2 = new Date(dummydataItem.價_起始日期); // 結束日期
 
                                         const diffTime = date2 - date1; // 取得毫秒數差距
                                         const diffDays = diffTime / (1000 * 60 * 60 * 24); // 轉換為天數
-                                        dummydataItem.量價差天=diffDays
+                                        dummydataItem.量價差天 = diffDays
+
 
                                     }
                                     return dummydataItem;

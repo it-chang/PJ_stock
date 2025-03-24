@@ -34,3 +34,6 @@ body {
 .hightlight_line_under {
     border-bottom: dashed;
 }
+.hightlight_line_box {
+    background-color: #ff617954
+}
