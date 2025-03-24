@@ -106,7 +106,7 @@
                                                        parseInt(data._quote) > 0 ? 'orange' : 
                                                        'green' 
                                             }" style="font-size: xx-small;">
-                                        {{data._quote}}
+                                       漲跌 {{data._quote}}
                                     </span>
                                 </div>
                                 <div :style="{ backgroundColor:  
@@ -123,12 +123,12 @@
                                     height: 
                                     String(Math.abs(parseInt(data.Volume_Oscillator)))+'px'
                             }">
-                                    {{data.Volume_Oscillator}}
+                            成交量 {{data.Volume_Oscillator}}
 
                                 </div>
                                 <div>
                                     <span style="    color: #285376b8;">
-                                        成交量 {{ parseInt(data.成交股數)}}
+                                         成交股數 {{ parseInt(data.成交股數)}}
                                     </span>
                                 </div>
                             </div>
@@ -298,6 +298,9 @@
                         }
                         if (urlParams.get('d') == 'yaya') {
                             file = './Result/checkyaya.xlsx'
+                        }
+                        if (urlParams.get('d') == 'over') {
+                            file = './Result/checkover.xlsx'
                         }
                         if (urlParams.get('d') == 'type') {
                             file = './Result/checksun/' + urlParams.get('type') + '.xlsx'
