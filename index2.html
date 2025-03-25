@@ -98,8 +98,10 @@
                                                        parseInt(data.量能.split('.')[0]) > 5 ? '#b8080860' : 
                                                        '#5d2f2f1f' 
                                         }">
-                                        量能{{ data.量能.split('.')[0] }}({{data.量能差}})
+                                        量能{{ data.量能.split('.')[0] }}({{data.量能差}})  
                                     </span>
+                                    <BR />
+                                    增縮3天 ({{data.增縮BY3天 }})
                                     <BR />
                                     <span :style="{ 
                                                 color: parseInt(data._quote) > 5 ? 'red' : 
@@ -328,7 +330,7 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
 
-                                const baseFields = ['殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
+                                const baseFields = ['淨值倍率','殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
                                 const trendFields = [];
                                 const volumeFields = ['遠交易量']; // '量','max量能', 'count量能', 
                                 const dateFields = ['highlight_date', '價_起始日期', '量價差天'];
@@ -398,7 +400,7 @@
                                         let differences = arrlist.slice(0, -1).map((item, index) => arrlist[index + 1] - item)
 
                                         dummydataItem.總量增縮 = differences.reduce((acc, current) => acc + current, 0);
-                                        dummydataItem.增縮3天 =differences.slice(-3).reduce((acc, current) => acc + current, 0);
+                                        //dummydataItem.增縮3天 =differences.slice(-3).reduce((acc, current) => acc + current, 0);
 
                                         dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
                                         dummydataItem.價_起始日期 = dummydataItem.價_起始日期 == Infinity ? '' : dummydataItem.價_起始日期;
@@ -412,6 +414,12 @@
                                             } else {
                                                 item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
                                             }
+                                            let dl= dummydataItem.datalist.filter(q=>q.日期<=item.日期);
+                                            debugger;
+                                            let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
+                                            let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
+                                            item.增縮BY3天 =differences_dl.slice(-3).reduce((acc, current) => acc + current, 0);
+
                                         });
 
                                         /*
@@ -427,7 +435,7 @@
                                         dummydataItem.量 = datalist.find(x => x.日期 === this.headers.slice(-1)[0]?.text)?.Volume_Oscillator;
                                         */
                                         dummydataItem.當日漲跌 = datalist.find(x => x.日期 === this.headers.slice(-1)[0]?.text)?._quote;
-
+                                        dummydataItem.增縮3天 =datalist.find(x => x.日期 === this.headers.slice(-1)[0]?.text)?.增縮BY3天;
 
                                         const date1 = new Date(dummydataItem.highlight_date); // 開始日期
                                         const date2 = new Date(dummydataItem.價_起始日期); // 結束日期
