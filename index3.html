@@ -16,26 +16,28 @@
     <script src="./Content/getRealTime.js"></script>
     <style>
         .custom-table .v-data-table__wrapper {
-            max-height: 350px; /* 控制資料區域高度，讓 headers 固定 */
-            overflow-y: auto; /* 讓資料可以垂直捲動 */
+            max-height: 350px;
+            /* 控制資料區域高度，讓 headers 固定 */
+            overflow-y: auto;
+            /* 讓資料可以垂直捲動 */
         }
-        </style>
+    </style>
 </head>
 
 <body>
     <div id="app">
         <v-app>
             <v-container style="max-width: 95%;">
-                <v-row  no-gutters>
+                <v-row no-gutters>
                     <v-col col="6">
                         <!--<a href="JavaScript: location.reload(true);">Refresh page</a>-->
-                        <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate" >last</v-btn>
+                        <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
                         <span> data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}</span>
-                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate" >Next</v-btn>
+                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
                     </v-col>
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price"  style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量"  style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
@@ -73,8 +75,8 @@
                     {{type.Typelevel }} {{type.Volume_Price_Change_sum}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
-                        :items="appfilteredData(type.Typelevel )" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
-                        :sort-desc.sync="sortDesc"  style="white-space: nowrap; " >
+                        :items="appfilteredData(type.Typelevel )" :items-per-page="-1" item-key="id"
+                        :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" style="white-space: nowrap; ">
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
                                 {{ item.stock_number }} {{ item.Type0 }}
@@ -96,22 +98,18 @@
                     </v-data-table>
                 </div>
 
-                <div v-for="(type, index) in distinct_type" v-show="!appmode" style="max-height: 400px; overflow-x: auto;">
+                <div v-for="(type, index) in distinct_type" v-show="!appmode"
+                    style="max-height: 400px; overflow-x: auto;">
                     {{ type.Typelevel }} {{ type.Volume_Price_Change_sum }}
+                    link
+                    <a :href="computedHref(type)">
+                        {{ sanitizedTypelevel(type) }}
+                    </a>
                     <br>
-                    <v-data-table
-                        disable-pagination
-                        fixed-header
-                        hide-default-footer
-                        :headers="headers"
-                        :items="filteredData(type.Typelevel)"
-                        :items-per-page="-1"
-                        item-key="id"
-                        :sort-by.sync="sortBy"
-                        :sort-desc.sync="sortDesc"
-                        style="white-space: nowrap; min-width: 100%; max-height: 400px;"
-                        class="custom-table"
-                    >
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
+                        :items="filteredData(type.Typelevel)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc" style="white-space: nowrap; min-width: 100%; max-height: 400px;"
+                        class="custom-table">
                         <template v-slot:item.stock_number="{ item }">
                             <v-btn text @click="openDialog(item)">
                                 {{ item.stock_number }} {{ item.Type0 }}
@@ -217,7 +215,7 @@
                     // &mode=app 
                     this.appmode = urlParams.get('mode') == 'app';
                 }
-                
+
                 if (urlParams.has('sync')) {
                     this.sync = urlParams.get('sync') == 'Y';
                 }
@@ -229,7 +227,7 @@
                     this.jsonData.reduce(function (res, value) {
                         var key = value.Typelevel  // Typelevel //+value.Trend
                         if (!res[key]) {
-                            res[key] = { Typelevel : key, Volume_Price_Change_sum: 0 };
+                            res[key] = { Typelevel: key, Volume_Price_Change_sum: 0 };
                             result.push(res[key])
                         }
                         res[key].Volume_Price_Change_sum += Number(value.Volume_Price_Change_sum);
@@ -243,11 +241,22 @@
                 appheaderData() {
                     return this.headers.filter(x => this.appheaderscol.includes(x.text))
                 },
+
+
             },
             methods: {
+                computedHref(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/') ; // 取得當前網站的根網址
+                    return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                },
+                sanitizedTypelevel(x) {
+           
+                    return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
+                },
+               
                 async init() {
                     await this.loadExcelData();
-                    if(this.sync){
+                    if (this.sync) {
                         await this.sync_realtime();
                     }
                     this.loadExcelData();
@@ -268,7 +277,7 @@
                 },
 
                 filteredData(x) {
-                    return this.jsonData.filter(y => y.Typelevel  == x)
+                    return this.jsonData.filter(y => y.Typelevel == x)
                 },
                 appfilteredData(x) {
                     let cols = this.appheaderscol.slice() // 創造一個新的陣列副本
@@ -277,7 +286,7 @@
                     cols.push('成交股數')
                     cols.push('now_price')
 
-                    return this.jsonData.filter(y => y.Typelevel  == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
+                    return this.jsonData.filter(y => y.Typelevel == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
                 },
                 openDialog(item) {
                     this.selectedItem = item;
@@ -288,12 +297,12 @@
                     const date = this.paraDate;
                     date.setDate(date.getDate() + i);
                     const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
-                    const url =window.location.href.replace(urlParams.get('date'),nextDateStr);
+                    const url = window.location.href.replace(urlParams.get('date'), nextDateStr);
                     window.open(url, '_blank');
                 },
                 actionFilter(i) {
-                    var vm=this
-                    vm.jsonData=vm.jsonData.filter(x=>x.rt_price>vm.filter1 &&x.rt_量>vm.filter2 )
+                    var vm = this
+                    vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
                 },
 
                 isNumberField(field) {
@@ -324,14 +333,14 @@
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-                    
+
                     if (urlParams.has('d')) {
                         if (urlParams.get('d') == 'A') {
                             //file = './Result/checkall.xlsx'
                             file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
                             this.paraDate = new Date(urlParams.get('date'))
                         }
-                    }else{
+                    } else {
                         //file = './Result/check1.xlsx'
                         file = './Result/check1/' + urlParams.get('date') + '.xlsx'
                         this.paraDate = new Date(urlParams.get('date'))

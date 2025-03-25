@@ -12,13 +12,13 @@ body {
 #app,
 .v-data-table>.v-data-table__wrapper>table {
 	color: #16456d;
-	background-color: #a494944d;
+	background-color: #f1eeee4d;
 }
 .v-data-table>.v-data-table__wrapper>table>tbody>tr>td {
 	padding:0 5px
 }
 .theme--light.v-data-table.v-data-table--fixed-header thead th {
-    background: #a494944d;
+    background: #f1eeee4d;
 }
 
 .textwordwrap{
@@ -35,5 +35,8 @@ body {
     border-bottom: dashed;
 }
 .hightlight_line_box {
-    background-color: #ff617954
+    background-color: #f4d8b45e
+}
+.hightlight_line_over {
+    background-color: #f096885e
 }
