@@ -397,8 +397,7 @@
                                         }
                                     });
                                 });
-
-
+                                
                                 Object.keys(this.uniqueValues).forEach(key => {
                                     this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
                                     this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));

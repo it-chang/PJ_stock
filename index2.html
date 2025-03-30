@@ -402,13 +402,13 @@
 
                                             let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
                                             let differences_dll = arrlist_dll.slice(0, -1).map((item, index) => arrlist_dll[index + 1] - item)
-                                            //item.漲跌BY3天 = differences_dll.slice(-3).reduce((acc, current) => acc + current, 0);
+                                            item.漲跌BY3天 = differences_dll.slice(-3).reduce((acc, current) => acc + current, 0);
                                         });
 
                                         var datess = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                         dummydataItem.當日漲跌 = datalist.find(x => x.日期 === datess.slice(-1)[0])?._quote;
                                         dummydataItem.增縮3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.增縮BY3天;
-                                        //dummydataItem.漲跌BY3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.漲跌BY3天;
+                                        dummydataItem.漲跌BY3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.漲跌BY3天;
 
                                         const date1 = new Date(dummydataItem.highlight_date); // 開始日期
                                         const date2 = new Date(dummydataItem.價_起始日期); // 結束日期
