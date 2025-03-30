@@ -31,7 +31,9 @@
                         <v-btn color="primary" @click="sortBy=['Type1','箱型力量_5均']">類別/箱型力量_5均</v-btn>
                     </v-col>
                     <v-col col="1">
-                        <v-btn color="primary" @click="jsonData=jsonData.filter(x=>x.成交股數> 5000 && x.增縮3天<50&& x.增縮3天 >0)">x.成交股數> 5000 && x.增縮3天<50&& x.增縮3天 >0</v-btn>
+                        <v-btn color="primary"
+                            @click="jsonData=jsonData.filter(x=>x.成交股數> 5000 && x.增縮3天<50 && x.增縮3天 >0  && x.漲跌BY3天 >0   )">x.成交股數>
+                            5000 && x.增縮3天<50&& x.增縮3天 && x.漲跌BY3天>0 >0</v-btn>
                     </v-col>
                 </v-row>
 
@@ -48,9 +50,14 @@
                             {{ item.stock_number }} {{ item.Type }}
                         </v-btn>
                     </template>
+                    <template v-slot:item.desc="{ item }">
+                        <td v-html="formatDesc(item.desc)"></td>
+                    </template>
 
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(0,arrcount)" :key="header.value">
-                        <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(0,arrcount)"
+                        :key="header.value">
+                        <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
+                            :key="index">
                             <div style="position: sticky;" :class="[
                                      (item.highlight_date == header.value) ? 'hightlight_line' : '',
                                      (item.highlight_date <= header.value && data.成交股數 > 5000  ) ? 'hightlight_line_under' : '',
@@ -92,14 +99,19 @@
                                         量能:{{ data.量能.split('.')[0] }}(量能差{{data.量能差}})
                                     </span>
 
-                                    <BR /> 
+                                    <BR />
                                     <span>
                                         增縮3天 :{{data.增縮BY3天 }}
                                     </span>
-                                 
+
+                                    <BR />
+                                    <span>
+                                        漲跌BY3天 :{{data.漲跌BY3天 }}
+                                    </span>
+
                                 </div>
                                 <div style="  height:60px">
-                                <div :style="{ backgroundColor:  
+                                    <div :style="{ backgroundColor:  
                                     parseInt(data.Volume_Oscillator) > 50  ? '#ff4d4d60' :  
                                     parseInt(data.Volume_Oscillator) > 40  ? '#ff4d4d50' : 
                                     parseInt(data.Volume_Oscillator) > 30  ? '#ff4d4d40' : 
@@ -113,9 +125,9 @@
                                     height: 
                                     String(Math.abs(parseInt(data.Volume_Oscillator)))+'px'
                             }">
-                                    成交量 {{data.Volume_Oscillator}}
+                                        成交量 {{data.Volume_Oscillator}}
+                                    </div>
                                 </div>
-                            </div>
                                 <div style="padding-top: 14px;">
                                     <span style="    color: #285376b8;">
                                         成交股數 {{ parseInt(data.成交股數)}}
@@ -236,12 +248,15 @@
                     this.selectedItem = item;
                     this.dialog = true;
                 },
-               
+
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];
                         return value != null && !isNaN(parseFloat(value)) && isFinite(value);
                     });
+                },
+                formatDesc(desc) {
+                    return desc.replace(/\*\*/g, '<br/>'); // 把 `**` 轉換成 `<br/>`
                 },
                 sync_data() {
                     this.jsonData.forEach(item => {
@@ -259,6 +274,7 @@
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
+
                     file = './Result/check.xlsx'
                     if (urlParams.has('d')) {
                         if (urlParams.get('d') == 'H') {
@@ -283,6 +299,14 @@
                             file = './Result/checksun/' + urlParams.get('type') + '.xlsx'
                         }
                     }
+
+                    var resultdata = ''
+                    if (urlParams.has('date')) {
+                        resultdata = 'Result' + urlParams.get('date')
+                        file = file.replace('Result', resultdata)
+                    }
+
+
                     await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
@@ -305,11 +329,11 @@
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
 
-                                const baseFields = ['營業毛利率','營業利益率','淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
+                                const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
                                 const trendFields = [];
-                                const volumeFields = ['遠交易量','成交股數']; // '量','max量能', 'count量能', 
+                                const volumeFields = ['遠交易量', '成交股數']; // '量','max量能', 'count量能', 
                                 const dateFields = ['highlight_date', '價_起始日期', '量價差天'];
-                                const miscFields = ['diff_quote', 'count', '當日漲跌', '總價差', '總量增縮', '增縮3天', 'type'];
+                                const miscFields = ['diff_quote', 'count', '當日漲跌', '總價差', '總量增縮', '漲跌BY3天', '增縮3天', 'type'];
 
                                 var arr = [...baseFields, ...trendFields, 'rt_price', ...volumeFields, ...dateFields, ...miscFields];
                                 if (!this.sync) {
@@ -319,8 +343,8 @@
                                 this.arrcount = dates.length
 
                                 arr.reverse().forEach(element => {
-                                      //dates.unshift(element)
-                                      dates.push(element)
+                                    //dates.unshift(element)
+                                    dates.push(element)
                                 });
 
                                 this.headers = dates.map(header => ({ text: header, value: header }));
@@ -346,7 +370,8 @@
                                         dummydataItem.highlight_date = maxdateitem.highlight_date
                                         dummydataItem.遠交易量 = maxdateitem.遠交易量
                                         dummydataItem.成交股數 = maxdateitem.成交股數
-                                        
+                                        dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
+
 
                                         // 總價差 (依據highlight_date 來計算)
                                         const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
@@ -370,16 +395,20 @@
                                                 item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
                                             }
                                             let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
-                                            
+                                            debugger;
                                             let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
                                             let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
                                             item.增縮BY3天 = differences_dl.slice(-3).reduce((acc, current) => acc + current, 0);
 
+                                            let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
+                                            let differences_dll = arrlist_dll.slice(0, -1).map((item, index) => arrlist_dll[index + 1] - item)
+                                            //item.漲跌BY3天 = differences_dll.slice(-3).reduce((acc, current) => acc + current, 0);
                                         });
 
                                         var datess = [...new Set(this.jsonData.map(x => x.日期))].sort()
                                         dummydataItem.當日漲跌 = datalist.find(x => x.日期 === datess.slice(-1)[0])?._quote;
                                         dummydataItem.增縮3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.增縮BY3天;
+                                        //dummydataItem.漲跌BY3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.漲跌BY3天;
 
                                         const date1 = new Date(dummydataItem.highlight_date); // 開始日期
                                         const date2 = new Date(dummydataItem.價_起始日期); // 結束日期
