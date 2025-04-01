@@ -395,14 +395,18 @@
                                                 item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
                                             }
                                             let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
-                                            debugger;
+                                            //debugger;
                                             let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
                                             let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
                                             item.增縮BY3天 = differences_dl.slice(-3).reduce((acc, current) => acc + current, 0);
 
                                             let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
-                                            let differences_dll = arrlist_dll.slice(0, -1).map((item, index) => arrlist_dll[index + 1] - item)
-                                            item.漲跌BY3天 = differences_dll.slice(-3).reduce((acc, current) => acc + current, 0);
+                                            debugger;
+                                           //let differences_dll = arrlist_dll.slice(0, -1).map((item, index) => arrlist_dll[index + 1] - item)
+                                           //item.漲跌BY3天 = differences_dll.slice(-3).reduce((acc, current) => acc + current, 0);
+                                            
+                                            
+                                            item.漲跌BY3天 =arrlist_dll.slice(-3).reduce((acc, current) => acc + current, 0);
                                         });
 
                                         var datess = [...new Set(this.jsonData.map(x => x.日期))].sort()
