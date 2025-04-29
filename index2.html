@@ -184,7 +184,8 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    sortBy: ['增縮3天'],
+                    //sortBy: ['增縮3天'],
+                    sortBy:['均價_%'],
                     sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
@@ -330,7 +331,7 @@
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
 
                                 const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
-                                const trendFields = [];
+                                const trendFields = ['均價_%'];
                                 const volumeFields = ['遠交易量', '成交股數']; // '量','max量能', 'count量能', 
                                 const dateFields = ['highlight_date', '價_起始日期', '量價差天'];
                                 const miscFields = ['diff_quote', 'count', '當日漲跌', '總價差', '總量增縮', '漲跌BY3天', '增縮3天', 'type'];
@@ -370,6 +371,8 @@
                                         dummydataItem.highlight_date = maxdateitem.highlight_date
                                         dummydataItem.遠交易量 = maxdateitem.遠交易量
                                         dummydataItem.成交股數 = maxdateitem.成交股數
+                                        dummydataItem['均價_%'] = maxdateitem['均價_%']
+                                      
                                         dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
 
 
