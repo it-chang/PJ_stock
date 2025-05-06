@@ -185,7 +185,8 @@
                     arrcount: 0,
                     uniqueValues: {},
                     //sortBy: ['增縮3天'],
-                    sortBy:['均價_%'],
+                    //sortBy:['均價_%'], 
+                    sortBy:['Volume_Oscillator'],
                     sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
@@ -332,13 +333,13 @@
 
                                 const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
                                 const trendFields = ['均價_%'];
-                                const volumeFields = ['遠交易量', '成交股數']; // '量','max量能', 'count量能', 
+                                
                                 const dateFields = ['highlight_date', '價_起始日期', '量價差天'];
                                 const miscFields = ['diff_quote', 'count', '當日漲跌', '總價差', '總量增縮', '漲跌BY3天', '增縮3天', 'type'];
-
-                                var arr = [...baseFields, ...trendFields, 'rt_price', ...volumeFields, ...dateFields, ...miscFields];
+                                const volumeFields = ['量能','Volume_Oscillator']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能', 
+                                var arr = [...baseFields, ...trendFields, 'rt_price', ...dateFields, ...miscFields, ...volumeFields];
                                 if (!this.sync) {
-                                    arr = [...baseFields, ...trendFields, ...volumeFields, ...dateFields, ...miscFields];
+                                    arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields];
                                 }
                                 this.arrcount = arr.length
                                 this.arrcount = dates.length
@@ -370,8 +371,11 @@
                                         dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
                                         dummydataItem.highlight_date = maxdateitem.highlight_date
                                         dummydataItem.遠交易量 = maxdateitem.遠交易量
-                                        dummydataItem.成交股數 = maxdateitem.成交股數
+                                       
+                                        dummydataItem.Volume_Oscillator = maxdateitem.Volume_Oscillator
+                                        dummydataItem.量能 = maxdateitem.量能
                                         dummydataItem['均價_%'] = maxdateitem['均價_%']
+                                        
                                       
                                         dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
 
