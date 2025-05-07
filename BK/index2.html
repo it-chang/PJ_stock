@@ -18,7 +18,6 @@
 
 <body>
     <div id="app">
-
         <v-app>
             <v-container style="max-width: 95%;">
                 <v-row no-gutters>
@@ -26,72 +25,117 @@
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
                         data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
                     </v-col>
-                    <!--
-                    <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['Type1','總量增縮']">類別/總量增縮</v-btn>
+                        <v-btn color="primary" @click="sortBy=['Type1','總價差']">類別/總價差</v-btn>
+                        <v-btn color="primary" @click="sortBy=['Type1','箱型力量_5均']">類別/箱型力量_5均</v-btn>
                     </v-col>
                     <v-col col="1">
-                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
-                    </v-col>-->
-                    <v-col col="1">
-                        <v-btn color="primary" @click="sortBy=['日期','箱型力量_5均']">Sort日期</v-btn>
-                    </v-col>
-                    
-                    <v-col col="1">
-                        <v-btn color="primary" @click="sortBy=['highlight_date','箱型力量_5均']">Sortbyhighlight</v-btn>
-                    </v-col>
-                    
-                    <v-col col="1">
-                        <v-btn color="primary" @click="funcSortBy(6)">Sort</v-btn>
+                        <v-btn color="primary"
+                            @click="jsonData=jsonData.filter(x=>x.遠交易量> -10  && x.增縮3天 >0  && x.漲跌BY3天 >0   )">
+                            x.成交股數> 3500  && x.增縮3天 >0  && x.漲跌BY3天 >0 </v-btn>
                     </v-col>
                 </v-row>
 
-
-                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
+                <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
-                    <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.stock_number }} {{ item.Type0 }}
+                        </v-btn>
+                    </template>
+                    <template v-slot:item.type="{ item }">
                         <v-btn text @click="openDialog(item)">
                             {{ item.stock_number }} {{ item.Type }}
                         </v-btn>
                     </template>
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(arrcount)"
-                        :key="header.value">
-                        <span>
-                            <!--{{ item.datalist.filter(x => x.日期 === header.value) }}-->
-                             <!--&& item.datalist.filter(x => x.日期 === header.value)?.flag =='Y'   -->
-                             
-                            <v-icon v-if="item[header.value]  " color="#a9a260">mdi-weather-sunny </v-icon>
-                            
-                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
-                                <span :style="{ 
-                                    color: parseInt(data.量能.split('.')[0]) > 90 ? 'red' : 
-                                           parseInt(data.量能.split('.')[0]) > 20 ? 'orange' : 
-                                           '#7594af' 
-                                }">
-                                    {{ data.量能.split('.')[0] }} 
-                                </span>
-                                <BR/>
-                                    <span :style="{ 
-                                        color: parseInt(data._quote) > 5 ? 'red' : 
-                                               parseInt(data._quote) > 2 ? 'orange' : 
-                                               '#7594af' 
-                                    }"
-                                    style="font-size: xx-small;">
-                                        {{data._quote}}
-                                    
-                                </span>
-                            </template>
-                               <!-- 
-                            <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)" :key="index">
-                                {{ data.量能.split('.')[0] }} 
-                            </template>-->
-                         
-                        </span>
+                    <template v-slot:item.desc="{ item }">
+                        <td v-html="formatDesc(item.desc)"></td>
                     </template>
 
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(0,arrcount)"
+                        :key="header.value">
+                        <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
+                            :key="index">
+                            <div style="position: sticky;" :class="[
+                                     (item.highlight_date == header.value) ? 'hightlight_line' : '',
+                                     (item.highlight_date <= header.value && data.成交股數 > 5000  ) ? 'hightlight_line_under' : '',
+                                     (data._quote>1 && data.量能 >5  &&  data.量能差 >5  && data.成交股數 > 5000  )  ||
+                                     (data._quote>6 &&  data.量能差 > 10   )  ||
+                                     (data.MA_break)
+                                     ? 'hightlight_line_box' : '',
+
+                                   
+                                    ].filter(Boolean)">
+                                <v-tooltip slot="append" bottom>
+                                    <template v-slot:activator="{ on }">
+                                        <v-icon v-on="on" v-if="data.flag=='Y'" color="#a9a260">mdi-weather-sunny
+                                        </v-icon>
+                                    </template>
+                                    <span>【表現佳】成交量>500 ，短期量增</span>
+                                </v-tooltip>
+                                <v-tooltip slot="append" bottom>
+                                    <template v-slot:activator="{ on }">
+                                        <v-icon v-on="on" v-if="data.MA_break" color="red">mdi-star-outline </v-icon>
+                                    </template>
+                                    <span>【MA_break】</span>
+                                </v-tooltip>
+                                <BR />
+                                <div>
+                                    <span :style="{ 
+                                                color: parseInt(data._quote) > 5 ? 'red' : 
+                                                       parseInt(data._quote) > 0 ? 'orange' : 
+                                                       'green' 
+                                            }" style="font-size: xx-small;">
+                                        漲跌:{{data._quote}}
+                                    </span>
+                                    <BR />
+                                    <span :style="{ 
+                                                color: (parseInt(data.量能.split('.')[0]) > 30 &&  data.量能差 > 0 ) ? 'red' : 
+                                                       (parseInt(data.量能.split('.')[0]) > 5  &&  data.量能差 > 0 )? 'orange' : 
+                                                       '#5d222285' 
+                                        }">
+                                        量能:{{ data.量能.split('.')[0] }}(量能差{{data.量能差}})
+                                    </span>
+
+                                    <BR />
+                                    <span>
+                                        增縮3天 :{{data.增縮BY3天 }}
+                                    </span>
+
+                                    <BR />
+                                    <span>
+                                        漲跌BY3天 :{{data.漲跌BY3天 }}
+                                    </span>
+
+                                </div>
+                                <div style="  height:60px">
+                                    <div :style="{ backgroundColor:  
+                                    parseInt(data.Volume_Oscillator) > 50  ? '#ff4d4d60' :  
+                                    parseInt(data.Volume_Oscillator) > 40  ? '#ff4d4d50' : 
+                                    parseInt(data.Volume_Oscillator) > 30  ? '#ff4d4d40' : 
+                                    parseInt(data.Volume_Oscillator) > 20  ? '#ff4d4d30' : 
+                                    parseInt(data.Volume_Oscillator) > 10  ? '#ff4d4d20' :
+                                    parseInt(data.Volume_Oscillator) > 0   ? '#ff4d4d10' :
+                                    parseInt(data.Volume_Oscillator) > -10 ? '#4caf5020' :
+                                    parseInt(data.Volume_Oscillator) > -20 ? '#4caf5040' :
+                                    parseInt(data.Volume_Oscillator) > -60 ? '#4caf5060' :
+                                    '#4caf5080' ,
+                                    height: 
+                                    String(Math.abs(parseInt(data.Volume_Oscillator)))+'px'
+                            }">
+                                        成交量 {{data.Volume_Oscillator}}
+                                    </div>
+                                </div>
+                                <div style="padding-top: 14px;">
+                                    <span style="    color: #285376b8;">
+                                        成交股數 {{ parseInt(data.成交股數)}}
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </template>
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);"
                             v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
@@ -105,10 +149,6 @@
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
-
-
-
-
                 </v-data-table>
                 <!-- 弹出窗口 -->
                 <v-dialog v-model="dialog" max-width="90vw">
@@ -144,13 +184,13 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    sortBy: ['highlight_date'],
+                    //sortBy: ['增縮3天'],
+                    //sortBy:['均價_%'], 
+                    sortBy:['Volume_Oscillator'],
                     sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
-                    filter1: 1,
-                    filter2: 0.4,
                 };
             },
             created() {
@@ -160,7 +200,7 @@
                     this.sync = urlParams.get('sync') == 'Y';
                 }
                 this.init();
-
+                window.scrollTo({ left: document.body.scrollWidth, behavior: 'smooth' });
             },
             computed: {
                 filteredData() {
@@ -189,7 +229,6 @@
                     if (this.sync) {
                         await this.sync_realtime();
                     }
-
                     this.loadExcelData();
                 },
                 async sync_realtime() {
@@ -211,35 +250,33 @@
                     this.selectedItem = item;
                     this.dialog = true;
                 },
-                actionFilter(i) {
-                    var vm = thisindex.html
-                    vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
-                },
+
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];
                         return value != null && !isNaN(parseFloat(value)) && isFinite(value);
                     });
                 },
+                formatDesc(desc) {
+                    return desc.replace(/\*\*/g, '<br/>'); // 把 `**` 轉換成 `<br/>`
+                },
                 sync_data() {
                     this.jsonData.forEach(item => {
-                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a
-                        // item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
-                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.b / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2)
-                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
-                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
+                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a;
+                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.b / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
+                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
+                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1);
                     })
                 },
 
-                funcSortBy(i) {
-                    debugger;
-                    this.sortBy = this.headers.slice(-1 * i).reverse().map(x => x.value)
-                    this.sortDesc = Array(i).fill(true)
-                    var dat = this.headers.slice(-1).map(x => x.value)[0]
-                    this.jsonData = this.jsonData.filter(x => x[dat] == "1")
+                filterfunc() {
+                    this.jsonDatabk = this.jsonData
+                    //this.jsonData = this.jsonDatabk.filter(x => x.max量能 != 100 && x.count量能 > 0)
+                    //app.jsonData=app.jsonData.filter(x => isNaN(x.量價差天)) 
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
+
                     file = './Result/check.xlsx'
                     if (urlParams.has('d')) {
                         if (urlParams.get('d') == 'H') {
@@ -248,7 +285,30 @@
                         if (urlParams.get('d') == 'sun') {
                             file = './Result/checksun.xlsx'
                         }
+                        if (urlParams.get('d') == 'HS') {
+                            file = './Result/checkHS.xlsx'
+                        }
+                        if (urlParams.get('d') == 'sunmy') {
+                            file = './Result/checksunmy.xlsx'
+                        }
+                        if (urlParams.get('d') == 'yaya') {
+                            file = './Result/checkyaya.xlsx'
+                        }
+                        if (urlParams.get('d') == 'over') {
+                            file = './Result/checkover.xlsx'
+                        }
+                        if (urlParams.get('d') == 'type') {
+                            file = './Result/checksun/' + urlParams.get('type') + '.xlsx'
+                        }
                     }
+
+                    var resultdata = ''
+                    if (urlParams.has('date')) {
+                        resultdata = 'Result' + urlParams.get('date')
+                        file = file.replace('Result', resultdata)
+                    }
+
+
                     await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
@@ -270,60 +330,110 @@
                                 });
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
-                                //var arr = ['Type', 'Type1', 'Type2', 'LevelArea', 'stock_number', '貝他值', '日期', 'highlight_date', 'MA5_%', '均價_%', 'MACD_%', '短交易量o', '遠交易量o', 'Trend_change', '_quote', 'diff_quote', 'now_price', 'rt_price', '成交股數', 'rt_量', 'count']
-                                var arr = ['殖利率',  '貝他值','成交量','Type1', 'Type2','stock_number', 'rt_price','遠交易量', '起始日期', 'diff_quote', 'highlight_date', 'count']
+
+                                const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
+                                const trendFields = ['均價_%'];
+                                
+                                const dateFields = ['highlight_date', '價_起始日期', '量價差天'];
+                                const miscFields = ['diff_quote', 'count', '當日漲跌', '總價差', '總量增縮', '漲跌BY3天', '增縮3天', 'type'];
+                                const volumeFields = ['量能','Volume_Oscillator']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能', 
+                                var arr = [...baseFields, ...trendFields, 'rt_price', ...dateFields, ...miscFields, ...volumeFields];
+                                if (!this.sync) {
+                                    arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields];
+                                }
                                 this.arrcount = arr.length
+                                this.arrcount = dates.length
+
                                 arr.reverse().forEach(element => {
-                                    dates.unshift(element)
+                                    //dates.unshift(element)
+                                    dates.push(element)
                                 });
 
                                 this.headers = dates.map(header => ({ text: header, value: header }));
-                                // 显示的日期列表
-                                const datesToShow = [...new Set(this.jsonData.map(x => x.日期))].sort();
 
-                                // 转换数据
-                                const transformedData = this.jsonData.map((item, index) => {
-                                    const transformedItem = item
-
-                                    this.jsonData.filter(q => q.stock_number == item.stock_number).forEach(ff => {
-                                        datesToShow.forEach(date => {
-                                            transformedItem[date] = ( ff.日期 === date && ff.flag=='Y') | transformedItem[date] === '1' ? '1' : ''; // 检查日期是否匹配
-                                        });
-                                    });
-                                    return transformedItem;
-                                });
+                                const transformedData = this.jsonData
 
                                 var dummydata = Array.from(
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
 
                                 dummydata.map((item, index) => {
-                                  
                                     const dummydataItem = item
-                                    if(!!!item.datalist){
-                                        const maxdata = this.jsonData.filter(q => q.stock_number == item.stock_number)
-                                        dummydataItem.datalist=maxdata
-                                        const maxdate = maxdata.map(x => x.日期).reduce((a, b) => a > b ? a : b);
+
+                                    if (!!!item.datalist) {
+                                        const datalist = this.jsonData.filter(q => q.stock_number == item.stock_number)
+                                        dummydataItem.datalist = datalist
+                                        const maxdate = datalist.map(x => x.日期).reduce((a, b) => a > b ? a : b);
+                                        const mindate = datalist.map(x => x.日期).reduce((a, b) => a < b ? a : b);
                                         const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
 
-                                        debugger;
                                         dummydataItem.箱型力量 = maxdateitem.箱型力量
                                         dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
-                                        dummydataItem.highlight_date= maxdateitem.highlight_date
-                                        dummydataItem.遠交易量= maxdateitem.遠交易量
+                                        dummydataItem.highlight_date = maxdateitem.highlight_date
+                                        dummydataItem.遠交易量 = maxdateitem.遠交易量
+                                       
+                                        dummydataItem.Volume_Oscillator = maxdateitem.Volume_Oscillator
+                                        dummydataItem.量能 = maxdateitem.量能
+                                        dummydataItem['均價_%'] = maxdateitem['均價_%']
+                                        
+                                      
+                                        dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
 
-                                        dummydataItem.起始日期 = dummydataItem.datalist.filter(y=>y.flag=='Y').map(x => x.日期).reduce((a, b) => a < b ? a : b)
-                                        //dummydataItem.count = maxdata.length;
-                                        dummydataItem.count =  dummydataItem.datalist.filter(y=>y.flag=='Y').length; 
+
+                                        // 總價差 (依據highlight_date 來計算)
+                                        const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
+                                        dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == maxdate)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
+
+                                        let arrlist = datalist.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
+                                        let differences = arrlist.slice(0, -1).map((item, index) => arrlist[index + 1] - item)
+
+                                        dummydataItem.總量增縮 = differences.reduce((acc, current) => acc + current, 0);
+
+                                        dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
+                                        dummydataItem.價_起始日期 = dummydataItem.價_起始日期 == Infinity ? '' : dummydataItem.價_起始日期;
+
+                                        dummydataItem.count = dummydataItem.datalist.filter(y => y.flag == 'Y')?.length;
+
+
+                                        dummydataItem.datalist.forEach((item, index) => {
+                                            if (index < dummydataItem.datalist.length - 1) {
+                                                item.量能差 = parseInt(item.量能 - dummydataItem.datalist[index + 1].量能);
+                                            } else {
+                                                item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
+                                            }
+                                            let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
+                                            //debugger;
+                                            let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
+                                            let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
+                                            item.增縮BY3天 = differences_dl.slice(-3).reduce((acc, current) => acc + current, 0);
+
+                                            let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
+                                            debugger;
+                                           //let differences_dll = arrlist_dll.slice(0, -1).map((item, index) => arrlist_dll[index + 1] - item)
+                                           //item.漲跌BY3天 = differences_dll.slice(-3).reduce((acc, current) => acc + current, 0);
+                                            
+                                            
+                                            item.漲跌BY3天 =arrlist_dll.slice(-3).reduce((acc, current) => acc + current, 0);
+                                        });
+
+                                        var datess = [...new Set(this.jsonData.map(x => x.日期))].sort()
+                                        dummydataItem.當日漲跌 = datalist.find(x => x.日期 === datess.slice(-1)[0])?._quote;
+                                        dummydataItem.增縮3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.增縮BY3天;
+                                        dummydataItem.漲跌BY3天 = datalist.find(x => x.日期 === datess.slice(-1)[0])?.漲跌BY3天;
+
+                                        const date1 = new Date(dummydataItem.highlight_date); // 開始日期
+                                        const date2 = new Date(dummydataItem.價_起始日期); // 結束日期
+
+                                        const diffTime = date2 - date1; // 取得毫秒數差距
+                                        const diffDays = diffTime / (1000 * 60 * 60 * 24); // 轉換為天數
+                                        dummydataItem.量價差天 = diffDays
+
+
                                     }
                                     return dummydataItem;
                                 });
-
-
                                 this.jsonData = dummydata
-
                             }
-
                             if (this.realtimedata.length > 0) {
                                 this.sync_data();
                             };
