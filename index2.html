@@ -13,11 +13,9 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
     <script src="./Content/common.js"></script>
     <script src="./Content/getRealTime.js"></script>
-    <style>     
-        .style1{
-
-        }   
-    </style>     
+    <style>
+        .style1 {}
+    </style>
 </head>
 
 <body>
@@ -28,6 +26,7 @@
                     <v-col col="2">
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
                         data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
+                        targer date {{para_date}}  【N:{{n}}】
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="sortBy=['Type1','總價差']">類別/總價差</v-btn>
@@ -35,11 +34,10 @@
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary"
-                            @click="jsonData=jsonData.filter(x=>x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BY3天 > -7 && x.量能均>5  )">
-                            x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BY3天 > -7 && x.量能均>5 </v-btn>
+                            @click="jsonData=jsonData.filter(x=>x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BYN天 > -7 && x.量能均>5  )">
+                            x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BYN天 > -7 && x.量能均>5 </v-btn>
                     </v-col>
                 </v-row>
-
                 <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
@@ -56,57 +54,49 @@
                     <template v-slot:item.desc="{ item }">
                         <td v-html="formatDesc(item.desc)"></td>
                     </template>
+                    <!--
+                        (data._quote>1 &&  data.量能   >  5  &&  data.量能差 >5  )  ||
+                        (data._quote>6 &&  data.量能差 > 10   )  ||
 
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(1,arrcount)"
+                    -->
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(0,arrcount)"
                         :key="header.value">
                         <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
                             :key="index">
-
                             <div style="position: sticky; height: 100%;" :class="[
-                                     (item.highlight_date == header.value) ? 'hightlight_line' : '',
-                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
-
-                                     (data._quote>1 && data.量能 >5  &&  data.量能差 >5  && data.成交股數 > 5000  )  ||
-                                     (data._quote>6 &&  data.量能差 > 10   )  ||
-                                     (data.MA_break)
-                                     ? 'hightlight_line_box' : '',
+                                    (item.highlight_date == header.value) ? 'hightlight_line' : '',
+                                    (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under hightlight_line_box' : '',
+                                    (data._quote>0 &&  data.量能差 >  5  &&  data.量能均 >10  )  ? 'hightlight_line_box_notuse' : '',
                                     ].filter(Boolean)">
-
-                                
                                 <BR />
                                 <div>
                                     <span :style="{ 
-                                                color: parseInt(data._quote) > 5 ? 'red' : 
-                                                       parseInt(data._quote) > 2 ? 'orange' : 
-                                                       'gray' 
-                                            }" style="font-size: xx-small; margin-left: 30%;">
+                                        color: (parseInt(data.漲跌BYN天) > 4 && parseInt(data._quote) > 5  ) ? 'red' :
+                                               (parseInt(data.漲跌BYN天) > 2 && parseInt(data._quote) > 2  ) ? 'orange' : 
+                                                'gray'  }">
                                         漲跌:{{data._quote}}
+                                        <BR />
+                                        (價)漲跌BYN天 :{{data.漲跌BYN天 }}
                                     </span>
-                                    <BR />
-                                    <span
-                                        :style="{ 
-                                        color: (parseInt(data.漲跌BY3天) > 4 && parseInt(data._quote) > 0  ) ? 'red' : 'gray'  }">
-                                        (價)漲跌BY3天 :{{data.漲跌BY3天 }}
-                                    </span>
-
-                                    <BR />
-                                    <span :style="{
-                                                color: (parseInt(data.增縮BY3天) > 0 &&  data.量能 > 0 ) ? 'gray' : 'gray' }"
-                                        style="font-size: xx-small; margin-left: 30%;">
-                                        增縮3天 :{{data.增縮BY3天 }}
-                                    </span>
-
                                     <BR />
                                     <span :style="{ 
-                                                color: (parseInt(data.量能.split('.')[0]) > 30 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )+3) ? 'red' : 
-                                                       (parseInt(data.量能.split('.')[0]) > 15 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )  ) ? 'orange' : 
-                                                       'gray' 
+                                        color: ( parseInt(data.增縮BYN天) > 0 &&  parseInt(data.量能.split('.')[0]) > 30 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )+3) ? 'red' : 
+                                               ( parseInt(data.增縮BYN天) > 0 &&  parseInt(data.量能.split('.')[0]) > 15 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )  ) ? 'orange' : 
+                                                'gray' 
                                         }">
+                                        增縮BYN天 :{{data.增縮BYN天 }}
+                                        <BR />
                                         (量)量能:{{ data.量能.split('.')[0] }}(差{{data.量能差}}) (均{{data.量能均}})
-                              
+                                    </span>
+                                    <BR />
+                                    <span :style="{ 
+                                        color: data.Flag=='Y'? 'red' :
+                                        'gray' 
+                                        }">
+                                        {{data.Flag}}-------------
                                     </span>
                                 </div>
-                                <div class="style1" style="  height:35px">
+                                <div class="style1" style="  height:35px;display: none;">
                                     <div :style="{ backgroundColor:  
                                     parseInt(data.Volume_Oscillator) > 50  ? '#ff4d4d60' :  
                                     parseInt(data.Volume_Oscillator) > 40  ? '#ff4d4d50' : 
@@ -121,25 +111,50 @@
                                     height: 
                                     String(Math.abs(parseInt(data.Volume_Oscillator)/2))+'px'
                                      }">
-                                        成交量 {{data.Volume_Oscillator}}
+                                        成交量 {{data.Volume_Oscillator}}  ( 差:{{data.Volume_Diff}} )
                                     </div>
+                                </div>
+                                <div class="style1" style="  height:35px;">
+                                    <div :style="{ backgroundColor:  
+                                    parseInt(data.Volume_Diff) > 40  ? '#ff4d4d60' : 
+                                    parseInt(data.Volume_Diff) > 30  ? '#ff4d4d50' : 
+                                    parseInt(data.Volume_Diff) > 20  ? '#ff4d4d40' : 
+                                    parseInt(data.Volume_Diff) > 10  ? '#ff4d4d30' :
+                                    parseInt(data.Volume_Diff) > 0   ? '#ff4d4d20' :
+                                    parseInt(data.Volume_Diff) > -10 ? '#4caf5020' :
+                                    parseInt(data.Volume_Diff) > -20 ? '#4caf5030' :
+                                    parseInt(data.Volume_Diff) > -60 ? '#4caf5040' :
+                                    '#4caf5080' ,
+                                    height: 
+                                    String(Math.abs(parseInt( ( data.Volume_Diff )*2.5 )))+'px'
+                                     }">
+                                     差:{{data.Volume_Diff}} 
+                                    </div>
+                                    <!-- 
+                                        String(Math.abs(parseInt( ((data.Volume_Diff>0 ? 1:-1) * data.Volume_Diff * data.Volume_Diff)/10 )))+'px'
+                                        data.Volume_Diff>0 ? 1:-1 * data.Volume_Diff * data.Volume_Diff 
+                                     -->
                                 </div>
 
                                 <div style="padding-top: 14px;">
                                     <span style="    color: #285376b8;">
-                                        成交股數 {{ parseInt(data.成交股數)}} 
+                                      
+                                        成交股數 {{ parseInt(data.成交股數)}}
                                     </span>
-                                    
                                     <v-tooltip slot="append" bottom>
                                         <template v-slot:activator="{ on }">
-                                            <v-icon v-on="on" v-if="data.flag=='Y'　&& (item.highlight_date <= header.value  && item.highlight_date !='')  " color="#a9a260">mdi-weather-sunny
+                                            <v-icon v-on="on" color="#a9a260"
+                                                v-if="data.flag=='Y' && (item.highlight_date <= header.value  && item.highlight_date !='')  ">
+                                                mdi-weather-sunny
                                             </v-icon>
                                         </template>
-                                        <span>【表現佳】成交量>500 ，短期量增</span>
+                                        <span>【表現佳】flag=='Y'</span>
                                     </v-tooltip>
                                     <v-tooltip slot="append" bottom>
                                         <template v-slot:activator="{ on }">
-                                            <v-icon v-on="on" v-if="data.MA_break　&& (item.highlight_date <= header.value  && item.highlight_date !='')" color="red">mdi-star-outline
+                                            <v-icon v-on="on" color="red"
+                                                v-if="data.MA_break && (item.highlight_date <= header.value  && item.highlight_date !='')">
+                                                mdi-star-outline
                                             </v-icon>
                                         </template>
                                         <span>【MA_break】</span>
@@ -196,14 +211,23 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    //sortBy: ['增縮3天'],
+                    //sortBy: ['增縮BYN天'],
                     //sortBy:['均價_%'], 
-                    sortBy: ['Volume_Oscillator'],
                     //sortBy: ['當日漲跌'],
+                    //sortBy: ['漲跌BYN天'],
+                    //sortBy: ['Volume_Oscillator'],
+                    
+                    sortBy: ['highlight_date'],
                     sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
+                    /////////////////////////////
+                    //【參數】 增縮BYN天 / 漲跌BYN天
+                    n:5,
+                    //【參數】  利用過去Data確認計算這些邏輯是否有用 
+                    set_date:-1,//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
+                    para_date:'',
                 };
             },
             created() {
@@ -279,11 +303,6 @@
                         item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1);
                     })
                 },
-                filterfunc() {
-                    this.jsonDatabk = this.jsonData
-                    //this.jsonData = this.jsonDatabk.filter(x => x.max量能 != 100 && x.count量能 > 0)
-                    //app.jsonData=app.jsonData.filter(x => isNaN(x.量價差天)) 
-                },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
 
@@ -318,7 +337,6 @@
                         file = file.replace('Result', resultdata)
                     }
 
-
                     await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
@@ -340,24 +358,31 @@
                                 });
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
-
-                                //const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
-                                const baseFields = []
+                              
+                                const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '貝他值', '成交量', 'Type1',];// 'stock_number'
+                                //const baseFields = []
                                 //(價)
                                 const trendFields = ['均價_%', 'highlight_date', '價_起始日期',];
                                 const dateFields = ['量價差天',];
-                                const miscFields = ['diff_quote', '當日漲跌', '總價差', '漲跌BY3天', '增縮3天', 'type']; //, 'count','總量增縮', 
+                                const miscFields = ['diff_quote', '當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
                                 //(量)
-                                const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
+                                const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator','Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
+                                const configFlag=['確認漲跌']
+                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields,'Flag',];
 
-                                var arr = [...baseFields, ...trendFields, 'rt_price', ...dateFields, ...miscFields, ...volumeFields];
-                                if (!this.sync) {
-                                    arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields];
+                                //【參數】  利用過去Data確認計算這些邏輯是否有用 
+                                var set_date= this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
+                                this.para_date= dates.slice(set_date)[0] 
+                                if(set_date!=-1)
+                                    arr.push(...configFlag)
+
+                                if (this.sync) {
+                                    arr.push('rt_量')
+                                    arr.push('rt_price')
                                 }
+                              
 
-                                //this.arrcount = arr.length
                                 this.arrcount = dates.length
-
                                 arr.reverse().forEach(element => {
                                     dates.push(element) //dates.unshift(element) 
                                 });
@@ -369,18 +394,20 @@
                                 var dummydata = Array.from(
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
-
+                           
                                 dummydata.map((item, index) => {
                                     const dummydataItem = item
-
                                     if (!!!item.datalist) {
                                         const datalist = this.jsonData.filter(q => q.stock_number == item.stock_number)
                                         dummydataItem.datalist = datalist
                                         const maxdate = datalist.map(x => x.日期).reduce((a, b) => a > b ? a : b);
                                         const mindate = datalist.map(x => x.日期).reduce((a, b) => a < b ? a : b);
-                                        const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == maxdate)[0]
+                                        const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == this.para_date)[0]
 
+                                        if (!!!maxdateitem) 
+                                            return null
                                         //## 處理Header資料
+                                        dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
                                         dummydataItem.箱型力量 = maxdateitem.箱型力量
                                         dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
                                         dummydataItem.highlight_date = maxdateitem.highlight_date
@@ -388,23 +415,16 @@
                                         dummydataItem.Volume_Oscillator = maxdateitem.Volume_Oscillator
                                         dummydataItem.量能 = maxdateitem.量能
                                         dummydataItem['均價_%'] = maxdateitem['均價_%']
-                                        dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
-
+                                        
                                         // 總價差 (依據highlight_date 來計算，如果沒有使用mindate)
                                         //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
                                         const targerdate = mindate
                                         dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == maxdate)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
 
-                                        // 計算"量"  Volume_Oscillator
-                                        let arrlist = datalist.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
-                                        let differences = arrlist.slice(0, -1).map((item, index) => arrlist[index + 1] - item)
-                                        dummydataItem.總量增縮 = differences.reduce((acc, current) => acc + current, 0);
-
                                         //價_起始日期 取被判定flag＝Y (Untitled.ipynb ==>　MA5_%>=0, 成交量 > 500, 遠交易量>-15 ,短交易量>-15 )
                                         dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
                                         dummydataItem.價_起始日期 = dummydataItem.價_起始日期 == Infinity ? '' : dummydataItem.價_起始日期;
-                                        //dummydataItem.count = dummydataItem.datalist.filter(y => y.flag == 'Y')?.length;
-
+                                        
                                         //## 處理明細資料
                                         dummydataItem.datalist.forEach((item, index) => {
 
@@ -414,28 +434,40 @@
                                                 item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
                                             }
                                             let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
-
+                                            //【參數】
+                                            var n=this.n
                                             let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
                                             let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
-                                            item.增縮BY3天 = differences_dl.slice(-3).reduce((acc, current) => acc + current, 0);
+                                            item.增縮BYN天 = differences_dl.slice(-n).reduce((acc, current) => acc + current, 0);
 
                                             let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
-                                            item.漲跌BY3天 = arrlist_dll.slice(-3).reduce((acc, current) => acc + current, 0)
+                                            item.漲跌BYN天 = arrlist_dll.slice(-n).reduce((acc, current) => acc + current, 0)
 
                                             let arrlist_dll1 = dl.map(x => parseInt(x.量能)).slice().reverse()
-                                            item.量能均 = arrlist_dll1.slice(-3).reduce((acc, current) => acc + current, 0)
-                                            item.量能均 = parseInt(item.量能均 / 3)
+                                            item.量能均 = arrlist_dll1.slice(-n).reduce((acc, current) => acc + current, 0)
+                                            item.量能均 = parseInt(item.量能均 / n)
+                                            
+                                            let arrlist_dll2 = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
+                                            item.Volume_Diff = arrlist_dll2.slice(-2).reduce((acc, current) => -acc + current, 0)
 
+                                            // 新產判斷邏輯
+                                            
+                                            item.Flag =(item._quote>0  &&  item.量能差 >  5  && item.量能均 >10 ) |item.Volume_Oscillator>-10 ?'Y' :'N'
+                                            //item.Flag +=item.Volume_Oscillator>-10 ? 'Y' :'N'
                                         });
 
-                                        //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)
-                                        var datess = [...new Set(this.jsonData.map(x => x.日期))].sort()
-                                        var datalist_last_date = datalist.find(x => x.日期 === datess.slice(-1)[0])
+                                        //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)                                        
+                                        var datalist_last_date = datalist.find(x => x.日期 === this.para_date)
+                                        dummydataItem.成交股數 = datalist_last_date?.成交股數;
                                         dummydataItem.當日漲跌 = datalist_last_date?._quote;
-                                        dummydataItem.增縮3天 = datalist_last_date?.增縮BY3天;
-                                        dummydataItem.漲跌BY3天 = datalist_last_date?.漲跌BY3天;
+                                        dummydataItem.增縮BYN天 = datalist_last_date?.增縮BYN天;
+                                        dummydataItem.漲跌BYN天 = datalist_last_date?.漲跌BYN天;
                                         dummydataItem.量能差 = datalist_last_date?.量能差;
                                         dummydataItem.量能均 = datalist_last_date?.量能均;
+                                        dummydataItem.Flag = datalist_last_date?.Flag;
+                                        dummydataItem.Volume_Diff = datalist_last_date?.Volume_Diff;
+                                        
+                                        
 
                                         //確認 "價" "量" 起來差距日
                                         const date1 = new Date(dummydataItem.highlight_date); // 開始日期 highlight_date(價)
@@ -443,11 +475,23 @@
                                         const diffTime = date2 - date1; // 取得毫秒數差距
                                         const diffDays = diffTime / (1000 * 60 * 60 * 24); // 轉換為天數
                                         dummydataItem.量價差天 = diffDays
+                                        //確認漲跌
+                                        var checkpoint_maxdateData=datalist.find(x => x.日期 === maxdate)
+                                        let cc = dummydataItem.datalist.filter(q => q.日期 > this.para_date);
+                                        let arrlist_cc = cc.map(x => parseInt(x._quote)).slice().reverse()
+                                        let differences_cc = arrlist_cc.slice(0, -1).map((item, index) => arrlist_cc[index + 1] - item)
+                                        item.確認漲跌 = arrlist_cc.reduce((acc, current) => acc + current, 0);
+                                  
+                                        
                                     }
                                     return dummydataItem;
                                 });
-                                this.jsonData = dummydata//.filter(x => x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BY3天 > -10)
-                                
+
+                                var para_x=2 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                this.arrcount =this.arrcount -para_x
+                                this.headers=this.headers.slice(para_x,this.headers.length)
+                                this.jsonData = dummydata//.filter(x => x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BYN天 > -10)
+                                //this.jsonData = dummydata.filter(x => x.Flag=='N')
                             }
                             if (this.realtimedata.length > 0) {
                                 this.sync_data();
