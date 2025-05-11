@@ -20,29 +20,26 @@
     <div id="app">
         <v-app>
             <v-container style="max-width: 95%;">
-
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" style="white-space: nowrap;">
-                <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers"
-                    :key="header.value">
-                    <span :style="{ 
-                        color: jsonData.map(x=>x[header.value]).sort().slice(-5)[0]< item[header.value]  ? 'red' :
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.filter(h => h.value !== 'Typelevel')"
+                        :key="header.value">
+                        <span :style="{ 
+                        color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :
                         'gray'  }">
-                        {{jsonData.map(x=>x[header.value]).sort().slice(-1)[0]}}
-                        <br/>
-{{header.value}}  <br/>
-                        {{item[header.value]}}
-                    </span>
-                        <!--
-                        this.jsonData.map(x=>x[header.value]).sort().slice(-5)[0]< item[header.value]  ? 'red' :
-                        -->
-
-                </template>
+                            {{parseFloat( item[header.value]/jsonData.map(x=>x[header.value]).sort((a, b) => a -
+                            b).slice(-1)[0]).toFixed(2) }}
+                        </span>
+                    </template>
+                    <template v-slot:item.desc="{ item }">
+                          <a :href="computedHref(item)" target="_blank" rel="noopener">
+                            {{ sanitizedTypelevel(item) }}
+                          </a>
+                      </template>
                 </v-data-table>
             </v-container>
         </v-app>
     </div>
-
     <script>
         var app = new Vue({
             el: '#app',
@@ -86,6 +83,14 @@
                 }
             },
             methods: {
+                sanitizedTypelevel(x) {
+
+                    return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
+                },
+                computedHref(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];
@@ -123,6 +128,7 @@
 
                             if (json.length > 0) {
                                 this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.headers.push({ text: 'desc', value: 'desc' })
                                 this.$renameHeaders(this.headers);
                                 this.jsonData = json.slice(1).map(row => {
                                     const rowData = {};
@@ -131,39 +137,8 @@
                                     });
                                     return rowData;
                                 });
-                               debugger;
-                                /*
-                                this.headers.forEach(header => {
-                                    if (this.isNumberField(header.value)) {
-                                        this.$set(this.filters, header.value, [
-                                            this.getMinValue(header.value),
-                                            this.getMaxValue(header.value),
-                                        ]);
-                                    } else {
-                                        this.$set(this.filters, header.value, []);
-                                    }
-                                    this.$set(this.uniqueValues, header.value, []);
-                                });
-                                this.jsonData.forEach(row => {
-                                    this.headers.forEach(header => {
-                                        const value = row[header.value];
-                                        if (value != null) {
-                                            const strValue = value.toString();
-                                            if (!this.uniqueValues[header.value].includes(strValue)) {
-                                                this.uniqueValues[header.value].push(strValue);
-                                            } else {
-                                            }
-                                        }
-                                    });
-                                });
 
-                                Object.keys(this.uniqueValues).forEach(key => {
-                                    this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
-                                    this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
-                                });*/
-
-
-
+                             
                             }
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
