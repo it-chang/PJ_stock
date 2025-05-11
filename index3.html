@@ -35,6 +35,10 @@
                         <span> data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}</span>
                         <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
                     </v-col>
+                    <v-col col="1">
+                       <!-- <v-btn color="primary" @click="sortBy=['_quote']">漲幅</v-btn>
+                        -->
+                    </v-col>
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
                         <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
                         <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
@@ -98,13 +102,16 @@
                     </v-data-table>
                 </div>
 
-                <div v-for="(type, index) in distinct_type" v-show="!appmode"
-                    style="max-height: 400px; overflow-x: auto;">
+                <div v-for="(type, index) in distinct_type" v-show="!appmode" style="max-height: 400px; overflow-x: auto;">
                     {{ type.Typelevel }} {{ type.Volume_Price_Change_sum }}
                     link
-                    <a :href="computedHref(type)">
-                        {{ sanitizedTypelevel(type) }}
-                    </a>
+                        <a :href="computedHref(type)" target="_blank" rel="noopener">
+                            {{ sanitizedTypelevel(type) }}
+                        </a>
+                    <span>   
+                        {{filteredData(type.Typelevel).filter(x=>x._quote>5).length}} / {{filteredData(type.Typelevel).length}}
+                    </span>   
+
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
                         :items="filteredData(type.Typelevel)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
@@ -198,8 +205,10 @@
                     appheaderscol: ['stock_number', '_quote', 'rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
                     filters: {},
                     uniqueValues: {},
-                    sortBy: 'highlight_date',
-                    sortDesc: true,
+                    //sortBy: 'highlight_date',
+                    sortBy: ['_quote'],
+                    
+                    sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
@@ -215,7 +224,6 @@
                     // &mode=app 
                     this.appmode = urlParams.get('mode') == 'app';
                 }
-
                 if (urlParams.has('sync')) {
                     this.sync = urlParams.get('sync') == 'Y';
                 }
