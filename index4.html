@@ -27,6 +27,7 @@
                         <span :style="{ 
                         color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :
                         'gray'  }">
+
                             {{parseFloat( item[header.value]/jsonData.map(x=>x[header.value]).sort((a, b) => a -
                             b).slice(-1)[0]).toFixed(2) }}
                         </span>
@@ -114,7 +115,7 @@
                     let urlParams = new URLSearchParams(window.location.search);
                     file = './Result/analyze_1.xlsx'
                     if (urlParams.has('d')) {
-                        if (urlParams.get('d') == '1') {
+                        if (urlParams.get('d') == '2') {
                             file = './Result/analyze_2.xlsx'
                         }
                     }
