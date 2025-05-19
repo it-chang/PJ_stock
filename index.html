@@ -71,10 +71,9 @@
                     :sort-desc.sync="sortDesc" :mobile-breakpoint="0" style="white-space: nowrap;">
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type0 }}
+                            {{ item.stock_number }} {{ item.Type0 }} 
                         </v-btn>
                     </template>
-
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);"
                             v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
@@ -95,10 +94,11 @@
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">              
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
-                        <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type0 }}
+                        <v-btn text @click="openDialog(item)"> 
+                            {{ item.stock_number }} {{ item.Type0 }}{{item['Volume_%']}}
                         </v-btn>
                     </template>
+                          
                     <template v-slot:item.now_price="{ item }">
                         <v-btn text @click="openDialog(item)">
                             <span style="color: rgb(124, 169, 173);"
