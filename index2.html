@@ -58,12 +58,8 @@
                         :key="header.value">
                         <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
                             :key="index">
-                            <!--
-                                    (item.highlight_date == header.value) ? 'hightlight_line' : '',
-                                    (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under hightlight_line_box' : '',
-                                    (data._quote>0 &&  data.量能差 >  5  &&  data.量能均 >10  )  ? 'hightlight_line_box_notuse' : '',
-                            -->
-                            <div style="position: sticky; height: 100%;" :class="[
+                        
+                            <div v-if="index==0" style="position: sticky; min-height: 100%;" :class="[
                                     (data.Flag >1  ) ? 'hightlight_line_box' : '',
                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
                                     ].filter(Boolean)">
