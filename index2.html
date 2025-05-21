@@ -178,6 +178,15 @@
                                         </template>
                                         <span>【MA_break】</span>
                                     </v-tooltip>
+                                    <v-tooltip slot="append" bottom>
+                                        <template v-slot:activator="{ on }">
+                                            <v-icon v-on="on" color="blue"
+                                                v-if="data.Volume_Price_Change_break ">
+                                                mdi-star-outline
+                                            </v-icon>
+                                        </template>
+                                        <span>【Volume_Price_Change_break】</span>
+                                    </v-tooltip>
                                 </div>
                             </div>
                         </template>
@@ -335,6 +344,7 @@
                     if (d) {
                         const fileMap = {
                             H: './Result/checkH.xlsx',
+                            V: './Result/checkVolume.xlsx',
                             sun: './Result/checksun.xlsx',
                             HS: './Result/checkHS.xlsx',
                             sunmy: './Result/checksunmy.xlsx',
