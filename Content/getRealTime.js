@@ -78,6 +78,7 @@ function generateStockApiUrls(data, size) {
     })
     return x
 }
+//REF : https://hackmd.io/@aaronlife/python-ex-stock-by-api
 function buildStockApiUrl(targets, type_tse_otc) {
     let endpoint = 'https://mis.twse.com.tw/stock/api/getStockInfo.jsp';
     let today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -115,13 +116,16 @@ async function getData(url) {
         let newArray = data['msgArray'] || [];
 
         _data = _data.concat(newArray);
+         debugger;
         _data.forEach(x => {
             x.g = x.g.split('_')[0];
             x.b = parseFloat(x.b.split('_')[0]);
             x.a = parseFloat(x.a.split('_')[0]);
             x.f = x.f.split('_')[0];
             x.v = x.v.split('_')[0];
+            
         });
+       
     } catch (error) {
         console.error('There has been a problem with your fetch operation:', error);
     }

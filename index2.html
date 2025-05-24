@@ -23,12 +23,14 @@
                     <v-col col="2">
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
                         data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
-                        【targer date】 {{para_date}} 
-                        <a href="#" onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
+                        【targer date】 {{para_date}}
+                        <a href="#"
+                            onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
                         【N:{{n}}】
                     </v-col>
                     <v-col col="1">
-                        <v-btn color="primary" @click="sortBy=['highlight_date','FlagDiff']">highlight_date/FlagDiff</v-btn>
+                        <v-btn color="primary"
+                            @click="sortBy=['highlight_date','FlagDiff']">highlight_date/FlagDiff</v-btn>
                         <v-btn color="primary" @click="sortBy=['highlight_date','Flag2']">highlight_date/Flag2</v-btn>
                         <v-btn color="primary" @click="sortBy=['總價差','highlight_date']">總價差/highlight_date</v-btn>
                     </v-col>
@@ -58,7 +60,7 @@
                         :key="header.value">
                         <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
                             :key="index">
-                        
+
                             <div v-if="index==0" style="position: sticky; min-height: 100%;" :class="[
                                     (data.Flag >1  ) ? 'hightlight_line_box' : '',
                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
@@ -84,33 +86,38 @@
                                         (量)量能:{{ data.量能.split('.')[0] }}(差{{data.量能差}}) (均{{data.量能均}})
                                     </span>
                                     <BR />
-                                        <v-tooltip slot="append" bottom>
-                                            <template v-slot:activator="{ on }">
-                                                <span v-on="on" :style="{ 
+                                    <v-tooltip slot="append" bottom>
+                                        <template v-slot:activator="{ on }">
+                                            <span v-on="on" :style="{ 
                                                     color:  data.Flag>2 ? 'red' :
                                                             data.Flag>0 ? 'orange' :
                                                             'gray' }">
-                                                    Flag: {{data.Flag}}
-                                                </span>
-                                            </template>
-                                            [Flag] 量價同時有長進　Volume_Diff >5 漲跌BYN天>5 _quote > -1
-                                        </v-tooltip>
+                                                Flag: {{data.Flag}}
+                                            </span>
+                                        </template>
+                                        [Flag] 量價同時有長進　Volume_Diff >5 漲跌BYN天>5 _quote > -1
+                                    </v-tooltip>
                                     <BR />
-                                    <span :style="{ 
+                                    <v-tooltip slot="append" bottom>
+                                        <template v-slot:activator="{ on }">
+                                            <span v-on="on"  :style="{ 
                                         color:  data.Flag1?.includes('4') ? 'red' :
                                                 data.Flag1?.includes('3') ? 'orange' :
                                                 data.Flag1?.includes('2') ? 'orange' :
                                         'gray' }">
-                                        Flag1: {{data.Flag1}} <br />
+                                                Flag1: {{data.Flag1}} <br />
 
-                                    </span>
+                                            </span>
+                                        </template>
+                                        計算＂量＂（確認是突然放量 /還是漸進）
+                                    </v-tooltip>
                                     <v-tooltip slot="append" bottom>
                                         <template v-slot:activator="{ on }">
                                             <span v-on="on" color="red">
                                                 Flag2: {{data.Flag2}}
                                             </span>
                                         </template>
-                                        [Flag2]-價長進的指標
+                                        [Flag2]-價長進的指標 (表示近期漲的狀況居多)
                                     </v-tooltip>
                                 </div>
                                 <div style="  height:35px;display: none;">
@@ -156,9 +163,9 @@
                                 <div style="padding-top: 14px;">
                                     <span style="    color: #285376b8;">
                                         成交股數 {{ parseInt(data.成交股數)}} <br />
-                                        MA5_% {{ data['MA5_%']}} 
+                                        MA5_% {{ data['MA5_%']}}
                                         均價_% {{ data['均價_%']}}
-                                        
+
                                     </span>
                                     <v-tooltip slot="append" bottom>
                                         <template v-slot:activator="{ on }">
@@ -180,8 +187,7 @@
                                     </v-tooltip>
                                     <v-tooltip slot="append" bottom>
                                         <template v-slot:activator="{ on }">
-                                            <v-icon v-on="on" color="blue"
-                                                v-if="data.Volume_Price_Change_break ">
+                                            <v-icon v-on="on" color="blue" v-if="data.Volume_Price_Change_break ">
                                                 mdi-star-outline
                                             </v-icon>
                                         </template>
@@ -192,19 +198,17 @@
                         </template>
                     </template>
                     <template v-slot:item.rt_price="{ item }">
-                        <span style="color: rgb(124, 169, 173);"
-                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
-                            {{
-                            ((realtimedata.filter(x=>x.c==item.stock_number)[0]?.b/parseFloat(realtimedata.filter(x=>x.c==item.stock_number)[0]?.y)-1)*100).toFixed(2)}}
+                        <span style="color: rgb(124, 169, 173);" v-show="sync">
+                            {{((realtimedata.filter(x=>x.c==item.stock_number)[0]?.b/parseFloat(realtimedata.filter(x=>x.c==item.stock_number)[0]?.y)-1)*100).toFixed(2)}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
-                        <!--
-                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
-                        -->
-                        <span style="color: rgb(124, 169, 173);"
-                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                        <span style="color: rgb(124, 169, 173);" v-show="sync">
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.max股數)).toFixed(1)}}
+                            <br />
+                            目前成交股數{{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}}
+                            <br />
+                            最大成交股數{{parseFloat(item.max股數).toFixed(0)}}
                         </span>
                     </template>
                 </v-data-table>
@@ -248,7 +252,7 @@
                     //sortBy: ['漲跌BYN天'],
                     //sortBy: ['Volume_Oscillator'],
                     sortBy: ['highlight_date'],
-                    sortDesc: [true,true],
+                    sortDesc: [true, true],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
@@ -327,7 +331,6 @@
                 },
                 sync_data() {
                     this.jsonData.forEach(item => {
-                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a;
                         item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.b / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
                         var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
                         item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1);
@@ -357,8 +360,8 @@
                             ? `./Result/checksun/${type}.xlsx`
                             : (fileMap[d] || file);
                     }
-                    if(setdate){
-                        this.set_date=setdate
+                    if (setdate) {
+                        this.set_date = setdate
                     }
 
                     // 若有 date 參數，將路徑中的 "Result" 替換成動態資料夾名（如 Result202405）
@@ -399,7 +402,7 @@
                                 const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator', 'Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
                                 const configFlag = ['確認漲跌']
 
-                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, 'max股數', 'FlagDiff',  'Flag2',]; //'Flag1',
+                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff', 'Flag2',]; //'Flag1',
 
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
@@ -409,7 +412,6 @@
 
                                 if (this.sync) {
 
-                                    arr.push('max股數')
                                     arr.push('rt_量')
                                     arr.push('rt_price')
                                 }
@@ -518,7 +520,7 @@
                                             let arrlist_dll5 = dd1.map(x => parseInt(x.量能均)).slice().reverse()
                                             var logic4 = arrlist_dll5.slice(nDay).filter(x => x > 2).length
 
-                                            //[Flag2]-價長進的指標
+                                            //[Flag2]-價長進的指標 (表示近期漲的狀況居多)
                                             item.Flag2 = logic1 + logic2 + logic3 + logic4 - neg_logic1
 
                                             nDay = -5 // 抓往前推幾天
