@@ -81,9 +81,11 @@
                                                ( parseInt(data.增縮BYN天) > 0 &&  parseInt(data.量能.split('.')[0]) > 15 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )  ) ? 'orange' : 
                                                 'gray' 
                                         }">
-                                        增縮BYN天 :{{data.增縮BYN天 }}
+                                        量能:{{ data.量能.split('.')[0] }}(差{{data.量能差}}) (均{{data.量能均}})
                                         <BR />
-                                        (量)量能:{{ data.量能.split('.')[0] }}(差{{data.量能差}}) (均{{data.量能均}})
+                                        (量)增縮BYN天 :{{data.增縮BYN天 }}
+                                        
+                                        
                                     </span>
                                     <BR />
                                     <v-tooltip slot="append" bottom>
@@ -199,12 +201,12 @@
                     </template>
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);" v-show="sync">
-                            {{((realtimedata.filter(x=>x.c==item.stock_number)[0]?.b/parseFloat(realtimedata.filter(x=>x.c==item.stock_number)[0]?.y)-1)*100).toFixed(2)}}
+                            {{item.rt_price}}
                         </span>
                     </template>
                     <template v-slot:item.rt_量="{ item }">
                         <span style="color: rgb(124, 169, 173);" v-show="sync">
-                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.max股數)).toFixed(1)}}
+                            {{item.rt_量}}
                             <br />
                             目前成交股數{{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}}
                             <br />
@@ -331,9 +333,9 @@
                 },
                 sync_data() {
                     this.jsonData.forEach(item => {
-                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.b / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
+                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
                         var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
-                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1);
+                        item.rt_量 = (vol / parseFloat(item.max股數)).toFixed(1);
                     })
                 },
                 async loadExcelData() {
@@ -397,7 +399,7 @@
                                 //(價)
                                 const trendFields = ['MA5_%', '均價_%', 'highlight_date', '價_起始日期',];
                                 const dateFields = ['量價差天',];
-                                const miscFields = ['diff_quote', '當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
+                                const miscFields = ['當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
                                 //(量)
                                 const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator', 'Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
                                 const configFlag = ['確認漲跌']
@@ -411,7 +413,6 @@
                                     arr.push(...configFlag)
 
                                 if (this.sync) {
-
                                     arr.push('rt_量')
                                     arr.push('rt_price')
                                 }
@@ -570,6 +571,8 @@
                                 this.jsonData = dummydata
                                 //this.jsonData = dummydata.filter(x => x.Flag2 >= 5)
                                 //this.jsonData = dummydata.filter(x => x.Flag2 > 2)
+                                // 【OK】
+                                //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0)
                             }
                             if (this.realtimedata.length > 0) {
                                 this.sync_data();
