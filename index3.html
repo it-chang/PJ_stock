@@ -76,7 +76,7 @@
                 </v-expansion-panels> -->
 
                 <div v-for="(type, index) in distinct_type" v-show="appmode">
-                    {{type.Typelevel }} {{type.Volume_Price_Change_sum}}
+                    {{type.Typelevel }} {{parseFloat(type.Volume_Price_Change_sum).toFixed(0)}}
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
                         :items="appfilteredData(type.Typelevel )" :items-per-page="-1" item-key="id"
@@ -103,7 +103,7 @@
                 </div>
 
                 <div v-for="(type, index) in distinct_type" v-show="!appmode" style="max-height: 400px; overflow-x: auto;">
-                    {{ type.Typelevel }} {{ type.Volume_Price_Change_sum }}
+                    {{ type.Typelevel }} {{parseFloat(type.Volume_Price_Change_sum).toFixed(0)}}
                     link
                         <a :href="computedHref(type)" target="_blank" rel="noopener">
                             {{ sanitizedTypelevel(type) }}
