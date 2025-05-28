@@ -124,7 +124,7 @@ async function getData(url) {
             x.f = x.f.split('_')[0]; //賣量
             x.v = x.v.split('_')[0];  //成交量
             x.z=  parseFloat(x.z)? x.z:x.b //盤中成交價
-            debugger;   
+           
         });
        
     } catch (error) {

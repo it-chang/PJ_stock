@@ -315,13 +315,6 @@
                         if (urlParams.get('d') == 'dangchong') {
                             file = './Result/checkdangchong.xlsx'
                         }
-
-                        if (urlParams.get('d') == 'Temp') {
-                            file = './Result/checktemp.xlsx'
-                        }
-                        /*if (urlParams.get('d') == 'NT') {
-                            file = './Result/check1_N.xlsx'
-                        }*/
                         if (urlParams.get('d') == 'T') {
                             //file = './Result/check1.xlsx'
                             file = './Result/check1/' + urlParams.get('date') + '.xlsx'
@@ -401,12 +394,12 @@
                                     this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
                                 });
                             }
+
+                            //app.jsonData=app.jsonData.filter(x => x["MACD"]<5 && x["價能"]>0 && x["MA5_%"]>0 && x["Volume_Oscillator"]>-30)
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
                 }
             }
         });
     </script>
-</body>
-
-</html>
+<
