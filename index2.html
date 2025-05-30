@@ -34,13 +34,13 @@
                         <v-btn color="primary" @click="sortBy=['highlight_date','Flag2']">highlight_date/Flag2</v-btn>
                         <v-btn color="primary" @click="sortBy=['總價差','highlight_date']">總價差/highlight_date</v-btn>
                         -->
+                        <v-btn color="primary" @click="Flag4">Flag4</v-btn>
+                        <v-btn color="primary" @click="reset">reset</v-btn>
                     </v-col>
                     <v-col col="1">
-                     
-                        <v-btn color="primary"
-                            @click='jsonData=jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)'>
-                            x.Volume_Oscillator > -20 && x.量能差 > 0 && x.漲跌BYN天 > -7 && x.量能均>5 </v-btn>
-                            
+                        
+                        <v-btn color="primary" @click="actionFilter1">index.html</v-btn>
+                          <v-btn color="primary" @click="actionFilter">Filter</v-btn>
                     </v-col>
                 </v-row>
                 <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="headers"
@@ -580,20 +580,7 @@
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
-                                this.jsonData_ = dummydata
-                                //this.jsonData = dummydata.filter(x => x.Flag2 > 2)
-
-                                // 【OK】
-                                //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0)
-                                //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0 && x["總價差"]>1)
-                                //this.jsonData=this.jsonData_.filter(x => x["均價_%"]>0 && x["總價差"]>1)
-
-                                //app.jsonData=app.jsonData_.filter(x => x.Flag  >2)
-                                //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag>2)
-                                //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-                                //this.jsonData=this.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-
-                                
+                                this.jsonData_ = dummydata                                
                             }
                             if (this.realtimedata.length > 0) {
                                 this.sync_data();
@@ -601,6 +588,37 @@
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
                 },
+                reset() {
+                    var vm = this
+                    vm.jsonData=vm.jsonData_
+                     vm.sortBy= ['highlight_date']
+                },
+                actionFilter(i) {
+                    var vm = this
+                    //【index.html 】
+                    //vm.jsonData=vm.jsonData.filter(x => parseFloat(x["均價_%"])>0 && x["遠交易量"]>-20)
+
+                    // 【OK】
+                    //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0)
+                    //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0 && x["總價差"]>1)
+                    //this.jsonData=this.jsonData_.filter(x => x["均價_%"]>0 && x["總價差"]>1)
+
+                    //app.jsonData=app.jsonData_.filter(x => x.Flag  >2)
+                    //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag>2)
+                    //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
+                    //this.jsonData=this.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
+
+                    vm.jsonData=vm.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
+                },
+                actionFilter1(i) {
+                    var vm = this
+                    //【index.html 】
+                    vm.jsonData=vm.jsonData_.filter(x => parseFloat(x["均價_%"])>0 && x["遠交易量"]>-20)
+                },
+                Flag4(){
+                    var vm = this
+                    vm.jsonData=vm.jsonData.filter(x => parseFloat(x["Flag"])==4 )
+                }
             }
         });
     </script>

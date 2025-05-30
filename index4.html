@@ -27,9 +27,11 @@
                         <span :style="{ 
                         color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :
                         'gray'  }">
-
+                            {{parseFloat(item[header.value]).toFixed(1)}}
+                <!--
                             {{parseFloat( item[header.value]/jsonData.map(x=>x[header.value]).sort((a, b) => a -
                             b).slice(-1)[0]).toFixed(2) }}
+                            -->
                         </span>
                     </template>
                     <template v-slot:item.desc="{ item }">
