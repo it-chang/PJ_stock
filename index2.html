@@ -434,6 +434,9 @@
                                 var dummydata = Array.from(
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
+                               
+                                //this.jsonData=this.jsonData.filter(q => q.stock_number == 6593)//6593
+                                //dummydata   =dummydata.filter(q => q.stock_number == 6593)
 
                                 dummydata.map((item, index) => {
                                     const dummydataItem = item
