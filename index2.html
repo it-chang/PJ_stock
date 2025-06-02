@@ -410,7 +410,7 @@
                                 const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator', 'Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
                                 const configFlag = ['確認漲跌']
 
-                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff','neg_Flag','Flag', 'Flag2',]; //'Flag1',
+                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff','neg_Flag','Flag','Flage_q4', 'Flag2',]; //'Flag1',
 
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
@@ -536,8 +536,9 @@
                                             item.neg_Flag=arrlist_quote.slice(_day).filter(x => x > 6).length
                                            //item.Flag +=-neg_Flag
 
-
+                                
                                             // ###【Flag】------    　end 
+                                            
                                         });
 
                                         //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)                                        
@@ -572,6 +573,9 @@
                                         item.確認漲跌 = arrlist_cc.reduce((acc, current) => acc + current, 0);
                                         //計算最大成交股數
                                         item.max股數 = parseInt(Math.max(...datalist.map(x => x.成交股數)));
+
+                                        //
+                                        item.Flage_q4=datalist.find(x=>x.Flag==4)?.日期
                                     }
                                     return dummydataItem;
                                 });
