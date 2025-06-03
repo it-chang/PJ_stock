@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>太陽圖</title>
+    <title>【FIM】</title>
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
     <link href="./Content/base.css" rel="stylesheet">
@@ -19,215 +19,216 @@
     <div id="app">
         <v-app>
             <v-container style="max-width: 95%;">
-                <v-row no-gutters>
-                    <v-col col="2">
-                        <a href="JavaScript: location.reload(true);">Refresh page</a>
-                        data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
-                        【targer date】 {{para_date}}
-                        <a href="#"
-                            onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
-                        【N:{{n}}】
+                <v-row>
+                    <v-col cols="3">
+                        <v-data-table hide-default-footer :headers="mydata_headers" :items="mydata"
+                            style="white-space: nowrap;" :items-per-page="50">
+                            <template v-slot:item.calculate="{ item }">
+                                <span v-show="item.Desc=='銀行'">
+                                    {{ mydata.filter(x=>x.Desc=='現金')[0].today
+                                    +mydata.filter(x=>x.Desc=='信用卡')[0].today
+                                    +mydata.filter(x=>x.Desc=='預備金')[0].today
+                                    +mydata.filter(x=>x.Desc=='銀行')[0].today
+                                    -300000
+                                    }}
+                                </span>
+                                <span v-show="item.Desc=='預備金'">
+                                    300000
+                                </span>
+                                <span v-show="item.Desc=='投入'">
+                                    {{ parseInt(item.today)
+                                    +mydata.filter(x=>x.Desc=='invest_input')[0].N_1
+                                    +mydata.filter(x=>x.Desc=='invest_input')[0].N_2
+                                    -mydata.filter(x=>x.Desc=='invest_output')[0].N_1
+                                    -mydata.filter(x=>x.Desc=='invest_output')[0].N_2
+                                    +mydata.filter(x=>x.Desc=='income_loss')[0].N_1
+                                    +mydata.filter(x=>x.Desc=='income_loss')[0].N_2
+                                    }}
+                                </span>
+                                <span v-show="item.Desc=='下單'">
+                                    {{ parseInt(item.today)+
+                                    -mydata.filter(x=>x.Desc=='invest_input')[0].N_1
+                                    -mydata.filter(x=>x.Desc=='invest_input')[0].N_2
+                                    +mydata.filter(x=>x.Desc=='invest_output')[0].N_1
+                                    +mydata.filter(x=>x.Desc=='invest_output')[0].N_2
+                                    }}
+                                </span>
+                                <span v-show="item.Desc=='Total'">
+                                    {{ mydata.filter(x=>x.Desc=='現金')[0].today
+                                    +mydata.filter(x=>x.Desc=='信用卡')[0].today
+                                    +mydata.filter(x=>x.Desc=='銀行')[0].today
+                                    +mydata.filter(x=>x.Desc=='預備金')[0].today
+                                    +mydata.filter(x=>x.Desc=='投入')[0].today
+                                    +mydata.filter(x=>x.Desc=='下單')[0].today
+                                    }}
+                                </span>
+                            </template>
+                            <template v-slot:body.append>
+                                <tr class="sticky-table-footer">
+                                    <td />
+                                    <td>{{stockdata_sum}}</td>
+                                    <td>{{
+                                        mydata.filter(x=>x.Desc=='現金')[0].today
+                                        +mydata.filter(x=>x.Desc=='信用卡')[0].today
+                                        +mydata.filter(x=>x.Desc=='銀行')[0].today
+                                        +mydata.filter(x=>x.Desc=='預備金')[0].today
+                                        +mydata.filter(x=>x.Desc=='投入')[0].today
+                                        +mydata.filter(x=>x.Desc=='下單')[0].today
+                                        +stockdata_sum
+                                        }}</td>
+
+                                </tr>
+                            </template>
+
+                        </v-data-table>
+                        <br />
                     </v-col>
-                    <v-col col="1">
-                        <!--
-                        <v-btn color="primary"  @click="sortBy=['highlight_date','FlagDiff']">highlight_date/FlagDiff</v-btn>
-                        <v-btn color="primary" @click="sortBy=['highlight_date','Flag2']">highlight_date/Flag2</v-btn>
-                        <v-btn color="primary" @click="sortBy=['總價差','highlight_date']">總價差/highlight_date</v-btn>
-                        -->
-                        <v-btn color="primary" @click="Flag4">Flag4</v-btn>
-                        <v-btn color="primary" @click="reset">reset</v-btn>
-                    </v-col>
-                    <v-col col="1">
-                        
-                        <v-btn color="primary" @click="actionFilter1">index.html</v-btn>
-                          <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                    <v-col cols="9">
+                        <v-data-table hide-default-footer :headers="headers" :items="maindata_input"
+                            style="white-space: nowrap;" :items-per-page="50">
+                            <template v-slot:item.calculate="{ item }">
+                                {{Object.values(item).map(x=>parseInt(x)||0).reduce((acc, current) => acc + current,
+                                0)}}
+                            </template>
+                            <template v-slot:item.bymonth="{ item }">
+                                {{parseInt(Object.values(item).map(x=>parseInt(x)||0).reduce((acc, current) => acc +
+                                current,
+                                0)/12)}}
+                            </template>
+                        </v-data-table>
+                        <br />
+                        <v-data-table hide-default-footer :headers="headers" :items="maindata_output"
+                            style="white-space: nowrap;" :items-per-page="50">
+                            <template v-slot:item.calculate="{ item }">
+                                {{Object.values(item).map(x=>parseInt(x)||0).reduce((acc, current) => acc + current,
+                                0)}}
+                            </template>
+                            <template v-slot:item.bymonth="{ item }">
+                                {{parseInt(Object.values(item).map(x=>parseInt(x)||0).reduce((acc, current) => acc +
+                                current,
+                                0)/12)}}
+                            </template>
+                        </v-data-table>
+                        <br />
+                        <v-data-table hide-default-footer :headers="headers" :items="report"
+                            style="white-space: nowrap;" :items-per-page="50">
+                            <template v-slot:item.calculate="{ item }">
+                                <span v-show="item.Desc=='月餘'">
+                                    {{Object.values(item).map(x=>parseInt(x)||0).reduce((acc, current) => acc +
+                                    current,0)}}
+                                </span>
+                            </template>
+                        </v-data-table>
+
                     </v-col>
                 </v-row>
-                <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="headers"
-                    :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
-                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">
-                    <template v-slot:item.stock_number="{ item }">
-                        <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type0 }}
-                        </v-btn>
+                <br />
+            </v-container>
+            <v-container style="max-width: 30%; margin-left: 15%;">
+            </v-container>
+            <v-container style="max-width: 80%;">
+                <v-data-table hide-default-footer :headers="stock_headers_profit" :items="stockdata"
+                    style="white-space: nowrap;" :items-per-page="50">
+                    <template v-slot:item.calculate_8="{ item }">
+                        {{(item.hold*item.profit).toFixed(0)}}
                     </template>
-                    <template v-slot:item.type="{ item }">
-                        <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type }}
-                        </v-btn>
-                    </template>
-                    <template v-slot:item.desc="{ item }">
-                        <td v-html="formatDesc(item.desc)"></td>
-                    </template>
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(0,arrcount)"
-                        :key="header.value">
-                        <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
-                            :key="index">
-                            <!--
-                                (data.Flag >3  ) ? 'hightlight_line_box' : '',
-                            -->
-                            <div v-if="index==0" style="position: sticky; min-height: 100%;" 
-                                    :class="[
-                                    (data.Flag >3   && data.Volume_Diff > 9 ) ? 'hightlight_line_box' : '',
-                                    (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
-                                    ].filter(Boolean)">
-                                <BR />
-                                <div>
-                                    <span :style="{ 
-                                        color: (parseInt(data.漲跌BYN天) > 4 && parseInt(data._quote) > 5  ) ? 'red' :
-                                               (parseInt(data.漲跌BYN天) > 2 && parseInt(data._quote) > 2  ) ? 'orange' : 
-                                                'gray'  }">
-                                        漲跌:{{data._quote}}
-                                        <BR />
-                                        (價)漲跌BYN天 :{{data.漲跌BYN天 }}
-                                    </span>
-                                    <BR />
-                                    <span :style="{ 
-                                        color: ( parseInt(data.增縮BYN天) > 0 &&  parseInt(data.量能.split('.')[0]) > 30 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )+3) ? 'red' : 
-                                               ( parseInt(data.增縮BYN天) > 0 &&  parseInt(data.量能.split('.')[0]) > 15 &&  data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )  ) ? 'orange' : 
-                                                'gray' 
-                                        }">
-                                        量能:{{ data.量能.split('.')[0] }}(差{{data.量能差}}) (均{{data.量能均}})
-                                        <BR />
-                                        (量)增縮BYN天 :{{data.增縮BYN天 }}
-                                    </span>
-                                    <BR />
-                                    <v-tooltip slot="append" bottom>
-                                        <template v-slot:activator="{ on }">
-                                            <span v-on="on" :style="{ 
-                                                    color:  data.Flag>4 ? 'red' :
-                                                            data.Flag>3 ? 'orange' :
-                                                            'gray' }">
-                                                Flag: {{data.Flag}}
-                                            </span>
-                                        </template>
-                                        [Flag] 量價同時有長進　Volume_Diff >5 漲跌BYN天>5 _quote > -1
-                                    </v-tooltip>
-                                    <BR />
-                                    <v-tooltip slot="append" bottom>
-                                        <template v-slot:activator="{ on }">
-                                            <span v-on="on"  :style="{ 
-                                        color:  data.Flag1?.includes('4') ? 'red' :
-                                                data.Flag1?.includes('3') ? 'orange' :
-                                                data.Flag1?.includes('2') ? 'orange' :
-                                        'gray' }">
-                                                Flag1: {{data.Flag1}} <br />
-
-                                            </span>
-                                        </template>
-                                        計算＂量＂（確認是突然放量 /還是漸進）
-                                    </v-tooltip>
-                                    <v-tooltip slot="append" bottom>
-                                        <template v-slot:activator="{ on }">
-                                            <span v-on="on" color="red">
-                                                Flag2: {{data.Flag2}}
-                                            </span>
-                                        </template>
-                                        [Flag2]-價長進的指標 (表示近期漲的狀況居多)
-                                    </v-tooltip>
-                                </div>
-                                <div style="  height:35px;display: none;">
-                                    <div :style="{ backgroundColor:  
-                                    parseInt(data.Volume_Oscillator) > 50  ? '#ff4d4d60' :  
-                                    parseInt(data.Volume_Oscillator) > 40  ? '#ff4d4d50' : 
-                                    parseInt(data.Volume_Oscillator) > 30  ? '#ff4d4d40' : 
-                                    parseInt(data.Volume_Oscillator) > 20  ? '#ff4d4d30' : 
-                                    parseInt(data.Volume_Oscillator) > 10  ? '#ff4d4d20' :
-                                    parseInt(data.Volume_Oscillator) > 0   ? '#ff4d4d10' :
-                                    parseInt(data.Volume_Oscillator) > -10 ? '#4caf5020' :
-                                    parseInt(data.Volume_Oscillator) > -20 ? '#4caf5040' :
-                                    parseInt(data.Volume_Oscillator) > -60 ? '#4caf5060' :
-                                    '#4caf5080' ,
-                                    height: 
-                                    String(Math.abs(parseInt(data.Volume_Oscillator)/2))+'px'
-                                     }">
-                                        成交量 {{data.Volume_Oscillator}} ( 差:{{data.Volume_Diff}} )
-                                    </div>
-                                </div>
-                                <div style="  height:35px;">
-                                    <div :style="{ backgroundColor:  
-                                    parseInt(data.Volume_Diff) > 40  ? '#ff4d4d60' : 
-                                    parseInt(data.Volume_Diff) > 30  ? '#ff4d4d50' : 
-                                    parseInt(data.Volume_Diff) > 20  ? '#ff4d4d40' : 
-                                    parseInt(data.Volume_Diff) > 10  ? '#ff4d4d30' :
-                                    parseInt(data.Volume_Diff) > 0   ? '#ff4d4d20' :
-                                    parseInt(data.Volume_Diff) > -10 ? '#f7f7f7' :
-                                    parseInt(data.Volume_Diff) > -20 ? '#f7f7f7' :
-                                    parseInt(data.Volume_Diff) > -60 ? '#f7f7f7' :
-                                    '#f7f7f7' ,
-                                    height: 
-                                    String(Math.abs(parseInt( ( data.Volume_Diff )*1)))+'px'
-                                     }">
-                                        Volume 差:{{data.Volume_Diff}}
-                                    </div>
-                                    <!-- 
-                                        String(Math.abs(parseInt( ((data.Volume_Diff>0 ? 1:-1) * data.Volume_Diff * data.Volume_Diff)/10 )))+'px'
-                                        data.Volume_Diff>0 ? 1:-1 * data.Volume_Diff * data.Volume_Diff 
-                                     -->
-                                </div>
-
-                                <div style="padding-top: 14px;">
-                                    <span style="    color: #285376b8;">
-                                        成交股數 {{ parseInt(data.成交股數)}} <br />
-                                        MA5_% {{ data['MA5_%']}}
-                                        均價_% {{ data['均價_%']}}
-
-                                    </span>
-                                    <v-tooltip slot="append" bottom>
-                                        <template v-slot:activator="{ on }">
-                                            <v-icon v-on="on" color="#a9a260"
-                                                v-if="data.flag=='Y' && (item.highlight_date <= header.value  && item.highlight_date !='')  ">
-                                                mdi-weather-sunny
-                                            </v-icon>
-                                        </template>
-                                        <span>【表現佳】flag=='Y'</span>
-                                    </v-tooltip>
-                                    <v-tooltip slot="append" bottom>
-                                        <template v-slot:activator="{ on }">
-                                            <v-icon v-on="on" color="red"
-                                                v-if="data.MA_break && (item.highlight_date <= header.value  && item.highlight_date !='')">
-                                                mdi-star-outline
-                                            </v-icon>
-                                        </template>
-                                        <span>【MA_break】</span>
-                                    </v-tooltip>
-                                    <v-tooltip slot="append" bottom>
-                                        <template v-slot:activator="{ on }">
-                                            <v-icon v-on="on" color="blue" v-if="data.Volume_Price_Change_break ">
-                                                mdi-star-outline
-                                            </v-icon>
-                                        </template>
-                                        <span>【Volume_Price_Change_break】</span>
-                                    </v-tooltip>
-                                </div>
-                            </div>
-                        </template>
-                    </template>
-                    <template v-slot:item.rt_price="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="sync">
-                            {{item.rt_price}}
-                        </span>
-                    </template>
-                    <template v-slot:item.rt_量="{ item }">
-                        <span style="color: rgb(124, 169, 173);" v-show="sync">
-                            {{item.rt_量}}
-                            <br />
-                            目前成交股數{{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}}
-                            <br />
-                            最大成交股數{{parseFloat(item.max股數).toFixed(0)}}
-                        </span>
+                    <template v-slot:[`item.${header.value}`]="{ item }"
+                        v-for="header in getYM().map(x => ({ text: x, value: x }))" :key="header.value">
+                        {{item[header.value]}}
                     </template>
                 </v-data-table>
-                <!-- 弹出窗口 -->
-                <v-dialog v-model="dialog" max-width="90vw">
+            </v-container>
+            <v-container style="max-width: 80%;">
+                <v-data-table hide-default-footer :headers="stock_headers" :items="stockdata"
+                    style="white-space: nowrap;" :items-per-page="50">
+                    <template v-slot:item.number="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.number }}
+                        </v-btn>
+                    </template>
+
+                    <template v-slot:item.calculate_1="{ item }">
+                        {{ ((item.now-item.buyin)/item.buyin*100).toFixed(1)}}
+                    </template>
+                    <template v-slot:item.calculate_2="{ item }">
+                        {{ parseInt(item.now*item.hold)}}
+                    </template>
+                    <template v-slot:item.calculate_3="{ item }">
+                        {{ parseInt(item.buyin*item.hold)}}
+                    </template>
+                    <template v-slot:item.calculate_4="{ item }">
+                        {{parseInt((item.now*item.hold)-(item.buyin*item.hold))}}
+                    </template>
+                    <template v-slot:item.calculate_5="{ item }">
+                        {{(parseFloat(item.profit)*parseInt(item.frequency)/ parseFloat(item.now)*100).toFixed(1)}}
+                    </template>
+                    <template v-slot:item.calculate_6="{ item }">
+                        {{item.hold/10 * item.now *item.profit_stock}}
+                    </template>
+                    <template v-slot:item.calculate_7="{ item }">
+                        {{(item.hold* item.frequency *item.profit).toFixed(0)}}
+                    </template>
+                    <template v-slot:item.calculate_8="{ item }">
+                        {{(item.hold*item.profit).toFixed(0)}}
+                    </template>
+                    <template v-slot:body.append>
+                        <tr class="sticky-table-footer">
+                            <td />
+                            <td />
+                            <td />
+                            <td />
+                            <td />
+                            <td />
+                            <td />
+                            <td>{{stockdata_input}}</td>
+                            <td>{{stockdata_sum}}</td>
+                        </tr>
+                    </template>
+                </v-data-table>
+
+
+                <v-dialog v-model="dialog" max-width="40vw">
                     <v-card>
-                        <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
-                        <v-card-text style="padding: 0; height:90vh;">
-                            <!-- 在這裡添加iframe -->
-                            <iframe v-if="selectedItem"
-                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
-                                width="80%" frameborder="0" style="padding: 0; height:80vh;">
-                            </iframe>
+                        <v-card-title class="headline">{{ selectedItem?.number }}</v-card-title>
+                        <v-card-text style="padding: 10px; height:30vh;">
+                            <v-row>
+                                <v-col>Hold : {{ selectedItem?.hold }}</v-col>
+                                <v-col>Now : {{ selectedItem?.now }}</v-col>
+                                <v-col>買均: {{ selectedItem?.buyin }}</v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col>add : {{selectedItem_add }}</v-col>
+                                <v-col>Now : {{ selectedItem?.now }}</v-col>
+                                <v-col>AVG : {{
+                                    (parseInt((selectedItem?.hold * selectedItem?.buyin)+
+                                    (selectedItem_add*selectedItem?.now))
+                                    /(parseInt(selectedItem_add)+parseInt(selectedItem?.hold))
+                                    ).toFixed(2)
+                                    }}
+                                </v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col></v-col>
+                                <v-col></v-col>
+                                <v-col>Total  {{ parseInt((selectedItem?.hold * selectedItem?.buyin)+
+                                    (selectedItem_add*selectedItem?.now)) }}</v-col>
+                            </v-row>
+                            <v-row>
+                                <v-col>
+                                    <v-text-field v-model="selectedItem_add" clearable label="BUY"
+                                        variant="outlined"></v-text-field>
+                                </v-col>
+                                <v-col> ADD Cost :{{(selectedItem_add*selectedItem?.now)}}</v-col>
+                                <v-col>
+                                    {{(parseInt((selectedItem?.hold * selectedItem?.buyin)+
+                                    (selectedItem_add*selectedItem?.now)) +
+                                    (selectedItem?.hold*selectedItem?.frequency)+(selectedItem?.hold/10 * selectedItem?.now *selectedItem?.profit_stock))
+                                     /(parseInt(selectedItem_add)+parseInt(selectedItem?.hold))
+                                    }}
+
+                                </v-col>
+                            </v-row>
+
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
@@ -238,6 +239,7 @@
             </v-container>
         </v-app>
     </div>
+
     <script>
         var app = new Vue({
             el: '#app',
@@ -245,32 +247,66 @@
             data() {
                 return {
                     sync: false,
-                    url: '',
-                    jsonData: [],
-                    jsonData_: [],
-                    dummydata: [],
-                    headers: [],
-                    filters: {},
-                    arrcount: 0,
-                    uniqueValues: {},
-                    //sortBy: ['增縮BYN天'],
-                    //sortBy:['均價_%'], 
-                    //sortBy: ['當日漲跌'],
-                    //sortBy: ['漲跌BYN天'],
-                    //sortBy: ['Volume_Oscillator'],
-                    sortBy: ['highlight_date'],
-                   // sortBy: ['FlagDiff'],
-                    
-                    sortDesc: [true, true],
+                    realtimedata: [],
                     dialog: false,
                     selectedItem: null,
-                    realtimedata: [],
-                    /////////////////////////////
-                    //【參數】 增縮BYN天 / 漲跌BYN天
-                    n: 5,
-                    //【參數】  利用過去Data確認計算這些邏輯是否有用 
-                    set_date: -1,//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
-                    para_date: '',
+                    selectedItem_add: null,
+                    mydata: [],
+                    mydata_headers: [
+                        { text: 'Desc', value: 'Desc', align: 'left' },
+                        { text: '', value: 'today', align: 'left' },
+                        { text: 'N_1', value: 'N_1', align: 'left' },
+                        { text: 'N_2', value: 'N_2', align: 'left' },
+                        { text: 'calculate', value: 'calculate', align: 'left' },
+
+                    ],
+                    maindata_intput: [],
+                    maindata_output: [],
+                    report: [],
+                    headers: [
+                        { text: 'Desc', value: 'Desc', align: 'left', sortable: true },
+                        { text: '202501', value: '202501', align: 'left', sortable: true },
+                        { text: '202502', value: '202502', align: 'left', sortable: true },
+                        { text: '202503', value: '202503', align: 'left', sortable: true },
+                        { text: '202504', value: '202504', align: 'left', sortable: true },
+                        { text: '202505', value: '202505', align: 'left', sortable: true },
+                        { text: '202506', value: '202506', align: 'left', sortable: true },
+                        { text: '202507', value: '202507', align: 'left', sortable: true },
+                        { text: '202508', value: '202508', align: 'left', sortable: true },
+                        { text: '202509', value: '202509', align: 'left', sortable: true },
+                        { text: '202510', value: '202510', align: 'left', sortable: true },
+                        { text: '202511', value: '202511', align: 'left', sortable: true },
+                        { text: '202512', value: '202512', align: 'left', sortable: true },
+                        { text: 'calculate', value: 'calculate', align: 'left' },
+                        { text: 'byMonth', value: 'bymonth', align: 'left' },
+                    ],
+                    stockdata: [],
+                    stock_headers: [
+                        { text: 'name', value: 'name', align: 'left', sortable: true },
+                        { text: 'number', value: 'number', align: 'left', sortable: true },
+                        { text: 'hold', value: 'hold', align: 'left', sortable: true },
+                        { text: 'now', value: 'now', align: 'left', sortable: true },
+                        { text: 'buyin', value: 'buyin', align: 'left', sortable: true },
+                        { text: '%', value: 'calculate_1', align: 'left' },
+                        { text: '', value: 'calculate_2', align: 'left' },
+                        { text: '', value: 'calculate_3', align: 'left' },
+                        { text: '', value: 'calculate_4', align: 'left' },
+                        { text: '配股', value: 'profit_stock', align: 'left', sortable: true },
+                        { text: '配息', value: 'profit', align: 'left', sortable: true },
+                        { text: 'frequency', value: 'frequency', align: 'left', sortable: true },
+
+                        { text: '配息%', value: 'calculate_5', align: 'left' },
+                        { text: '', value: 'calculate_6', align: 'left' },
+                        { text: '總發放', value: 'calculate_7', align: 'left' },
+                        { text: '單次發放', value: 'calculate_8', align: 'left' },
+
+                    ],
+                    stock_headers_profit: [
+                        { text: 'name', value: 'name', align: 'left', sortable: true },
+                        { text: 'number', value: 'number', align: 'left', sortable: true },
+                        { text: 'month', value: 'month', align: 'left', sortable: true },
+                        { text: '單次發放', value: 'calculate_8', align: 'left' },
+                    ]
                 };
             },
             created() {
@@ -279,350 +315,177 @@
                 if (urlParams.has('sync')) {
                     this.sync = urlParams.get('sync') == 'Y';
                 }
+                this.set_maindata();
+                this.set_mydata();
+                this.set_stockdata();
                 this.init();
-                window.scrollTo({ left: document.body.scrollWidth, behavior: 'smooth' });
             },
             computed: {
-                filteredData() {
-                    return this.jsonData.filter(item => {
-                        return Object.keys(this.filters).every(key => {
-                            const filterValues = this.filters[key];
-
-                            if (!filterValues || filterValues.length === 0) return true;
-                            const value = item[key] ? item[key].toString() : '';
-                            const a = this.isNumberField(key);
-
-                            if (Array.isArray(filterValues) && a) {
-                                const [min, max] = filterValues;
-                                const numericValue = parseFloat(value);
-                                return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
-                            } else {
-                                return filterValues.includes(value);
-                            }
-                        });
-                    });
+                stockdata_input() {
+                    return this.stockdata.map(item => parseInt(item.buyin * item.hold) || 0).reduce((acc, current) => acc + current, 0)
+                },
+                stockdata_sum() {
+                    return this.stockdata.map(item => parseInt((item.now * item.hold) - (item.buyin * item.hold)) || 0).reduce((acc, current) => acc + current, 0)
                 }
             },
             methods: {
+                openDialog(item) {
+                    this.selectedItem = item;
+                    this.selectedItem_add = 0;
+                    
+                    this.dialog = true;
+                },
                 async init() {
-                    await this.loadExcelData();
                     if (this.sync) {
                         await this.sync_realtime();
                     }
-                    this.loadExcelData();
                 },
                 async sync_realtime() {
                     var vm = this
                     try {
                         console.log('Starting the process...');
-                        const result = await main(this.jsonData)
+                        const result = await main(this.stockdata)
                             .then(result => {
                                 console.log('Promise result:', result);   // 處理結果
                                 vm.realtimedata = result
+
+                                if (this.realtimedata.length > 0) {
+                                    this.sync_data();
+                                }
                             })
                     } catch (error) {
                         console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
                     }
                     console.log('done');  // 確保這個訊息在主流程完成後顯示
                 },
-                openDialog(item) {
-                    this.selectedItem = item;
-                    this.dialog = true;
-                },
-                isNumberField(field) {
-                    return field !== 'stock_number' && this.jsonData.some(item => {
-                        const value = item[field];
-                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
-                    });
-                },
-                formatDesc(desc) {
-                    return desc.replace(/\*\*/g, '<br/>'); // 把 `**` 轉換成 `<br/>`
-                },
                 sync_data() {
-                    this.jsonData.forEach(item => {
-                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
-                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
-                        item.rt_量 = (vol / parseFloat(item.max股數)).toFixed(1);
+                    this.stockdata.forEach(item => {
+
+                        item.now = (this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z).toFixed(2);
+                        //item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
+                        //var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
+                        //item.rt_量 = (vol / parseFloat(item.max股數)).toFixed(1);
                     })
                 },
-                async loadExcelData() {
-                    let urlParams = new URLSearchParams(window.location.search);
-                    let file = './Result/check.xlsx'; // 預設檔案
-                    const d = urlParams.get('d');
-                    const type = urlParams.get('type');
-                    const date = urlParams.get('date');
-                    const setdate = urlParams.get('setdate');
+                getYM() {
+                    const year = 2025;
+                    const months = Array.from({ length: 12 }, (v, i) =>
+                        `${year}${String(i + 1).padStart(2, '0')}`
+                    );
+                    return months
+                },
+                minus(desc, x,) {
+                    var suminput = { "Desc": desc };
+                    var getMonth = this.getYM()//Object.keys(x[0]).filter(x => x != 'Desc')
+                    getMonth.forEach(item => {
+                        var input = x.map(x => parseInt(x[item]) || 0)[0]
+                        var output = x.map(x => parseInt(x[item]) || 0)[1]
+                        suminput[item] = input - output;
+                    })
+                    x.push(suminput)
+                    return x
+                },
+                sumdata(desc, x) {
+                    var suminput = { "Desc": desc };
+                    var getMonth = this.getYM()// Object.keys(x[0]).filter(x => x != 'Desc')
+                    getMonth.forEach(item => {
+                        suminput[item] = x.map(x => parseInt(x[item]) || 0).reduce((acc, current) => acc + current, 0);
+                    })
+                    x.push(suminput)
+                    return x
+                },
+                set_maindata() {
+                    // 【INPUT】
+                    this.maindata_input = [
+                        { "Desc": "預設", "202501": "85000", "202502": null, "202503": null, "202504": null, "202505": null, "202506": null, "202507": null, "202508": null, "202509": null, "202510": null, "202511": null, "202512": null },
+                        { "Desc": "薪", "202501": "67300", "202502": "67300", "202503": "67300", "202504": "67300", "202505": "69300", "202506": "64480", "202507": "69300", "202508": "69300", "202509": "69300", "202510": "69300", "202511": "69300", "202512": "69300" },
+                        { "Desc": "獎金", "202501": "70300", "202502": null, "202503": null, "202504": null, "202505": "36150", "202506": null, "202507": null, "202508": null, "202509": null, "202510": "36150", "202511": null, "202512": "" },
+                        { "Desc": "獎金2", "202501": "40000", "202502": null, "202503": null, "202504": null, "202505": null, "202506": null, "202507": null, "202508": null, "202509": null, "202510": null, "202511": null, "202512": "" },
+                        //{ "Desc": "sum收入", "202501": "177600", "202502": "67300", "202503": "67300", "202504": "67300", "202505": "105450", "202506": "64480", "202507": "69300", "202508": "69300", "202509": "69300", "202510": "105450", "202511": "69300", "202512": "69300" },
+                    ]
+                    this.maindata_input = this.sumdata("sum收入", this.maindata_input);
 
-                    if (d) {
-                        const fileMap = {
-                            H: './Result/checkH.xlsx',
-                            V: './Result/checkVolume.xlsx',
-                            sun: './Result/checksun.xlsx',
-                            HS: './Result/checkHS.xlsx',
-                            sunmy: './Result/checksunmy.xlsx',
-                            yaya: './Result/checkyaya.xlsx',
-                            over: './Result/checkover.xlsx',
-                            checksundangchong: './Result/checksundangchong.xlsx'
-                        };
+                    this.report.push(this.maindata_input.filter(x => x.Desc == "sum收入")[0])
+                    // 【OUTPUT】
+                    this.maindata_output = [
+                        { "Desc": "生活-LPP", "202501": "8000", "202502": "5000", "202503": "7000", "202504": "7000", "202505": "8500", "202506": "7000", "202507": "7000", "202508": "7000", "202509": "7000", "202510": "7000", "202511": "7000", "202512": "7000" },
+                        { "Desc": "生活", "202501": "5000", "202502": "4000", "202503": "3000", "202504": "3500", "202505": "2894", "202506": "3000", "202507": "3000", "202508": "3000", "202509": "3000", "202510": "3000", "202511": "3000", "202512": "3000" },
+                        { "Desc": "固-3C影音", "202501": "2000", "202502": "2000", "202503": "3000", "202504": "1700", "202505": "3594", "202506": "3000", "202507": "3000", "202508": "3000", "202509": "3000", "202510": "3000", "202511": "3000", "202512": "3000" },
+                        { "Desc": "固-阿罵", "202501": "62000", "202502": "9000", "202503": "1800", "202504": "1000", "202505": null, "202506": null, "202507": null, "202508": null, "202509": null, "202510": null, "202511": null, "202512": "0" },
+                        { "Desc": "固-車", "202501": "3500", "202502": "2000", "202503": "3500", "202504": "1680", "202505": "3500", "202506": "2000", "202507": "2000", "202508": "2000", "202509": "2000", "202510": "2000", "202511": "2000", "202512": "2000" },
+                        { "Desc": "固-車稅/保養", "202501": null, "202502": null, "202503": null, "202504": "4320", "202505": null, "202506": "10000", "202507": "4770", "202508": "18000", "202509": null, "202510": null, "202511": null, "202512": "10000" },
+                        { "Desc": "固-稅", "202501": null, "202502": null, "202503": null, "202504": null, "202505": "7168", "202506": null, "202507": null, "202508": null, "202509": null, "202510": null, "202511": null, "202512": "" },
+                        { "Desc": "運動", "202501": "2400", "202502": "7400", "202503": null, "202504": null, "202505": null, "202506": null, "202507": "6400", "202508": null, "202509": null, "202510": null, "202511": null, "202512": "" },
+                        { "Desc": "購物/娛樂", "202501": "10000", "202502": "7000", "202503": "5000", "202504": "13000", "202505": "10000", "202506": "8000", "202507": "5000", "202508": "6000", "202509": "40000", "202510": "5000", "202511": "5000", "202512": "5000" },
+                        { "Desc": "旅", "202501": null, "202502": null, "202503": "7000", "202504": null, "202505": "6595", "202506": null, "202507": null, "202508": null, "202509": "36000", "202510": null, "202511": null, "202512": "0" },
+                    ]
+                    this.maindata_output = this.sumdata("sum支出", this.maindata_output);
+                    this.report.push(this.maindata_output.filter(x => x.Desc == "sum支出")[0])
 
-                        file = d === 'type'
-                            ? `./Result/checksun/${type}.xlsx`
-                            : (fileMap[d] || file);
-                    }
-                    if (setdate) {
-                        this.set_date = setdate
-                    }
+                    this.report = this.minus("月餘", this.report);
+                    //【Savings】
+                    this.maindata_savings = { "Desc": "儲蓄", "202502": "-200000", "202504": "-50000", "202505": "-50000", "202506": "-50000", "202507": null, "202508": "-50000", "202509": null, "202510": "-50000", "202511": "-50000", "202512": null }
+                    this.report.push(this.maindata_savings)
+                    this.maindata_cash = { "Desc": "現金", }
+                    var sum = 0
+                    this.getYM().forEach(item => {
+                        sum += parseInt(this.report.filter(x => x.Desc == '月餘')[0][item] || 0)
+                        sum += parseInt(this.maindata_savings[item] || 0)
+                        this.maindata_cash[item] = sum
+                    })
+                    this.report.push(this.maindata_cash)
+                },
+                set_mydata() {
+                    this.mydata = [
+                        { "Desc": "invest_input", "N_1": 107900, "N_2": null },
+                        { "Desc": "invest_output", "N_1": null, "N_2": null },
+                        { "Desc": "income_loss", "N_1": null, "N_2": null },
+                        //   
+                        { "Desc": "現金", "today": 3200 },
+                        { "Desc": "信用卡", "today": -3774 },
+                        { "Desc": "銀行", "today": 39640 },
+                        { "Desc": "預備金", "today": 303166 },
+                        { "Desc": "投入", "today": 3060434 },
+                        { "Desc": "下單", "today": 908373 },
+                        { "Desc": "Total", "today": null }
+                    ]
+                },
+                set_stockdata() {
+                    this.stockdata = [
+                        { "Type2": "上市", "name": null, "number": '0050', "hold": 0, "now": 177.15, "buyin": 179.86, "profit_stock": null, "profit": 2.07, "frequency": 2, "month": "1,7" },
+                        { "Type2": "上市", "name": null, "number": '0056', "hold": 15000, "now": 33.79, "buyin": 35.17, "profit_stock": null, "profit": 1.07, "frequency": 4, "month": "1,4,7,10" },
+                        { "Type2": "上市", "name": null, "number": '00878', "hold": 20000, "now": 20.24, "buyin": 21.64, "profit_stock": null, "profit": 0.47, "frequency": 4, "month": "2,5,8,11" },
+                        { "Type2": "上市", "name": null, "number": '00929', "hold": 1000, "now": 17.01, "buyin": 18.85, "profit_stock": null, "profit": 0.07, "frequency": 12, "month": "1,2,3,4,5,6,7,8,9,10,11,12" },
+                        { "Type2": "上市", "name": "台泥", "number": 1101, "hold": 19000, "now": 26.85, "buyin": 32.03, "profit_stock": null, "profit": 1, "frequency": 1, "month": 8 },
+                        { "Type2": "上櫃", "name": " 宏佳騰", "number": 1599, "hold": 1000, "now": 28.85, "buyin": 35.35, "profit_stock": null, "profit": 0.5, "frequency": 1, "month": 9 },
+                        { "Type2": "上市", "name": "橋椿", "number": 2062, "hold": 9000, "now": 24.4, "buyin": 30.75, "profit_stock": null, "profit": 1.8, "frequency": 1, "month": 7 },
+                        { "Type2": "上市", "name": "光寶科", "number": 2301, "hold": 29, "now": 103.0, "buyin": 109.11, "profit_stock": null, "profit": 2.5, "frequency": 2, "month": "3,8" },
+                        { "Type2": "上市", "name": " 錸德", "number": 2349, "hold": 32000, "now": 9.65, "buyin": 12.95, "profit_stock": null, "profit": null, "frequency": 0, "month": "" },
+                        { "Type2": "上市", "name": " 技嘉", "number": 2376, "hold": 0, "now": 282.5, "buyin": 270.76, "profit_stock": null, "profit": 10, "frequency": 1, "month": 8 },
+                        { "Type2": "上市", "name": " 興富發", "number": 2542, "hold": 10000, "now": 39.95, "buyin": 43.59, "profit_stock": 0.5, "profit": 2, "frequency": 1, "month": 9 },
+                        { "Type2": "上櫃", "name": "李洲", "number": 3066, "hold": 11000, "now": 15.40, "buyin": 24.15, "profit_stock": null, "profit": null, "frequency": 0, "month": "" },
+                        { "Type2": "上櫃", "name": "譜瑞-KY", "number": 4966, "hold": 184, "now": 547, "buyin": 702.76, "profit_stock": null, "profit": 8.93, "frequency": 2, "month": "3,8" },
+                        { "Type2": "上市", "name": "采鈺", "number": 6789, "hold": 160, "now": 204, "buyin": 348.46, "profit_stock": null, "profit": 3, "frequency": 1, "month": 7 }
+                    ]
 
-                    // 若有 date 參數，將路徑中的 "Result" 替換成動態資料夾名（如 Result202405）
-                    if (date) {
-                        const resultFolder = 'Result' + date;
-                        file = file.replace('Result', resultFolder);
-                    }
-                    // 
-                    await fetch(file)
-                        .then(response => response.arrayBuffer())
-                        .then(data => {
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const sheetName = workbook.SheetNames[0];
-                            const worksheet = workbook.Sheets[sheetName];
-                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    this.stock_headers_profit.push(...this.getYM().map(x => ({ text: x, value: x })));
 
-                            if (json.length > 0) {
-                                this.headers = json[0].map(header => ({ text: header, value: header }));
-                                this.$renameHeaders(this.headers);
-                                //Excel data to json 
-                                this.jsonData = json.slice(1).map(row => {
-                                    const rowData = {};
-                                    this.headers.forEach((header, i) => {
-                                        rowData[header.value] = row[i];
-                                    });
-                                    return rowData;
-                                });
-
-                                var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
-
-                                const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '總市值', '貝他值', '成交量', 'Type1',];// 'stock_number'
-                                //(價)
-                                const trendFields = ['MA5_%', '均價_%', 'highlight_date', '價_起始日期',];
-                                const dateFields = ['量價差天',];
-                                const miscFields = ['當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
-                                //(量)
-                                const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator', 'Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
-                                const configFlag = ['確認漲跌']
-
-                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff','neg_Flag','Flag', 'Flag2',]; //'Flag1',
-
-                                //【參數】  利用過去Data確認計算這些邏輯是否有用 
-                                var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
-                                this.para_date = dates.slice(set_date)[0]
-                                if (set_date != -1)
-                                    arr.push(...configFlag)
-
-                                if (this.sync) {
-                                    arr.push('rt_量')
-                                    arr.push('rt_price')
-                                }
-
-                                this.arrcount = dates.length
-                                arr.reverse().forEach(element => {
-                                    dates.push(element) //dates.unshift(element) 
-                                });
-
-                                this.headers = dates.map(header => ({ text: header, value: header }));
-                                const transformedData = this.jsonData
-
-                                var dummydata = Array.from(
-                                    new Map(transformedData.map(item => [item.stock_number, item])).values()
-                                );
-
-                                dummydata.map((item, index) => {
-                                    const dummydataItem = item
-                                    if (!!!item.datalist) {
-                                        const datalist = this.jsonData.filter(q => q.stock_number == item.stock_number)
-                                        dummydataItem.datalist = datalist
-                                        const maxdate = datalist.map(x => x.日期).reduce((a, b) => a > b ? a : b);
-                                        const mindate = datalist.map(x => x.日期).reduce((a, b) => a < b ? a : b);
-                                        const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == this.para_date)[0]
-
-                                        if (!!!maxdateitem)
-                                            return null
-                                        //## 處理Header資料
-                                        dummydataItem.desc = dummydataItem.desc.replace('**', '<br/>')
-                                        dummydataItem.箱型力量 = maxdateitem.箱型力量
-                                        dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
-                                        dummydataItem.highlight_date = maxdateitem.highlight_date
-                                        dummydataItem.遠交易量 = maxdateitem.遠交易量
-                                        dummydataItem.Volume_Oscillator = maxdateitem.Volume_Oscillator
-                                        dummydataItem.量能 = maxdateitem.量能
-                                        dummydataItem['均價_%'] = maxdateitem['均價_%']
-                                        dummydataItem['MA5_%'] = maxdateitem['MA5_%']
-
-                                        // 總價差 (依據highlight_date 來計算，如果沒有使用mindate)
-                                        //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
-                                        const targerdate = mindate
-                                        dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == this.para_date)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
-
-                                        //價_起始日期 取被判定flag＝Y (Untitled.ipynb ==>　MA5_%>=0, 成交量 > 500, 遠交易量>-15 ,短交易量>-15 )
-                                        dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
-                                        dummydataItem.價_起始日期 = dummydataItem.價_起始日期 == Infinity ? '' : dummydataItem.價_起始日期;
-
-                                        //## 處理明細資料
-                                        dummydataItem.datalist.forEach((item, index) => {
-
-                                            if (index < dummydataItem.datalist.length - 1) {
-                                                item.量能差 = parseInt(item.量能 - dummydataItem.datalist[index + 1].量能);
-                                            } else {
-                                                item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
-                                            }
-                                            let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
-                                            //【參數】
-                                            var n = this.n
-
-                                            let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
-                                            let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
-                                            item.增縮BYN天 = differences_dl.slice(-n).reduce((acc, current) => acc + current, 0);
-
-                                            let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
-                                            item.漲跌BYN天 = arrlist_dll.slice(-n).reduce((acc, current) => acc + current, 0)
-
-                                            let arrlist_dll1 = dl.map(x => parseInt(x.量能)).slice().reverse()
-                                            item.量能均 = arrlist_dll1.slice(-n).reduce((acc, current) => acc + current, 0)
-                                            item.量能均 = parseInt(item.量能均 / n)
-
-                                            let arrlist_dll2 = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
-                                            item.Volume_Diff = arrlist_dll2.slice(-2).reduce((acc, current) => -acc + current, 0)
-
-                                            // 新產判斷邏輯
-                                            // ###【Flag】 新產判斷邏輯
-                                            //item.Flag = dl.filter(x => x["均價_%"]>0 && x["MA5_%"]>0 && x.Volume_Oscillator >= -15 && x._quote>2 &&x.量能>15 && x.Volume_Diff>15).length
-                                            item.Flag = dl.filter(x => x["均價_%"]>0 && x["MA5_%"]<0) .length
-                                            
-
-                                            // ###【Flag1】**** 計算　＂量＂　（確認是突然放量　還是漸進）
-                                            item.Flag1 =    item.量能差 > 10 && item.量能均 > 5 ? '【Lv.4】-突然放量' :
-                                                            item.量能差 < 10 && item.量能均 > 5 ? '【Lv.3】-有量，當日縮' :
-                                                            item.量能差 > 10 && item.量能均 < 5 ? '【Lv.2】-漸漸量長' :
-                                                            '【Lv.1】-'
-                                        });
-                                        //二次處理明細  要先經過一次計算
-                                        dummydataItem.datalist.forEach((item, index) => {
-
-                                            // ###【Flag2】------     價長進的指標 (表示近期漲的狀況居多)
-                                            let dd1 = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
-                                            // 【參數】
-                                            var nDay = -3 // 抓往前推幾天
-                                            //(價) 計算近期漲跌BYN天 >2or1  表示近期都是漲的
-                                            let arrlist_dll3 = dd1.map(x => parseInt(x.漲跌BYN天)).slice().reverse()
-                                            var logic1 = arrlist_dll3.slice(nDay).filter(x => x > 2).length 
-                                            var logic2 = arrlist_dll3.slice(nDay).filter(x => x > 4).length
-                                            var neg_logic1 = arrlist_dll3.slice(nDay).filter(x => x > 5).length
-                                            //(量) 計算近期 Volume_Oscillator 的差值 ，表示近期有突破量
-                                            let arrlist_dll4 = dd1.map(x => parseInt(x.Volume_Diff)).slice().reverse()
-                                            var logic3 = arrlist_dll4.slice(nDay).filter(x => x >= 5).length
-                                            //(量) 計算近期 量能均 >2 ， 表示近期都是量越來越多
-                                            let arrlist_dll5 = dd1.map(x => parseInt(x.量能均)).slice().reverse()
-                                            var logic4 = arrlist_dll5.slice(nDay).filter(x => x > 2).length
-                                            // Flag2 整理
-                                            item.Flag2 = logic1 + logic2 + logic3 + logic4 - neg_logic1
-                                            // ###【Flag2】------    　end 
-
-                                            // ###【Flag】------  
-                                            nDay = -5 // 抓往前推幾天
-                                            let arrlist_dll6 = dd1.map(x => parseInt(x.Flag)).slice().reverse()
-                                            item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
-
-                                            let arrlist_quote = dd1.map(x => parseInt(x._quote)).slice().reverse()
-                                            _day=-arrlist_quote.length-nDay
-                                            item.neg_Flag=arrlist_quote.slice(_day).filter(x => x > 6).length
-                                           //item.Flag +=-neg_Flag
-
-
-                                            // ###【Flag】------    　end 
-                                        });
-
-                                        //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)                                        
-                                        var datalist_last_date = datalist.find(x => x.日期 === this.para_date)
-                                        dummydataItem.Volume_Diff = datalist_last_date?.Volume_Diff;
-                                        dummydataItem.成交股數 = datalist_last_date?.成交股數;
-                                        dummydataItem.當日漲跌 = datalist_last_date?._quote;
-                                        dummydataItem.增縮BYN天 = datalist_last_date?.增縮BYN天;
-                                        dummydataItem.漲跌BYN天 = datalist_last_date?.漲跌BYN天;
-                                        dummydataItem.量能差 = datalist_last_date?.量能差;
-                                        dummydataItem.量能均 = datalist_last_date?.量能均;
-                                        dummydataItem.Flag = datalist_last_date?.Flag;
-                                        dummydataItem.neg_Flag = datalist_last_date?.neg_Flag;
-                                        dummydataItem.Flag1 = datalist_last_date?.Flag1;
-                                        dummydataItem.Flag2 = datalist_last_date?.Flag2;
-
-                                        var datalist_filter = datalist.filter(q => q.日期 <= this.para_date);
-                                        let arrlist_flag = datalist_filter.map(x => parseInt(x.Flag)).slice().reverse()
-                                        dummydataItem.FlagDiff = arrlist_flag.slice(-2).reduce((acc, current) => -acc + current, 0);
-
-                                        //確認 "價" "量" 起來差距日
-                                        const date1 = new Date(dummydataItem.highlight_date); // 開始日期 highlight_date(價)
-                                        const date2 = new Date(dummydataItem.價_起始日期);     // 結束日期 價_起始日期    (價+量)
-                                        const diffTime = date2 - date1; // 取得毫秒數差距
-                                        const diffDays = diffTime / (1000 * 60 * 60 * 24); // 轉換為天數
-                                        dummydataItem.量價差天 = diffDays
-                                        //確認漲跌
-                                        var checkpoint_maxdateData = datalist.find(x => x.日期 === maxdate)
-                                        let cc = dummydataItem.datalist.filter(q => q.日期 > this.para_date);
-                                        let arrlist_cc = cc.map(x => parseInt(x._quote)).slice().reverse()
-                                        let differences_cc = arrlist_cc.slice(0, -1).map((item, index) => arrlist_cc[index + 1] - item)
-                                        item.確認漲跌 = arrlist_cc.reduce((acc, current) => acc + current, 0);
-                                        //計算最大成交股數
-                                        item.max股數 = parseInt(Math.max(...datalist.map(x => x.成交股數)));
-                                    }
-                                    return dummydataItem;
-                                });
-
-                                var para_x = 3 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
-                                this.arrcount = this.arrcount - para_x
-                                this.headers = this.headers.slice(para_x, this.headers.length)
-                                this.jsonData = dummydata
-                                this.jsonData_ = dummydata                                
+                    this.stockdata.forEach(item => {
+                        //var happenMonth = item.month.toString().split(',').map(m => m.padStart(2, '0'))
+                        //多取一個月
+                        var happenMonth = item.month.toString().split(',').map(m => (parseInt(m) + 1).toString().padStart(2, '0'))
+                        this.getYM().forEach(YM => {
+                            if (happenMonth.indexOf(YM.slice(-2)) != -1) {
+                                item[YM] = (item.hold * item.profit).toFixed(0)
                             }
-                            if (this.realtimedata.length > 0) {
-                                this.sync_data();
-                            };
                         })
-                        .catch(error => console.error('Error loading Excel file:', error));
-                },
-                reset() {
-                    var vm = this
-                    vm.jsonData=vm.jsonData_
-                     vm.sortBy= ['highlight_date']
-                },
-                actionFilter(i) {
-                    var vm = this
-                    //【index.html 】
-                    //vm.jsonData=vm.jsonData.filter(x => parseFloat(x["均價_%"])>0 && x["遠交易量"]>-20)
-
-                    // 【OK】
-                    //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0)
-                    //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0 && x["總價差"]>1)
-                    //this.jsonData=this.jsonData_.filter(x => x["均價_%"]>0 && x["總價差"]>1)
-
-                    //app.jsonData=app.jsonData_.filter(x => x.Flag  >2)
-                    //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag>2)
-                    //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-                    //this.jsonData=this.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-
-                    vm.jsonData=vm.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-                },
-                actionFilter1(i) {
-                    var vm = this
-                    //【index.html 】
-                    vm.jsonData=vm.jsonData_.filter(x => parseFloat(x["均價_%"])>0 && x["遠交易量"]>-20)
-                },
-                Flag4(){
-                    var vm = this
-                    vm.jsonData=vm.jsonData.filter(x => parseFloat(x["Flag"])==4 )
+                    })
+                    this.stockdata = this.sumdata("total", this.stockdata);
+                    this.stockdata.map(x => x.stock_number = x.number)
                 }
-            }
+            },
         });
     </script>
 </body>
 
 </html>
- 
