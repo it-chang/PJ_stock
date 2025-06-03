@@ -28,14 +28,19 @@
                             onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
                         【N:{{n}}】
                     </v-col>
+                    <v-col col="1" v-for="(le, index) in [...new Set(jsonData.map(x=>x.Typelevel))]" >
+                        <v-btn color="primary" @click="jsonDataChange(le)">{{le}}</v-btn>
+                    </v-col>
                     <v-col col="1">
+                        <v-btn color="primary" @click="reset">reset</v-btn>
+                 
                         <!--
                         <v-btn color="primary"  @click="sortBy=['highlight_date','FlagDiff']">highlight_date/FlagDiff</v-btn>
                         <v-btn color="primary" @click="sortBy=['highlight_date','Flag2']">highlight_date/Flag2</v-btn>
                         <v-btn color="primary" @click="sortBy=['總價差','highlight_date']">總價差/highlight_date</v-btn>
                         -->
                         <v-btn color="primary" @click="Flag4">Flag4</v-btn>
-                        <v-btn color="primary" @click="reset">reset</v-btn>
+                  
                     </v-col>
                     <v-col col="1">
 
@@ -256,12 +261,8 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                   
-       
                     //sortBy: ['Flage_q4'],
                     sortBy: ['Typelevel','總價差'],
-
-
                     sortDesc: [true, true],
                     dialog: false,
                     selectedItem: null,
@@ -500,7 +501,6 @@
                                             // ###【Flag】 新產判斷邏輯
                                             //item.Flag = dl.filter(x => x["均價_%"]>0 && x["MA5_%"]>0 && x.Volume_Oscillator >= -15 && x._quote>2 &&x.量能>15 && x.Volume_Diff>15).length
                                             item.Flag = dl.filter(x => x["均價_%"] > 0 && x["MA5_%"] < 0).length
-                                            debugger;
 
                                             // ###【Flag1】**** 計算　＂量＂　（確認是突然放量　還是漸進）
                                             item.Flag1 = item.量能差 > 10 && item.量能均 > 5 ? '【Lv.4】-突然放量' :
@@ -534,7 +534,7 @@
                                             nDay = -5 // 抓往前推幾天
 
                                             let arrlist_dll6 = dd1.map(x => parseInt(x.Flag)).slice().reverse()
-                                            debugger;
+                                   
                                             item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
 
                                             let arrlist_quote = dd1.map(x => parseInt(x._quote)).slice().reverse()
@@ -628,6 +628,11 @@
                 Flag4() {
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(x => parseFloat(x["Flag"]) == 4)
+                },
+                jsonDataChange(x){
+                    var vm = this
+                    vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)                     
+                    vm.sortBy= ['Typelevel','總價差']
                 }
             }
         });
