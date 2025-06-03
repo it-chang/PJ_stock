@@ -53,7 +53,9 @@
                     </template>
                     <template v-slot:item.type="{ item }">
                         <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type }}
+                            {{ item.stock_number }}
+                            {{ item.Type }}<br/>
+                            {{item.Typelevel}}
                         </v-btn>
                     </template>
                     <template v-slot:item.desc="{ item }">
@@ -67,7 +69,9 @@
                                 (data.Flag >3  ) ? 'hightlight_line_box' : '',
                             -->
                             <div v-if="index==0" style="position: sticky; min-height: 100%;" :class="[
-                                    (data.Flag >3   && data.Volume_Diff > 9  && data.量能.split('.')[0]>15 && data['均價_%']>0 ) ? 'hightlight_line_box' : '',
+                                    (data.Flag >3   && data.Volume_Diff > 9  && data.量能.split('.')[0]>15 && data['均價_%']>0 
+                                     && data['MACD-SL']>0 && data['MACD'] > data['MACD-SL']
+                                    ) ? 'hightlight_line_box' : '',
                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
                                     ].filter(Boolean)">
                                 <BR />
@@ -255,7 +259,7 @@
                    
        
                     //sortBy: ['Flage_q4'],
-                    sortBy: ['總價差'],
+                    sortBy: ['Typelevel','總價差'],
 
 
                     sortDesc: [true, true],
