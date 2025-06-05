@@ -20,6 +20,9 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <v-row no-gutters>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
+                    </v-col>
                     <v-col col="2">
                         <a href="JavaScript: location.reload(true);">Refresh page</a>
                         data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
@@ -28,26 +31,27 @@
                             onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
                         【N:{{n}}】
                     </v-col>
-                    <v-col col="1" v-for="(le, index) in [...new Set(jsonData.map(x=>x.Typelevel))]" >
-                        <v-btn color="primary" @click="jsonDataChange(le)">{{le}}</v-btn>
+                    <v-col col="1">
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="reset">reset</v-btn>
-                 
-                        <!--
-                        <v-btn color="primary"  @click="sortBy=['highlight_date','FlagDiff']">highlight_date/FlagDiff</v-btn>
-                        <v-btn color="primary" @click="sortBy=['highlight_date','Flag2']">highlight_date/Flag2</v-btn>
-                        <v-btn color="primary" @click="sortBy=['總價差','highlight_date']">總價差/highlight_date</v-btn>
-                        -->
                         <v-btn color="primary" @click="Flag4">Flag4</v-btn>
-                  
                     </v-col>
-                    <v-col col="1">
 
+                    <v-col col="1">
                         <v-btn color="primary" @click="actionFilter1">index.html</v-btn>
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
                     </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="collapse=!collapse">Collapse</v-btn>
+                    </v-col>
                 </v-row>
+                <v-row no-gutters v-show="collapse">
+                    <v-col col="1" v-for="(le, index) in [...new Set(jsonData.map(x=>x.Typelevel))].sort()">
+                        <v-btn color="primary" @click="jsonDataChange(le)">{{le}}</v-btn>
+                    </v-col>
+                </v-row>
+
                 <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
@@ -59,7 +63,7 @@
                     <template v-slot:item.type="{ item }">
                         <v-btn text @click="openDialog(item)">
                             {{ item.stock_number }}
-                            {{ item.Type }}<br/>
+                            {{ item.Type }}<br />
                             {{item.Typelevel}}
                         </v-btn>
                     </template>
@@ -252,6 +256,7 @@
             vuetify: new Vuetify(),
             data() {
                 return {
+                    collapse: false,
                     sync: false,
                     url: '',
                     jsonData: [],
@@ -262,7 +267,7 @@
                     arrcount: 0,
                     uniqueValues: {},
                     //sortBy: ['Flage_q4'],
-                    sortBy: ['Typelevel','總價差'],
+                    sortBy: ['Typelevel', '總價差'],
                     sortDesc: [true, true],
                     dialog: false,
                     selectedItem: null,
@@ -534,7 +539,7 @@
                                             nDay = -5 // 抓往前推幾天
 
                                             let arrlist_dll6 = dd1.map(x => parseInt(x.Flag)).slice().reverse()
-                                   
+
                                             item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
 
                                             let arrlist_quote = dd1.map(x => parseInt(x._quote)).slice().reverse()
@@ -629,10 +634,10 @@
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(x => parseFloat(x["Flag"]) == 4)
                 },
-                jsonDataChange(x){
+                jsonDataChange(x) {
                     var vm = this
-                    vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)                     
-                    vm.sortBy= ['Typelevel','總價差']
+                    vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)
+                    vm.sortBy = ['Typelevel', '總價差']
                 }
             }
         });

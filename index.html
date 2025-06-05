@@ -28,8 +28,8 @@
                         <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
                     </v-col>
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter1" label="短交易量" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="遠交易量" style="max-width: 150px;"></v-text-field>
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
@@ -180,7 +180,7 @@
                     realtimedata: [],
                     paraDate: null,
                     filter1: 1,
-                    filter2: 0.4,
+                    filter2: -20,
                 };
             },
             created() {
@@ -274,7 +274,10 @@
                     const url = window.location.href.replace(urlParams.get('date'), nextDateStr);
                     window.open(url, '_blank');
                 },
-             
+                actionFilter(i) {
+                    var vm = this
+                    vm.jsonData = vm.jsonData.filter(x => x.短交易量 > vm.filter1 && x.遠交易量 > vm.filter2)
+                },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];
@@ -392,18 +395,11 @@
                                 });
                             }
 
-                           
+                            //app.jsonData=app.jsonData.filter(x => x["MACD"]<5 && x["價能"]>0 && x["MA5_%"]>0 && x["Volume_Oscillator"]>-30)
                                 
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
-                } ,  
-                actionFilter(i) {
-                    var vm = this
-                    //vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
-                    
-                    //vm.jsonData=vm.jsonData.filter(x => x["MACD"]<5 && x["價能"]>0 && x["MA5_%"]>0 && x["Volume_Oscillator"]>-30)
-                    vm.jsonData=vm.jsonData.filter(x => parseFloat(x["均價_%"])>0 && x["遠交易量"]>-20)
-                },
+                }
             }
         });
     </script>

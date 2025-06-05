@@ -29,19 +29,20 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <v-row no-gutters>
-                    <v-col col="6">
-                        <!--<a href="JavaScript: location.reload(true);">Refresh page</a>-->
+                    <v-col col="1">
+                        <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
+                    </v-col>
+                    <v-col col="5">
                         <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
                         <span> data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}</span>
                         <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
                     </v-col>
                     <v-col col="1">
-                       <!-- <v-btn color="primary" @click="sortBy=['_quote']">漲幅</v-btn>
-                        -->
+                        <v-btn color="primary" @click="sortBy=['rt_price']">sortBy :rt_price</v-btn>
                     </v-col>
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
-                        <v-text-field v-model="filter1" label="rt_price" style="max-width: 150px;"></v-text-field>
-                        <v-text-field v-model="filter2" label="rt_量" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter1" label="短交易量" style="max-width: 150px;"></v-text-field>
+                        <v-text-field v-model="filter2" label="遠交易量" style="max-width: 150px;"></v-text-field>
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
@@ -102,15 +103,22 @@
                     </v-data-table>
                 </div>
 
-                <div v-for="(type, index) in distinct_type" v-show="!appmode" style="max-height: 400px; overflow-x: auto;">
-                    {{ type.Typelevel }} {{parseFloat(type.Volume_Price_Change_sum).toFixed(0)}}
-                    link
-                        <a :href="computedHref(type)" target="_blank" rel="noopener">
-                            {{ sanitizedTypelevel(type) }}
-                        </a>
-                    <span>   
-                        {{filteredData(type.Typelevel).filter(x=>x._quote>5).length}} / {{filteredData(type.Typelevel).length}}
-                    </span>   
+                <div v-for="(type, index) in distinct_type" v-show="!appmode"
+                    style="max-height: 400px; overflow-x: auto;">
+                    {{ type.Typelevel }}
+                    【分類】
+                    <a :href="computedHref2(type)" target="_blank" rel="noopener">
+                        {{ sanitizedTypelevel(type) }}
+                    </a>
+                    {{parseFloat(type.Volume_Price_Change_sum).toFixed(0)}}
+                    【太陽】
+                    <a :href="computedHref(type)" target="_blank" rel="noopener">
+                        {{ sanitizedTypelevel(type) }}
+                    </a>
+                    <span>
+                        {{filteredData(type.Typelevel).filter(x=>x._quote>5).length}} /
+                        {{filteredData(type.Typelevel).length}}
+                    </span>
 
                     <br>
                     <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
@@ -199,6 +207,7 @@
                 return {
                     appmode: false,
                     sync: false,
+                    para_type: null,
                     url: '',
                     jsonData: [],
                     headers: [],
@@ -207,14 +216,14 @@
                     uniqueValues: {},
                     //sortBy: 'highlight_date',
                     sortBy: ['_quote'],
-                    
+
                     sortDesc: [true],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
                     paraDate: null,
                     filter1: 1,
-                    filter2: 0.4,
+                    filter2: -20,
                 };
             },
             created() {
@@ -249,19 +258,21 @@
                 appheaderData() {
                     return this.headers.filter(x => this.appheaderscol.includes(x.text))
                 },
-
-
             },
             methods: {
                 computedHref(x) {
-                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/') ; // 取得當前網站的根網址
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
                     return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
                 },
+                computedHref2(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    let urlParams = new URLSearchParams(window.location.search);
+                    return `${baseUrl}/index3.html?d=${urlParams.get('d')}&date=${urlParams.get('date')}&type=${this.sanitizedTypelevel(x)}`;
+                },
                 sanitizedTypelevel(x) {
-           
                     return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
                 },
-               
+
                 async init() {
                     await this.loadExcelData();
                     if (this.sync) {
@@ -310,7 +321,7 @@
                 },
                 actionFilter(i) {
                     var vm = this
-                    vm.jsonData = vm.jsonData.filter(x => x.rt_price > vm.filter1 && x.rt_量 > vm.filter2)
+                    vm.jsonData = vm.jsonData_.filter(x => x.短交易量 > vm.filter1 && x.遠交易量 > vm.filter2)
                 },
 
                 isNumberField(field) {
@@ -341,18 +352,13 @@
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-
-                    if (urlParams.has('d')) {
-                        if (urlParams.get('d') == 'A') {
-                            //file = './Result/checkall.xlsx'
-                            file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
-                            this.paraDate = new Date(urlParams.get('date'))
-                        }
+                    this.type = urlParams.get('type');
+                    if (urlParams.get('d') == 'A') {
+                        file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
+                        this.paraDate = new Date(urlParams.get('date'))
                     } else {
-                        //file = './Result/check1.xlsx'
                         file = './Result/check1/' + urlParams.get('date') + '.xlsx'
                         this.paraDate = new Date(urlParams.get('date'))
-
                     }
                     await fetch(file)
                         .then(response => response.arrayBuffer())
@@ -396,14 +402,16 @@
                                             if (!this.uniqueValues[header.value].includes(strValue)) {
                                                 this.uniqueValues[header.value].push(strValue);
                                             } else {
-
-
                                             }
                                         }
                                     });
                                 });
 
+                                if (this.type) {
+                                    this.jsonData = this.jsonData.filter(x => x.Typelevel.includes(this.type));
+                                }
 
+                                this.jsonData_ = JSON.parse(JSON.stringify(this.jsonData))
                                 Object.keys(this.uniqueValues).forEach(key => {
                                     this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
                                     this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));

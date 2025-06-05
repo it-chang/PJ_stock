@@ -22,23 +22,28 @@
             <v-container style="max-width: 95%;">
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" style="white-space: nowrap;">
-                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.filter(h => h.value !== 'Typelevel')"
-                        :key="header.value">
+                    <template v-slot:[`item.${header.value}`]="{ item }"
+                        v-for="header in headers.filter(h => h.value !== 'Typelevel')" :key="header.value">
                         <span :style="{ 
                         color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :
                         'gray'  }">
                             {{parseFloat(item[header.value]).toFixed(1)}}
-                <!--
+                            <!--
                             {{parseFloat( item[header.value]/jsonData.map(x=>x[header.value]).sort((a, b) => a -
                             b).slice(-1)[0]).toFixed(2) }}
                             -->
                         </span>
                     </template>
                     <template v-slot:item.desc="{ item }">
-                          <a :href="computedHref(item)" target="_blank" rel="noopener">
+                        太陽
+                        <a :href="computedHref(item)" target="_blank" rel="noopener">
                             {{ sanitizedTypelevel(item) }}
-                          </a>
-                      </template>
+                        </a>
+                        分類
+                        <a :href="computedHref2(item)" target="_blank" rel="noopener">
+                            {{ sanitizedTypelevel(item) }}
+                        </a>
+                    </template>
                 </v-data-table>
             </v-container>
         </v-app>
@@ -87,12 +92,15 @@
             },
             methods: {
                 sanitizedTypelevel(x) {
-
                     return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
                 },
                 computedHref(x) {
                     const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
                     return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                },
+                computedHref2(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    return `${baseUrl}/index3.html?d=A&date=${Object.keys(this.jsonData[0]).slice(-2)[0]}&type=${this.sanitizedTypelevel(x)}`;
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
@@ -140,8 +148,6 @@
                                     });
                                     return rowData;
                                 });
-
-                             
                             }
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
