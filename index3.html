@@ -321,7 +321,7 @@
                 },
                 actionFilter(i) {
                     var vm = this
-                    vm.jsonData = vm.jsonData_.filter(x => x.短交易量 > vm.filter1 && x.遠交易量 > vm.filter2)
+                    vm.jsonData = vm.jsonData_.filter(x => parseInt(x.短交易量) > vm.filter1 && parseInt(x.遠交易量) > vm.filter2)
                 },
 
                 isNumberField(field) {
