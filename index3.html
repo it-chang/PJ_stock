@@ -43,9 +43,11 @@
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
                         <v-text-field v-model="filter1" label="短交易量" style="max-width: 150px;"></v-text-field>
                         <v-text-field v-model="filter2" label="遠交易量" style="max-width: 150px;"></v-text-field>
+                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
                     </v-col>
                     <v-col col="1">
-                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>parseFloat(x._quote)>3)">_quote>3</v-btn>
+                           <v-btn color="primary" @click="actionFilter2">dd>3</v-btn>
                     </v-col>
                 </v-row>
 
@@ -323,7 +325,13 @@
                     var vm = this
                     vm.jsonData = vm.jsonData_.filter(x => parseInt(x.短交易量) > vm.filter1 && parseInt(x.遠交易量) > vm.filter2)
                 },
+                actionFilter2(i) {
+                    var vm = this
+                    vm.jsonData=vm.jsonData_.filter(x=>parseFloat(x['MACD_%'])>0 && parseFloat(x['均價_%']) >0 && parseFloat(x['價能']) >-0.5 && parseFloat(x['盤後量']) >1)
+                    vm.sortBy='成交量'
+                    //vm.jsonData=vm.jsonData.filter(x=>x.Type1!='金融保險')
 
+                },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
                         const value = item[field];

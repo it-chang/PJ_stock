@@ -33,7 +33,10 @@
                     </v-col>
                     <v-col col="1">
                         <v-btn color="primary" @click="actionFilter">Filter</v-btn>
+                         <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>parseFloat(x._quote) >3)">_quote>3</v-btn>
+                         <v-btn color="primary" @click="actionFilter2">dd>3</v-btn>
                     </v-col>
+
                 </v-row>
 
                 <!-- 篩選區域 -->
@@ -211,6 +214,9 @@
                 },
             
                 filteredData() {
+                
+                  return this.jsonData
+                  /*
                     return this.jsonData.filter(item => {
                         return Object.keys(this.filters).every(key => {
                             const filterValues = this.filters[key];
@@ -229,6 +235,7 @@
                             }
                         });
                     });
+                    */
                 }
             },
             methods: {
@@ -277,6 +284,13 @@
                 actionFilter(i) {
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(x => x.短交易量 > vm.filter1 && x.遠交易量 > vm.filter2)
+                },
+                actionFilter2(i) {
+                    var vm = this
+                    vm.jsonData=vm.jsonData_.filter(x=>parseFloat(x['MACD_%'])>0 && parseFloat(x['均價_%']) >0 && parseFloat(x['價能']) >-0.5 && parseFloat(x['盤後量']) >1)
+                    vm.sortBy='成交量'
+                    vm.jsonData=vm.jsonData.filter(x=>x.Type1!='金融保險')
+
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
@@ -388,7 +402,7 @@
                                         }
                                     });
                                 });
-                                
+                                this.jsonData_ = JSON.parse(JSON.stringify(this.jsonData))
                                 Object.keys(this.uniqueValues).forEach(key => {
                                     this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
                                     this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
