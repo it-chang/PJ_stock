@@ -328,7 +328,7 @@
                 actionFilter2(i) {
                     var vm = this
                     vm.jsonData=vm.jsonData_.filter(x=>parseFloat(x['MACD_%'])>0 && parseFloat(x['均價_%']) >0 && parseFloat(x['價能']) >-0.5 && parseFloat(x['盤後量']) >1)
-                    vm.sortBy='成交量'
+                    vm.sortBy='均價long_%'
                     //vm.jsonData=vm.jsonData.filter(x=>x.Type1!='金融保險')
 
                 },
