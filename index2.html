@@ -85,6 +85,9 @@
                                     ].filter(Boolean)">
                                 <BR />
                                 <div>
+                                    <span>
+                                        {{data.Typelevel.replace(data.Type1,'')}}
+                                    </span>
                                     <span :style="{ 
                                         color: (parseInt(data.漲跌BYN天) > 4 && parseInt(data._quote) > 5  ) ? 'red' :
                                                (parseInt(data.漲跌BYN天) > 2 && parseInt(data._quote) > 2  ) ? 'orange' : 

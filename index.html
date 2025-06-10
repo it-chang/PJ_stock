@@ -22,6 +22,7 @@
             <v-container style="max-width: 95%;">
                 <v-row no-gutters>
                     <v-col col="6">
+                        <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
                         <!--<a href="JavaScript: location.reload(true);">Refresh page</a>-->
                         <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
                         <span>data count {{filteredData.map(x=>x.stock_number).length}}</span>
@@ -30,11 +31,15 @@
                     <v-col cols="3" style="display: flex; gap: 10px; align-items: center;">
                         <v-text-field v-model="filter1" label="短交易量" style="max-width: 150px;"></v-text-field>
                         <v-text-field v-model="filter2" label="遠交易量" style="max-width: 150px;"></v-text-field>
+                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
                     </v-col>
                     <v-col col="1">
-                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
-                         <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>parseFloat(x._quote) >3)">_quote>3</v-btn>
-                         <v-btn color="primary" @click="actionFilter2">dd>3</v-btn>
+
+                        <v-btn color="primary" @click="reset">reset</v-btn>
+                        <v-btn color="primary"
+                            @click="jsonData=jsonData_.filter(x=>parseFloat(x._quote) >3)">_quote>3</v-btn>
+                        <v-btn color="primary" @click="actionFilter2(true)">dd>3</v-btn>
+                        <v-btn color="primary" @click="actionFilter2(false)">reverse</v-btn>
                     </v-col>
 
                 </v-row>
@@ -74,7 +79,7 @@
                     :sort-desc.sync="sortDesc" :mobile-breakpoint="0" style="white-space: nowrap;">
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type0 }} 
+                            {{ item.stock_number }} {{ item.Type0 }}
                         </v-btn>
                     </template>
                     <template v-slot:item.rt_price="{ item }">
@@ -94,14 +99,14 @@
                 </v-data-table>
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" v-show="!appmode" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
-                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">              
+                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                     <!-- 自訂第一個欄位為超連結 -->
                     <template v-slot:item.stock_number="{ item }">
-                        <v-btn text @click="openDialog(item)"> 
+                        <v-btn text @click="openDialog(item)">
                             {{ item.stock_number }} {{ item.Type0 }}{{item['Volume_%']}}
                         </v-btn>
                     </template>
-                          
+
                     <template v-slot:item.now_price="{ item }">
                         <v-btn text @click="openDialog(item)">
                             <span style="color: rgb(124, 169, 173);"
@@ -212,35 +217,35 @@
 
                     return this.filteredData.map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
                 },
-            
+
                 filteredData() {
-                
-                  return this.jsonData
-                  /*
-                    return this.jsonData.filter(item => {
-                        return Object.keys(this.filters).every(key => {
-                            const filterValues = this.filters[key];
 
-                            if (!filterValues || filterValues.length === 0) return true;
-                            const value = item[key] ? item[key].toString() : '';
-                            const a = this.isNumberField(key);
-
-                            if (Array.isArray(filterValues) && a) {
-                                //if (Array.isArray(filterValues)) {
-                                const [min, max] = filterValues;
-                                const numericValue = parseFloat(value);
-                                return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
-                            } else {
-                                return filterValues.includes(value);
-                            }
-                        });
-                    });
-                    */
+                    return this.jsonData
+                    /*
+                      return this.jsonData.filter(item => {
+                          return Object.keys(this.filters).every(key => {
+                              const filterValues = this.filters[key];
+  
+                              if (!filterValues || filterValues.length === 0) return true;
+                              const value = item[key] ? item[key].toString() : '';
+                              const a = this.isNumberField(key);
+  
+                              if (Array.isArray(filterValues) && a) {
+                                  //if (Array.isArray(filterValues)) {
+                                  const [min, max] = filterValues;
+                                  const numericValue = parseFloat(value);
+                                  return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
+                              } else {
+                                  return filterValues.includes(value);
+                              }
+                          });
+                      });
+                      */
                 }
             },
             methods: {
                 getHeaderStyle(headerText) {
-                    const specialHeaders = ['盤後量','成交量','淨值倍率','貝他值','價能'];
+                    const specialHeaders = ['盤後量', '成交量', '淨值倍率', '貝他值', '價能'];
                     if (specialHeaders.includes(headerText)) {
                         return 'background-color: #ffeb3b; color: #000;';
                     }
@@ -281,16 +286,28 @@
                     const url = window.location.href.replace(urlParams.get('date'), nextDateStr);
                     window.open(url, '_blank');
                 },
+                reset() {
+                    var vm = this
+                    vm.jsonData = vm.jsonData_
+                    //vm.sortBy = ['highlight_date']
+                },
                 actionFilter(i) {
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(x => x.短交易量 > vm.filter1 && x.遠交易量 > vm.filter2)
                 },
                 actionFilter2(i) {
                     var vm = this
-                    vm.jsonData=vm.jsonData_.filter(x=>parseFloat(x['MACD_%'])>0 && parseFloat(x['均價_%']) >0 && parseFloat(x['價能']) >-0.5 && parseFloat(x['盤後量']) >1)
-                    vm.sortBy='成交量'
-                    vm.jsonData=vm.jsonData.filter(x=>x.Type1!='金融保險')
+                    if (i) {
+                        vm.jsonData = vm.jsonData_.filter(x => parseFloat(x['MACD_%']) > 0 && parseFloat(x['均價_%']) > 0 && parseFloat(x['盤後量']) > 1)
+                        //&& parseFloat(x['價能']) >-0.5 
+                    } else {
+                        app.jsonData = app.jsonData_.filter(i => !app.jsonData.map(x => x.stock_number).includes(i.stock_number))
+                    }
 
+                    vm.sortBy = '成交量'
+                    vm.jsonData = vm.jsonData.filter(x => x.Type1 != '金融保險')
+                    //revert
+                    //
                 },
                 isNumberField(field) {
                     return field !== 'stock_number' && this.jsonData.some(item => {
@@ -410,7 +427,7 @@
                             }
 
                             //app.jsonData=app.jsonData.filter(x => x["MACD"]<5 && x["價能"]>0 && x["MA5_%"]>0 && x["Volume_Oscillator"]>-30)
-                                
+
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
                 }
