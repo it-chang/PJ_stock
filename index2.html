@@ -542,7 +542,6 @@
                                             nDay = -5 // 抓往前推幾天
 
                                             let arrlist_dll6 = dd1.map(x => parseInt(x.Flag)).slice().reverse()
-
                                             item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
 
                                             let arrlist_quote = dd1.map(x => parseInt(x._quote)).slice().reverse()
