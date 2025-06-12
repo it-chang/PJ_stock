@@ -57,13 +57,21 @@ async function main(data) {
                 await sleep(5000);
             }
         }
+        if(postsdata.length==0){
+            openURL()
+        }
+        
         resolve(postsdata);
     });
 }
 
-
-
-
+function openURL(){
+    window.open(
+            'https://cors-anywhere.herokuapp.com/corsdemo',
+            '_blank',
+            'width=800,height=600,left=100,top=100'
+            );
+}
 
 function generateStockApiUrls(data, size) {
     
@@ -110,6 +118,7 @@ async function getData(url) {
         let response = await fetch(url);
         if (!response.ok) {
             console.log(url)
+          
             throw new Error('Network response was not ok');
         }
         let data = await response.json();
