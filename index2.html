@@ -148,6 +148,15 @@
                                         MA5_% {{ data['MA5_%']}}
                                         <br />
                                         均價_% {{ data['均價_%']}}
+                                         <br />
+                                        均價long_% {{ data['均價long_%']}}
+                                   
+                                        <br />
+                                        MA_short {{ data['MA_short']}}
+                                        <br />
+                                        MA_long {{ data['MA_long']}}
+                                         <br />
+                                        MA_longlong {{ data['MA_longlong']}}
                                         <br />
                                         MACD_% {{ data['MACD_%']}}
                                     </span>
@@ -676,6 +685,8 @@
                                         dummydataItem['MACD_%'] = datalist_last_date['MACD_%'] 
                                         dummydataItem['MA5_%'] = datalist_last_date['MA5_%'] 
                                         dummydataItem['均價_%'] = datalist_last_date['均價_%'] 
+                                        dummydataItem['均價long_%'] = datalist_last_date['均價long_%'] 
+                                        
                                         dummydataItem.fullsummary = datalist_last_date?.Full_Summary;
                                         dummydataItem.Volume_Diff = datalist_last_date?.Volume_Diff;
                                         dummydataItem.成交股數 = datalist_last_date?.成交股數;
