@@ -514,7 +514,7 @@
 
                                 const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '總市值', '成交量', 'Type1',];// 'stock_number'
                                 //(價)
-                                const trendFields = ['MACD_%','均價_%','MA5_%',  'highlight_date', '價_起始日期',]; 
+                                const trendFields = ['MACD_%','均價long_%','均價_%','MA5_%',  'highlight_date', '價_起始日期',]; 
                                 const dateFields = ['量價差天',];
                                 const miscFields = ['當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
                                 //(量)
@@ -522,7 +522,7 @@
                                 const configFlag = ['確認漲跌']
 
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff', 'neg_Flag', 'Flag', 'FlagUP_', 'FlagUPUP', 'Flage_q4',]; 
-                                arr =['淨值倍率', '殖利率','type','MACD_%','MACD-SL','MACD','均價_%', 'MA5_%', '當日漲跌', '總價差','量能均',  '量能','Flage_q4','fullsummary','flag_Y'] //,'FlagUP_', 'FlagUPUP'
+                                arr =['淨值倍率', '殖利率','type','MACD_%','MACD-SL','MACD','均價long_%','均價_%', 'MA5_%', '當日漲跌', '總價差','量能均',  '量能','Flage_q4','fullsummary','flag_Y'] //,'FlagUP_', 'FlagUPUP'
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
