@@ -35,8 +35,10 @@ body {
     border-bottom: dashed;
 }
 .hightlight_line_box {
-    background-color: #f0bf7f5e
+    background-color: #f5d5aa5e !important;
 }
-.hightlight_line_over {
-    background-color: #f096885e
+.line_box {
+  /* background-color: lightgray;*/
+    border: groove;
 }
+    
