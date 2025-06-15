@@ -33,11 +33,11 @@
                     <v-col col="2">
                         <v-btn color="primary" @click="reset">reset</v-btn>
                         <v-btn color="primary" @click="Flag4">Flag4</v-btn>
-                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>x.FlagUPUP<=2)">FlagUPUP<=2< /v-btn>
-                             <v-btn color="primary"
-                                    @click="jsonData=jsonData_.filter(x=>x.FlagUPUP>2)">FlagUPUP>2</v-btn>
-                                          <v-btn color="primary"
-                                    @click="jsonData=jsonData_.filter(x=>x['均價long_%'] <0 & x['均價_%'] >0)">反轉點</v-btn>
+                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>x.FlagUPUP<=2)">FlagUPUP<=2</v-btn>
+                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>x.FlagUPUP>2)">FlagUPUP>2</v-btn>
+                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>x['均價long_%'] <0 & x['均價_%'] >0)">反轉點</v-btn>
+                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>x['均價long_%'] >0  & x['均價_%'] >0 & x['MACD-SL'] >0 & x['MACD_%'] >0) ; sortBy=['MACD-SL']">站穩?</v-btn>
+
                     </v-col>
 
                     <v-col col="1">
@@ -522,7 +522,7 @@
                                 const configFlag = ['確認漲跌']
 
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff', 'neg_Flag', 'Flag', 'FlagUP_', 'FlagUPUP', 'Flage_q4',]; 
-                                arr =['淨值倍率', '殖利率','type','MACD_%','MACD-SL','MACD','均價_%', 'MA5_%', '當日漲跌', '總價差', 'Flage_q4','fullsummary','flag_Y'] //,'FlagUP_', 'FlagUPUP'
+                                arr =['淨值倍率', '殖利率','type','MACD_%','MACD-SL','MACD','均價_%', 'MA5_%', '當日漲跌', '總價差','量能均',  '量能','Flage_q4','fullsummary','flag_Y'] //,'FlagUP_', 'FlagUPUP'
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
