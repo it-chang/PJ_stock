@@ -32,7 +32,7 @@ body {
     border-left: dashed;
 }
 .hightlight_line_under {
-    border-bottom: dashed;
+     border-bottom: dashed !important;
 }
 .hightlight_line_box {
     background-color: #f5d5aa5e !important;
