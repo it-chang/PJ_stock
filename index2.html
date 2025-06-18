@@ -542,7 +542,7 @@
                                 const configFlag = ['確認漲跌']
 
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff', 'neg_Flag', 'Flag', 'FlagUP_', 'FlagUPUP', 'Flage_q4',];
-                                arr = ['淨值倍率', '殖利率', 'type', 'MACD_%', 'MACD-SL', 'MACD', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能', 'Flage_q4', 'fullsummary', 'flag_Y'] //,'FlagUP_', 'FlagUPUP'
+                                arr = ['淨值倍率', '殖利率', 'type', 'MACD_%', 'MACD-SL', 'MACD', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能','frist_uptrend', 'Flage_q4', 'fullsummary', 'flag_Y'] //,'FlagUP_', 'FlagUPUP'
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -735,6 +735,8 @@
 
                                         dummydataItem.flag_Y = datalist.filter(x => x.flag == 'Y').length > 0
                                         dummydataItem.Flage_q4 = datalist.find(x => x.Flag == 4)?.日期
+                                        
+                                        dummydataItem.frist_uptrend = datalist.filter(x=>x.Full_Summary.includes('多頭')).map(x=>x.日期).sort()[0]
                                     }
                                     return dummydataItem;
                                 });
