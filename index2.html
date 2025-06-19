@@ -741,7 +741,7 @@
                                     return dummydataItem;
                                 });
 
-                                var para_x = 5 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                var para_x = 0 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
