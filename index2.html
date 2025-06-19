@@ -493,8 +493,12 @@
                             c: './Result/checksun_c.xlsx',
                             d: './Result/checksun_d.xlsx',
                             e: './Result/checksun_e.xlsx',
+                            f: './Result/checksun_f.xlsx',
                             sunmy: './Result/checksunmy.xlsx',
                         };
+                        file = d === 'f'
+                            ? `./Result/checksun_f/${urlParams.get('date')}.xlsx`
+                            : (fileMap[d] || file);
 
                         file = d === 'type'
                             ? `./Result/checksun/${type}.xlsx`
@@ -542,7 +546,7 @@
                                 const configFlag = ['確認漲跌']
 
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff', 'neg_Flag', 'Flag', 'FlagUP_', 'FlagUPUP', 'Flage_q4',];
-                                arr = ['淨值倍率', '殖利率', 'type', 'MACD_%', 'MACD-SL', 'MACD', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能','frist_uptrend', 'Flage_q4', 'fullsummary', 'flag_Y'] //,'FlagUP_', 'FlagUPUP'
+                                arr = [...baseFields, 'type', 'MACD_%', 'MACD-SL', 'MACD', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能','frist_uptrend', 'Flage_q4', 'fullsummary', 'flag_Y'] //,'FlagUP_', 'FlagUPUP'
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -741,7 +745,7 @@
                                     return dummydataItem;
                                 });
 
-                                var para_x = 0 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                var para_x = 5 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
