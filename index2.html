@@ -493,16 +493,17 @@
                             c: './Result/checksun_c.xlsx',
                             d: './Result/checksun_d.xlsx',
                             e: './Result/checksun_e.xlsx',
-                            f: './Result/checksun_f.xlsx',
+                            //f: './Result/checksun_f.xlsx',
                             sunmy: './Result/checksunmy.xlsx',
                         };
                         file = d === 'f'
                             ? `./Result/checksun_f/${urlParams.get('date')}.xlsx`
                             : (fileMap[d] || file);
-
+                        
                         file = d === 'type'
                             ? `./Result/checksun/${type}.xlsx`
                             : (fileMap[d] || file);
+                        
                     }
                     if (setdate) {
                         this.set_date = setdate
@@ -510,9 +511,10 @@
 
                     // 若有 date 參數，將路徑中的 "Result" 替換成動態資料夾名（如 Result202405）
                     if (date) {
-                        const resultFolder = 'Result' + date;
-                        file = file.replace('Result', resultFolder);
+                        //const resultFolder = 'Result' + date;
+                        //file = file.replace('Result', resultFolder);
                     }
+                    console.log(file)   
                     // 
                     await fetch(file)
                         .then(response => response.arrayBuffer())
