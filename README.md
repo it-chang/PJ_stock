@@ -34,3 +34,8 @@
 	
 	app.realtimedata.filter(x=>x.c=='6442')
 	((app.realtimedata.filter(x => x.c =='6442' )[0]?.b / parseFloat(app.realtimedata.filter(x => x.c == '6442')[0]?.y) - 1) * 100).toFixed(2);
+
+
+-------------------------------------------------------------------------------
+20250616 
+  1514 8222 6603
