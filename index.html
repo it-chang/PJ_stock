@@ -339,30 +339,19 @@
                     let urlParams = new URLSearchParams(window.location.search);
                     file = './Result/check.xlsx'
                     if (urlParams.has('d')) {
-
                         if (urlParams.get('d') == 'M') {
                             file = './Result/checkmy.xlsx'
                         }
-                        if (urlParams.get('d') == 'dangchong') {
-                            file = './Result/checkdangchong.xlsx'
-                        }
-                        if (urlParams.get('d') == 'T') {
-                            //file = './Result/check1.xlsx'
-                            file = './Result/check1/' + urlParams.get('date') + '.xlsx'
-                            this.paraDate = new Date(urlParams.get('date'))
-                        }
-
-                        if (urlParams.get('d') == 'O') {
-                            //file = './Result/check3.xlsx'
-                            file = './Result/check3/' + urlParams.get('date') + '.xlsx'
-                            this.paraDate = new Date(urlParams.get('date'))
-                        }
-   
                         /**********************/
                         if (urlParams.get('d') == 'C') {
                             file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
                             this.paraDate = new Date(urlParams.get('date'))
                             // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
+                        }
+                            /**********************/
+                        if (urlParams.get('d') == 'O') {
+                            file = './Result/checksun_others/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
                         }
                     }
                     await fetch(file)
