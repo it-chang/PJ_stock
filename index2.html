@@ -62,26 +62,26 @@
                         :key="header.value">
                         <!--
                         flag_Y: 【表現佳】flag=='Y' (Untitled.ipynb ==>　MA5_%>=0, 成交量 > 500, 遠交易量>-15 ,短交易量>-15)
-                        hightlight_line_box: MACD 放量動能結構好
-                         hightlight_line_under : 進入強勢區間時間內
+                        hightlight_line_box: MACD 放量動能結構好 VPC_break
+                        hightlight_line_under : 進入強勢區間時間內
                         -->
                         <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
                             :key="index">
                             <div v-if="index==0" style="position: sticky; min-height: 100%;" :class="[
                                     item.flag_Y ? 'line_box' : '',
-                                    (data['MACD_%']>0 && data['MACD-SL']>0 ) ? 'hightlight_line_box' : '',
+                                    (data['VPC_break'] ) ? 'hightlight_line_box' : '',
                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
                                     ].filter(Boolean)">
-                                <v-tooltip slot="append" bottom color="#E5E5E5">
+                                <v-tooltip slot="append" bottom color="#E5E5E5" >
                                     <template v-slot:activator="{ on }">
                                         <div v-on="on">
                                             <span>
-                                                {{item.flag_Y}} {{data.Typelevel.replace(data.Type1,'')}}
+                                                 {{data.Typelevel.replace(data.Type1,'')}}
                                             </span>
-                                            <span :style="{ 
+                                            <!--span :style="{ 
                                                 color: (parseInt(data.漲跌BYN天) > 4  ) ? 'red' :
-                                            (parseInt(data.漲跌BYN天) > 2  ) ? 'orange' : 
-                                            'gray'  }">
+                                                (parseInt(data.漲跌BYN天) > 2  ) ? 'orange' : 
+                                                'gray'  }">
                                                 【價】
                                             </span>
                                             <span :style="{ 
@@ -89,13 +89,12 @@
                                                    (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.2) ? 'orange' : 
                                                 'gray' }">
                                                 【量】
-                                            </span>
+                                            </span-->
                                         </div>
                                     </template>
                                     <span style="color: #285376b8;">
                                         【價】-----------------------------------------------
                                         <br />
-
                                     </span>
                                     <span :style="{ 
                                          color: (parseInt(data.漲跌BYN天) > 4  ) ? 'red' :
@@ -104,8 +103,8 @@
                                         漲跌BY{{n}}天 :{{data.漲跌BYN天 }}
                                     </span>
                                     <br />
-                                    <!--【量】-->
-                                    <span style="color: #285376b8;">
+                                    
+                                    <!span style="color: #285376b8;">
                                         【量】-----------------------------------------------
                                         <br />
                                         成交股數 {{ parseInt(data.成交股數)}}
@@ -126,7 +125,7 @@
                                         量能差 {{data.量能差}}
                                     </span>
                                     <br />
-                                    <!--【Description】-->
+                                    
                                     -------------------------------------------------
                                     <br />
                                     <span v-html="formatDesc(data.Full_Summary)" style="color: #285376b8;">
@@ -138,8 +137,9 @@
                                 <v-tooltip slot="append" bottom color="#E5E5E5">
                                     <template v-slot:activator="{ on }">
                                         <span v-on="on" :style="{
-                                                color: parseInt(data._quote) > 5  ? 'red' :
-                                                parseInt(data._quote) > 2  ? 'orange' :
+                                                color: parseInt(data.量能) > 10 && parseInt(data._quote) > 5  ? 'red' :
+                                                       parseInt(data.量能) > 10 && parseInt(data._quote) > 2  ? 'orange' :
+                                                       parseInt(data._quote) > 2  ? 'blue' :
                                                 'gray'  }">
                                             漲跌:{{data._quote}}
                                         </span>
@@ -163,16 +163,21 @@
                                         MACD_% {{ data['MACD_%']}}
                                     </span>
                                 </v-tooltip>
-
                                 <BR />
                                 <!--【Flag】-->
                                 <v-tooltip slot="append" bottom><template v-slot:activator="{ on }">
-                                        <span v-on="on">
-                                            量能:{{data.量能 }}
+                                        <span v-on="on" 
+                                        :style="{
+                                                color:
+                                               parseInt(data._quote) > 1  &&   parseInt(data.量能) > 50 && parseInt(data.量能)> parseInt(data.量能均)* 1.5  ? 'red' :
+                                               parseInt(data._quote) > 1  &&   parseInt(data.量能) > 20 && parseInt(data.量能)> parseInt(data.量能均)* 1.5 ? 'orange' :
+                                               parseInt(data._quote) > 1  &&   parseInt(data.量能) > 20 && parseInt(data.量能)> parseInt(data.量能均) ? 'blue' :
+                                                'gray'  }">
+                                            量能:{{data.量能 }}(均: {{data.量能均 }})
                                         </span>
-                                        <span>
+                                        <!--span>
                                             {{data.flag}} {{data['MACD_%']}}
-                                        </span>
+                                        </span-->
                                     </template>
                                     【Flag】: 量價同時有長進　Volume_Diff >5 漲跌BYN天>5 本日漲跌 > -1
                                     <br /> &nbsp; Volume_Diff : {{data.Volume_Diff}}
@@ -244,31 +249,6 @@
                                     </div>
                                 </div>
                                 <br />
-                                <v-tooltip slot="append" bottom v-if="data.VPC_break">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="red">
-                                                mdi-weather-sunny
-                                            </v-icon> VPC_break
-                                        </span>
-                                    </template>
-                                    <span>VPC_break</span>
-                                </v-tooltip>
-                                <br />
-                                <!--價-->
-                                <v-tooltip slot="append" bottom v-if="data['均價_%']>0 && data['MA5_%']>0">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="pink">
-                                                mdi-star-outline
-                                            </v-icon> 價_check!!!
-                                        </span>
-                                    </template>
-                                    <span>【 MA5_% >0 均價_%' >0 】 </span>
-                                    <br />MA5_ : {{data['MA5_%']}}
-                                    <br />均價_ : {{data['均價_%']}}
-                                </v-tooltip>
-
                                 <!--v-tooltip slot="append" bottom
                                     v-if="data.flag=='Y' && (item.highlight_date <= header.value  && item.highlight_date !='')  ">
                                     <template v-slot:activator="{ on }">
@@ -302,11 +282,34 @@
                                     </template>
                                     <span>【Volume_Price_Change_break】</span>
                                 </v-tooltip-->
-
-
+                                    <!--@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@-->
+                                <!--v-tooltip slot="append" bottom v-if="data.VPC_break">
+                                    <template v-slot:activator="{ on }">
+                                        <span v-on="on" color="blue">
+                                            <v-icon color="red">
+                                                mdi-weather-sunny
+                                            </v-icon> VPC_break
+                                        </span>
+                                    </template>
+                                    <span>VPC_break</span>
+                                </v-tooltip-->
+                                <br />
+                                <!--價-->
+                                <!-- v-tooltip slot="append" bottom v-if="data['均價_%']>0 && data['MA5_%']>0">
+                                    <template v-slot:activator="{ on }">
+                                        <span v-on="on" color="blue">
+                                            <v-icon color="pink">
+                                                mdi-star-outline
+                                            </v-icon> 價_check!!!
+                                        </span>
+                                    </template>
+                                    <span>【 MA5_% >0 均價_%' >0 】 </span>
+                                    <br />MA5_ : {{data['MA5_%']}}
+                                    <br />均價_ : {{data['均價_%']}}
+                                </v-tooltip-->
                                 <br />
                                 <!--成交量 -->
-                                <v-tooltip slot="append" bottom
+                                <!--v-tooltip slot="append" bottom
                                     v-if="data['Volume_MA_short']>data['Volume_MA_long'] && data['Volume_MA_short']>0 && data['Volume_MA_long']>0">
                                     <template v-slot:activator="{ on }">
                                         <span v-on="on" color="blue">
@@ -319,7 +322,7 @@
                                     <br />
                                     <span> Volume_MA_long {{data['Volume_MA_long']}}</span>
                                     <br />
-                                </v-tooltip>
+                                </v-tooltip-->
                                 <!--alert   -->
                                 <v-tooltip slot="append" bottom v-if="parseInt(data.neg_Flag)>2">
                                     <template v-slot:activator="{ on }">
@@ -414,7 +417,8 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    sortBy: ['MACD_%'],
+                    sortBy: ['frist_uptrend','MACD_%'],
+                    
                     //sortBy: ['Typelevel', '總價差'],
                     sortDesc: [true, true],
                     dialog: false,
@@ -766,13 +770,13 @@
                                         dummydataItem.flag_Y = datalist.filter(x => x.flag == 'Y').length > 0
                                         dummydataItem.Flage_q4 = datalist.find(x => x.Flag == 4)?.日期
                                         dummydataItem.star = datalist.find(x => x.Volume_Price_Change_break && x.VPC_break && parseFloat(x['MACD-SL']) > 0)?.日期
-                                        //dummydataItem.frist_uptrend = datalist.filter(x => x.Full_Summary.includes('多頭')).map(x => x.日期).sort()[0]
-                                        dummydataItem.frist_uptrend = datalist.filter(x => x.VPC_break).map(x => x.日期).sort()[0]
+                                        dummydataItem.frist_uptrend = datalist.filter(x => x.Full_Summary.includes('多頭')).map(x => x.日期).sort()[0]
+                                        //dummydataItem.frist_uptrend = datalist.filter(x => x.VPC_break).map(x => x.日期).sort()[0]
                                     }
                                     return dummydataItem;
                                 });
 
-                                var para_x = 5 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                var para_x = 1 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
