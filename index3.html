@@ -272,7 +272,8 @@
                     return `${baseUrl}/index3.html?d=${urlParams.get('d')}&date=${urlParams.get('date')}&type=${this.sanitizedTypelevel(x)}`;
                 },
                 sanitizedTypelevel(x) {
-                    return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
+                    return  x.Type1
+                    //return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
                 },
 
                 async init() {

@@ -823,6 +823,8 @@
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)
                     vm.sortBy = ['Typelevel', '總價差']
+                },memo(){
+                    // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0　&&x['均價long_%']>0)
                 }
             }
         });
