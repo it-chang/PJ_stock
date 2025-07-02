@@ -32,18 +32,8 @@
                     <v-col col="2">
                         <v-btn color="primary" @click="reset">reset</v-btn>
                         <v-btn color="primary" @click="Flag4">Flag4</v-btn>
-                        <v-btn color="primary" @click="jsonData=jsonData_.filter(x=>x.FlagUPUP<=2)">FlagUPUP<=2< /v-btn>
-                                <v-btn color="primary"
-                                    @click="jsonData=jsonData_.filter(x=>x.FlagUPUP>2)">FlagUPUP>2</v-btn>
-                                <v-btn color="primary"
-                                    @click="jsonData=jsonData_.filter(x=>x['均價long_%'] <0 & x['均價_%'] >0)">反轉點</v-btn>
-                                <v-btn color="primary"
-                                    @click="jsonData=jsonData_.filter(x=>x['均價long_%'] >0  & x['均價_%'] >0 & x['MACD-SL'] >0 & x['MACD_%'] >0) ; sortBy=['MACD-SL']">站穩?</v-btn>
                     </v-col>
-                    <v-col col="1">
-                        <v-btn color="primary" @click="actionFilter1">index.html</v-btn>
-                        <v-btn color="primary" @click="actionFilter">Filter</v-btn>
-                    </v-col>
+
                     <v-col col="1">
                         <v-btn color="primary" @click="collapse=!collapse">Collapse</v-btn>
                     </v-col>
@@ -72,24 +62,12 @@
                                     (data['VPC_break'] ) ? 'hightlight_line_box' : '',
                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
                                     ].filter(Boolean)">
-                                <v-tooltip slot="append" bottom color="#E5E5E5" >
+                                <v-tooltip slot="append" bottom color="#E5E5E5">
                                     <template v-slot:activator="{ on }">
                                         <div v-on="on">
                                             <span>
-                                                 {{data.Typelevel.replace(data.Type1,'')}}
+                                                {{data.Typelevel.replace(data.Type1,'')}}
                                             </span>
-                                            <!--span :style="{ 
-                                                color: (parseInt(data.漲跌BYN天) > 4  ) ? 'red' :
-                                                (parseInt(data.漲跌BYN天) > 2  ) ? 'orange' : 
-                                                'gray'  }">
-                                                【價】
-                                            </span>
-                                            <span :style="{ 
-                                             color: (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.5) ? 'red' : 
-                                                   (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.2) ? 'orange' : 
-                                                'gray' }">
-                                                【量】
-                                            </span-->
                                         </div>
                                     </template>
                                     <span style="color: #285376b8;">
@@ -103,8 +81,7 @@
                                         漲跌BY{{n}}天 :{{data.漲跌BYN天 }}
                                     </span>
                                     <br />
-                                    
-                                    <!span style="color: #285376b8;">
+                                    <span style="color: #285376b8;">
                                         【量】-----------------------------------------------
                                         <br />
                                         成交股數 {{ parseInt(data.成交股數)}}
@@ -118,14 +95,13 @@
                                             color: (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.5) ? 'red' : 
                                                    (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.2) ? 'orange' : 
                                                 'gray' }">
-                                        量能:{{ data.量能.split('.')[0] }}
+                                        量能:data.量能.split('.')[0] 
                                         <BR />
                                         量能均{{data.量能均}}
                                         <BR />
                                         量能差 {{data.量能差}}
                                     </span>
                                     <br />
-                                    
                                     -------------------------------------------------
                                     <br />
                                     <span v-html="formatDesc(data.Full_Summary)" style="color: #285376b8;">
@@ -166,8 +142,7 @@
                                 <BR />
                                 <!--【Flag】-->
                                 <v-tooltip slot="append" bottom><template v-slot:activator="{ on }">
-                                        <span v-on="on" 
-                                        :style="{
+                                        <span v-on="on" :style="{
                                                 color:
                                                parseInt(data._quote) > 1  &&   parseInt(data.量能) > 50 && parseInt(data.量能)> parseInt(data.量能均)* 1.5  ? 'red' :
                                                parseInt(data._quote) > 1  &&   parseInt(data.量能) > 20 && parseInt(data.量能)> parseInt(data.量能均)* 1.5 ? 'orange' :
@@ -187,27 +162,31 @@
                                     </blockquote>
 
                                     <br />------------------------------------------------------------
-                                    <br />
-                                    【Flag1】:計算＂量＂（確認是突然放量 /還是漸進）
-                                    <br />
-                                    <span :style="{ 
-                                        color:  data.Flag1?.includes('4') ? 'red' :
-                                                data.Flag1?.includes('3') ? 'orange' :
-                                                data.Flag1?.includes('2') ? 'orange' :
-                                                '' }">
-                                        &nbsp; Flag1: {{data.Flag1}} <br />
-                                    </span>
-                                    <br />------------------------------------------------------------
-                                    <br />
-                                    【Flag2】:價長進的指標 (表示近期漲的狀況居多)
-                                    <br />
-                                    <span color="red">
-                                        &nbsp; Flag2: {{data.Flag2}}
-                                    </span>
+
                                     <br />
                                 </v-tooltip>
                                 <br />
-
+                                <!--
+                                 parseInt(data.漲跌BYN天Diff) > 10 && parseInt(data.漲跌BYN天) > 1 ? 'red' :
+                                 parseInt(data.增縮BYN天Diff) > 10 && parseInt(data.增縮BYN天) > 2 ? 'red' :
+                                -->
+                                <span :style="{ color: 
+                                           
+                                            parseInt(data.漲跌BYN天Diff) > 5  && parseInt(data.漲跌BYN天) > 1 && parseInt(data._quote) > 1 ? 'orange' :
+                                            parseInt(data.漲跌BYN天Diff) > 1  && parseInt(data.漲跌BYN天) > 1 && parseInt(data._quote) > 1? 'blue' :
+                                            'gray'  }">
+                                    漲跌BY{{n}}天 :{{data.漲跌BYN天 }} / {{data.漲跌BYN天Diff }}
+                                </span>
+                                <br />
+                                <span :style="{ color: 
+                                          
+                                            parseInt(data.增縮BYN天Diff) > 5 && parseInt(data.增縮BYN天) > 2 && parseInt(data._quote) > 1? 'orange' :
+                                            parseInt(data.增縮BYN天Diff) > 1 && parseInt(data.增縮BYN天) > 2 && parseInt(data._quote) > 1? 'blue' :
+                                            'gray'  }">
+                                    增縮BY{{n}}天 :{{data.增縮BYN天 }}/ {{data.增縮BYN天Diff }}
+                                </span>
+                                <br />
+                                {{data.textdesc}}
                                 <br />
                                 <!--成交量 bar -->
                                 <div style="  height:35px;display: none;">
@@ -248,96 +227,9 @@
                                         Volume 差:{{data.Volume_Diff}}
                                     </div>
                                 </div>
-                                <br />
-                                <!--v-tooltip slot="append" bottom
-                                    v-if="data.flag=='Y' && (item.highlight_date <= header.value  && item.highlight_date !='')  ">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="red">
-                                                mdi-weather-sunny
-                                            </v-icon> flag_Y
-                                        </span>
-                                    </template>
-                                    <span>【表現佳】flag=='Y' (Untitled.ipynb ==>　MA5_%>=0, 成交量 > 500, 遠交易量>-15 ,短交易量>-15)</span>
-                                </v-tooltip-->
-                                <!--v-tooltip slot="append" bottom
-                                    v-if="data.MA_break && (item.highlight_date <= header.value  && item.highlight_date !='')">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="red">
-                                                mdi-star-outline
-                                            </v-icon> MA
-                                        </span>
-                                    </template>
-                                    <span>【MA_break : MA 5 >0 】</span>
-                                </v-tooltip-->
-
-                                <!--v-tooltip slot="append" bottom v-if="data.Volume_Price_Change_break ">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="red">
-                                                mdi-star-outline
-                                            </v-icon> 量
-                                        </span>
-                                    </template>
-                                    <span>【Volume_Price_Change_break】</span>
-                                </v-tooltip-->
-                                    <!--@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@-->
-                                <!--v-tooltip slot="append" bottom v-if="data.VPC_break">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="red">
-                                                mdi-weather-sunny
-                                            </v-icon> VPC_break
-                                        </span>
-                                    </template>
-                                    <span>VPC_break</span>
-                                </v-tooltip-->
-                                <br />
-                                <!--價-->
-                                <!-- v-tooltip slot="append" bottom v-if="data['均價_%']>0 && data['MA5_%']>0">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="pink">
-                                                mdi-star-outline
-                                            </v-icon> 價_check!!!
-                                        </span>
-                                    </template>
-                                    <span>【 MA5_% >0 均價_%' >0 】 </span>
-                                    <br />MA5_ : {{data['MA5_%']}}
-                                    <br />均價_ : {{data['均價_%']}}
-                                </v-tooltip-->
-                                <br />
-                                <!--成交量 -->
-                                <!--v-tooltip slot="append" bottom
-                                    v-if="data['Volume_MA_short']>data['Volume_MA_long'] && data['Volume_MA_short']>0 && data['Volume_MA_long']>0">
-                                    <template v-slot:activator="{ on }">
-                                        <span v-on="on" color="blue">
-                                            <v-icon color="pink">
-                                                mdi-check-all
-                                            </v-icon> Volume_check
-                                        </span>
-                                    </template>
-                                    <span> Volume_MA_short {{data['Volume_MA_short']}}</span>
-                                    <br />
-                                    <span> Volume_MA_long {{data['Volume_MA_long']}}</span>
-                                    <br />
-                                </v-tooltip-->
-                                <!--alert   -->
-                                <v-tooltip slot="append" bottom v-if="parseInt(data.neg_Flag)>2">
-                                    <template v-slot:activator="{ on }">
-                                        <v-icon v-on="on" color="red">
-                                            mdi mdi-alert
-                                        </v-icon>
-                                    </template>
-                                    <span>【 neg_Flag>2 】</span>
-                                </v-tooltip>
-
                             </div>
                         </template>
                     </template>
-
-
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);" v-show="sync">
                             {{item.rt_price}}
@@ -362,7 +254,6 @@
                             {{ item.總價差 }}
                         </v-btn>
                     </template>
-
                     <template v-slot:item.type="{ item }">
                         <v-btn text @click="openDialog(item)">
                             {{ item.stock_number }}
@@ -376,17 +267,11 @@
                     <template v-slot:item.fullsummary="{ item }">
                         <td v-html="formatDesc(item.fullsummary)"></td>
                     </template>
-
-
                 </v-data-table>
-
-
-                <!-- 弹出窗口 -->
                 <v-dialog v-model="dialog" max-width="90vw">
                     <v-card>
                         <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
                         <v-card-text style="padding: 0; height:90vh;">
-                            <!-- 在這裡添加iframe -->
                             <iframe v-if="selectedItem"
                                 :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
                                 width="80%" frameborder="0" style="padding: 0; height:80vh;">
@@ -417,9 +302,8 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    sortBy: ['frist_uptrend','MACD_%'],
-                    
-                    //sortBy: ['Typelevel', '總價差'],
+                    //sortBy: ['frist_uptrend', 'MACD_%'],
+                    sortBy: ['frist_uptrend', '總價差'],
                     sortDesc: [true, true],
                     dialog: false,
                     selectedItem: null,
@@ -509,7 +393,7 @@
                     let file = './Result/check.xlsx'; // 預設檔案
                     const d = urlParams.get('d');
                     const type = urlParams.get('type');
-                    const date = urlParams.get('date');
+                    //const date = urlParams.get('date');
                     const setdate = urlParams.get('setdate');
 
                     if (d) {
@@ -536,14 +420,6 @@
                     if (setdate) {
                         this.set_date = setdate
                     }
-
-                    // 若有 date 參數，將路徑中的 "Result" 替換成動態資料夾名（如 Result202405）
-                    if (date) {
-                        //const resultFolder = 'Result' + date;
-                        //file = file.replace('Result', resultFolder);
-                    }
-                    console.log(file)
-                    // 
                     await fetch(file)
                         .then(response => response.arrayBuffer())
                         .then(data => {
@@ -568,15 +444,16 @@
 
                                 const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '總市值', '成交量', 'Type1',];// 'stock_number'
                                 //(價)
-                                const trendFields = ['MACD_%', '均價long_%', '均價_%', 'MA5_%', 'highlight_date', '價_起始日期',];
+                                const trendFields = ['MACD_%', '均價long_%', '均價_%', 'MA5_%', 'highlight_date',];//'價_起始日期',
                                 const dateFields = ['量價差天',];
                                 const miscFields = ['當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
                                 //(量)
                                 const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator', 'Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
                                 const configFlag = ['確認漲跌']
 
-                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'FlagDiff', 'neg_Flag', 'Flag', 'FlagUP_', 'FlagUPUP', 'Flage_q4',];//, 'star'
-                                arr = [...baseFields, 'type', 'MACD_%', 'MACD-SL', 'MACD', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能', 'frist_uptrend', 'Flage_q4', 'fullsummary'] // , 'star' , 'flag_Y','FlagUP_', 'FlagUPUP'
+                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'Flag', 'Flage_q4',];
+                                // 'MACD-SL', 'MACD','漲跌BYN天', '增縮BYN天', 
+                                arr = [...baseFields, 'VPC_break', 'type', 'MACD_%', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能', 'frist_uptrend', 'frist_uptrendcheck', 'Flage_q4', 'fullsummary'] //  , 'flag_Y',
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -625,15 +502,10 @@
                                         dummydataItem['均價_%'] = maxdateitem['均價_%']
                                         dummydataItem['MA5_%'] = maxdateitem['MA5_%']
 
-
                                         // 總價差 (依據highlight_date 來計算，如果沒有使用mindate)
                                         //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
                                         const targerdate = mindate
                                         dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == this.para_date)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
-
-                                        //價_起始日期 取被判定flag＝Y (Untitled.ipynb ==>　MA5_%>=0, 成交量 > 500, 遠交易量>-15 ,短交易量>-15 )
-                                        dummydataItem.價_起始日期 = dummydataItem.datalist.filter(y => y.flag == 'Y').map(x => x.日期).reduce((a, b) => a < b ? a : b, Infinity);
-                                        dummydataItem.價_起始日期 = dummydataItem.價_起始日期 == Infinity ? '' : dummydataItem.價_起始日期;
 
                                         //## 處理明細資料
                                         dummydataItem.datalist.forEach((item, index) => {
@@ -647,116 +519,62 @@
                                             //【參數】
                                             var n = this.n
 
-                                            let arrlist_dl = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
+                                            let arrlist_dl = dl.map(x => parseInt(x.量能)).slice().reverse()
                                             let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
                                             item.增縮BYN天 = differences_dl.slice(-n).reduce((acc, current) => acc + current, 0);
 
-                                            let arrlist_dll = dl.map(x => parseInt(x._quote)).slice().reverse()
-                                            item.漲跌BYN天 = arrlist_dll.slice(-n).reduce((acc, current) => acc + current, 0)
+                                            let differences_d2 = dl.map(x => parseInt(x._quote)).slice().reverse()
+                                            item.漲跌BYN天 = differences_d2.slice(-n).reduce((acc, current) => acc + current, 0);
 
-                                            let arrlist_dll1 = dl.map(x => parseInt(x.量能)).slice().reverse()
-                                            item.量能均 = arrlist_dll1.slice(-n).reduce((acc, current) => acc + current, 0)
+                                            item.量能均 = dl.map(x => parseInt(x.量能)).slice().reverse().slice(-n).reduce((acc, current) => acc + current, 0)
                                             item.量能均 = parseInt(item.量能均 / n)
 
-                                            let arrlist_dll2 = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse()
-                                            item.Volume_Diff = arrlist_dll2.slice(-2).reduce((acc, current) => -acc + current, 0)
+                                            item.Volume_Diff = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
 
                                             // 新產判斷邏輯
                                             // ###【Flag】 新產判斷邏輯
-                                            //item.Flag = dl.filter(x => x["均價_%"]>0 && x["MA5_%"]>0 && x.Volume_Oscillator >= -15 && x._quote>2 &&x.量能>15 && x.Volume_Diff>15).length
                                             item.Flag = dl.filter(x => x["均價_%"] > 0 && x["MA5_%"] < 0).length   // 在表現好的狀況下去尋找有點被回拉的
-                                            item.FlagUPUP = dl.filter(x => x["均價_%"] > 0.5 && x["MA5_%"] > 0.5 && x["量能"] > 7).length
-                                            //每日加權指標（單日強度分數）
-                                            item.FlagUP_ = (parseFloat(item["均價_%"]) + parseFloat(item["MA5_%"])).toFixed(2);
-
-                                            // ###【Flag1】**** 計算　＂量＂　（確認是突然放量　還是漸進）
-                                            item.Flag1 = item.量能差 > 10 && item.量能均 > 5 ? '【Lv.4】-突然放量' :
-                                                item.量能差 < 10 && item.量能均 > 5 ? '【Lv.3】-有量，當日縮' :
-                                                    item.量能差 > 10 && item.量能均 < 5 ? '【Lv.2】-漸漸量長' :
-                                                        '【Lv.1】-';
-
                                         });
 
                                         //二次處理明細  要先經過一次計算
                                         dummydataItem.datalist.forEach((item, index) => {
-
-                                            // ###【Flag2】------     價長進的指標 (表示近期漲的狀況居多)
                                             let dd1 = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
-                                            // 【參數】
-                                            var nDay = -3 // 抓往前推幾天
-                                            //(價) 計算近期漲跌BYN天 >2or1  表示近期都是漲的
-                                            let arrlist_dll3 = dd1.map(x => parseInt(x.漲跌BYN天)).slice().reverse()
-                                            var logic1 = arrlist_dll3.slice(nDay).filter(x => x > 2).length
-                                            var logic2 = arrlist_dll3.slice(nDay).filter(x => x > 4).length
-                                            var neg_logic1 = arrlist_dll3.slice(nDay).filter(x => x > 5).length
-                                            //(量) 計算近期 Volume_Oscillator 的差值 ，表示近期有突破量
-                                            let arrlist_dll4 = dd1.map(x => parseInt(x.Volume_Diff)).slice().reverse()
-                                            var logic3 = arrlist_dll4.slice(nDay).filter(x => x >= 5).length
-                                            //(量) 計算近期 量能均 >2 ， 表示近期都是量越來越多
-                                            let arrlist_dll5 = dd1.map(x => parseInt(x.量能均)).slice().reverse()
-                                            var logic4 = arrlist_dll5.slice(nDay).filter(x => x > 2).length
-                                            // Flag2 整理
-                                            item.Flag2 = logic1 + logic2 + logic3 + logic4 - neg_logic1
-                                            // ###【Flag2】------    　end 
-
                                             // ###【Flag】------  
                                             nDay = -5 // 抓往前推幾天
-
                                             let arrlist_dll6 = dd1.map(x => parseInt(x.Flag)).slice().reverse()
                                             item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
-
-                                            let arrlist_dllUPUP = dd1.map(x => parseInt(x.FlagUPUP)).slice().reverse()
-                                            item.FlagUPUP = arrlist_dllUPUP.slice(nDay).filter(x => x > 0).length
-
-                                            //說明：衡量股價當日相對於均價與短期均線的「向上偏離度」
-                                            //FlagUP_ > 1.2 ➜ 當日價格有明顯上攻意圖
-                                            let arrlist_dllUP_ = dd1.map(x => parseInt(x.FlagUP_)).slice().reverse()
-                                            item.FlagUP_ = arrlist_dllUP_.slice(nDay).filter(x => x > 1.2).length
-
-                                            let arrlist_quote = dd1.map(x => parseInt(x._quote)).slice().reverse()
-                                            _day = -arrlist_quote.length - nDay
-                                            item.neg_Flag = arrlist_quote.slice(_day).filter(x => x > 6).length
-
                                             // ###【Flag】------    　end 
+
+                                            item.增縮BYN天Diff = dd1.map(x => parseInt(x.增縮BYN天)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
+                                            item.漲跌BYN天Diff = dd1.map(x => parseInt(x.漲跌BYN天)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
+
+                                            //////////////////////////////////////////////////////////////////////////
+                                            item.textdesc = '價'.concat(item.漲跌BYN天Diff > 2 ? "漲" : item.漲跌BYN天Diff < -3 ? "跌" : "-");
+                                            item.textdesc += '量'.concat(item.增縮BYN天Diff > 2 ? "增" : item.增縮BYN天Diff < -10 ? "縮" : "-");
+                                            item.Full_Summary += '</b>'
+                                            item.Full_Summary += item.textdesc;
                                         });
-
                                         //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)                 
-
                                         var datalist_last_date = datalist.find(x => x.日期 === this.para_date)
-
                                         dummydataItem['MACD'] = datalist_last_date['MACD']
                                         dummydataItem['MACD-SL'] = datalist_last_date['MACD-SL']
                                         dummydataItem['MACD_%'] = datalist_last_date['MACD_%']
                                         dummydataItem['MA5_%'] = datalist_last_date['MA5_%']
                                         dummydataItem['均價_%'] = datalist_last_date['均價_%']
                                         dummydataItem['均價long_%'] = datalist_last_date['均價long_%']
-
                                         dummydataItem.fullsummary = datalist_last_date?.Full_Summary;
                                         dummydataItem.Volume_Diff = datalist_last_date?.Volume_Diff;
                                         dummydataItem.成交股數 = datalist_last_date?.成交股數;
                                         dummydataItem.當日漲跌 = datalist_last_date?._quote;
                                         dummydataItem.增縮BYN天 = datalist_last_date?.增縮BYN天;
-                                        dummydataItem.漲跌BYN天 = datalist_last_date?.漲跌BYN天;
+                                        dummydataItem.增縮BYN天Diff = datalist_last_date?.增縮BYN天Diff;
+                                        dummydataItem.漲跌BYN天Diff = datalist_last_date?.漲跌BYN天Diff;
                                         dummydataItem.量能差 = datalist_last_date?.量能差;
                                         dummydataItem.量能均 = datalist_last_date?.量能均;
+                                        dummydataItem.VPC_break = datalist_last_date?.VPC_break;
                                         dummydataItem.Flag = datalist_last_date?.Flag;
-                                        dummydataItem.FlagUPUP = datalist_last_date?.FlagUPUP;
-                                        dummydataItem.FlagUP_ = datalist_last_date?.FlagUP_;
-                                        dummydataItem.neg_Flag = datalist_last_date?.neg_Flag;
-                                        dummydataItem.Flag1 = datalist_last_date?.Flag1;
-                                        dummydataItem.Flag2 = datalist_last_date?.Flag2;
+
                                         //////////////////////////////////////////////////////////////////////////
-
-                                        var datalist_filter = datalist.filter(q => q.日期 <= this.para_date);
-                                        let arrlist_flag = datalist_filter.map(x => parseInt(x.Flag)).slice().reverse()
-                                        dummydataItem.FlagDiff = arrlist_flag.slice(-2).reduce((acc, current) => -acc + current, 0);
-
-                                        //確認 "價" "量" 起來差距日
-                                        const date1 = new Date(dummydataItem.highlight_date); // 開始日期 highlight_date(價)
-                                        const date2 = new Date(dummydataItem.價_起始日期);     // 結束日期 價_起始日期    (價+量)
-                                        const diffTime = date2 - date1; // 取得毫秒數差距
-                                        const diffDays = diffTime / (1000 * 60 * 60 * 24); // 轉換為天數
-                                        dummydataItem.量價差天 = diffDays
                                         //確認漲跌
                                         var checkpoint_maxdateData = datalist.find(x => x.日期 === maxdate)
                                         let cc = dummydataItem.datalist.filter(q => q.日期 > this.para_date);
@@ -766,17 +584,34 @@
                                         //計算最大成交股數
                                         item.max股數 = parseInt(Math.max(...datalist.map(x => x.成交股數)));
                                         //
-
                                         dummydataItem.flag_Y = datalist.filter(x => x.flag == 'Y').length > 0
                                         dummydataItem.Flage_q4 = datalist.find(x => x.Flag == 4)?.日期
-                                        dummydataItem.star = datalist.find(x => x.Volume_Price_Change_break && x.VPC_break && parseFloat(x['MACD-SL']) > 0)?.日期
-                                        dummydataItem.frist_uptrend = datalist.filter(x => x.Full_Summary.includes('多頭')).map(x => x.日期).sort()[0]
+
+                                        //dummydataItem.frist_uptrend = datalist.filter(x => x.Full_Summary.includes('多頭')).map(x => x.日期).sort()[0]
+                                        dummydataItem.frist_uptrend = datalist.filter(x => x.textdesc.includes('價漲量增')).map(x => x.日期).sort()[0]
+                                        dummydataItem.last_uptrend = datalist.filter(x => x.textdesc.includes('價漲量增')).map(x => x.日期)[0]
+                                        dummydataItem.last_downtrend = datalist.filter(x => x.textdesc.includes('價跌量增')).map(x => x.日期)[0]
+
+                                        // 價漲量增 又發生 價跌量增  將取消 frist_uptrend 標記
+                                        if (!!dummydataItem.last_downtrend && !!dummydataItem.frist_uptrend
+                                            && dummydataItem.last_downtrend > dummydataItem.frist_uptrend
+                                            && dummydataItem.last_downtrend > dummydataItem.last_uptrend
+                                        ) {
+                                            if (dummydataItem.last_downtrend > dummydataItem.last_uptrend) {
+                                                debugger;
+                                            }
+                                            dummydataItem.frist_uptrend = undefined
+                                        }
+
+
+
                                         //dummydataItem.frist_uptrend = datalist.filter(x => x.VPC_break).map(x => x.日期).sort()[0]
+                                        dummydataItem.frist_uptrendcheck = datalist.filter(x => x.日期 > dummydataItem.frist_uptrend).map(x => parseInt(x._quote)).slice().reduce((acc, current) => acc + current, 0);
                                     }
                                     return dummydataItem;
                                 });
 
-                                var para_x = 1 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                var para_x = 5 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
@@ -791,29 +626,7 @@
                 reset() {
                     var vm = this
                     vm.jsonData = vm.jsonData_
-                    vm.sortBy = ['highlight_date']
-                },
-                actionFilter(i) {
-                    var vm = this
-                    //【index.html 】
-                    //vm.jsonData=vm.jsonData.filter(x => parseFloat(x["均價_%"])>0 && x["遠交易量"]>-20)
-
-                    // 【OK】
-                    //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0)
-                    //app.jsonData=app.jsonData.filter(x => x["均價_%"]>0 && x["總價差"]>1)
-                    //this.jsonData=this.jsonData_.filter(x => x["均價_%"]>0 && x["總價差"]>1)
-
-                    //app.jsonData=app.jsonData_.filter(x => x.Flag  >2)
-                    //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag>2)
-                    //app.jsonData=app.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-                    //this.jsonData=this.jsonData_.filter(x =>  x.Flag >2 && x.neg_Flag<2 && x["總價差"]>0)
-
-                    vm.jsonData = vm.jsonData_.filter(x => x.Flag > 2 && x.neg_Flag < 2 && x["總價差"] > 0)
-                },
-                actionFilter1(i) {
-                    var vm = this
-                    //【index.html 】
-                    vm.jsonData = vm.jsonData_.filter(x => parseFloat(x["均價_%"]) > 0 && x["遠交易量"] > -20)
+                    //vm.sortBy = ['highlight_date']
                 },
                 Flag4() {
                     var vm = this
@@ -823,8 +636,11 @@
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)
                     vm.sortBy = ['Typelevel', '總價差']
-                },memo(){
+                },
+                memo() {
                     // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0　&&x['均價long_%']>0)
+
+                    //app.jsonData=app.jsonData_.filter(x=>x['總價差']>0 && !!x.frist_uptrend )
                 }
             }
         });
