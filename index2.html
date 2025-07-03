@@ -128,7 +128,6 @@
                                         均價_% {{ data['均價_%']}}
                                         <br />
                                         均價long_% {{ data['均價long_%']}}
-
                                         <br />
                                         MA_short {{ data['MA_short']}}
                                         <br />
@@ -175,7 +174,7 @@
                                             parseInt(data.漲跌BYN天Diff) > 5  && parseInt(data.漲跌BYN天) > 1 && parseInt(data._quote) > 1 ? 'orange' :
                                             parseInt(data.漲跌BYN天Diff) > 1  && parseInt(data.漲跌BYN天) > 1 && parseInt(data._quote) > 1? 'blue' :
                                             'gray'  }">
-                                    漲跌BY{{n}}天 :{{data.漲跌BYN天 }} / {{data.漲跌BYN天Diff }}
+                                    漲跌BY{{n}}天 :{{parseInt(data.漲跌BYN天) }} / {{data.漲跌BYN天Diff }}
                                 </span>
                                 <br />
                                 <span :style="{ color: 
@@ -183,7 +182,7 @@
                                             parseInt(data.增縮BYN天Diff) > 5 && parseInt(data.增縮BYN天) > 2 && parseInt(data._quote) > 1? 'orange' :
                                             parseInt(data.增縮BYN天Diff) > 1 && parseInt(data.增縮BYN天) > 2 && parseInt(data._quote) > 1? 'blue' :
                                             'gray'  }">
-                                    增縮BY{{n}}天 :{{data.增縮BYN天 }}/ {{data.增縮BYN天Diff }}
+                                    增縮BY{{n}}天 :{{parseInt(data.增縮BYN天) }}/ {{data.增縮BYN天Diff }}
                                 </span>
                                 <br />
                                 {{data.textdesc}}
@@ -453,7 +452,9 @@
 
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'Flag', 'Flage_q4',];
                                 // 'MACD-SL', 'MACD','漲跌BYN天', '增縮BYN天', 
-                                arr = [...baseFields, 'VPC_break', 'type', 'MACD_%', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能均', '量能', 'frist_uptrend', 'frist_uptrendcheck', 'Flage_q4', 'fullsummary'] //  , 'flag_Y',
+                                arr = [ 'VPC_break', 'type', 'MACD_%', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差','量能差','量能均', '量能', 
+                                                     '漲跌BYN天Diff','漲跌BYN天','增縮BYN天Diff','增縮BYN天','textdesc',
+                                                      'frist_uptrend', 'frist_uptrendcheck', 'Flage_q4', 'fullsummary'] //  , 'flag_Y',
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -477,8 +478,8 @@
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
 
-                                //this.jsonData = this.jsonData.filter(q => q.stock_number == 8054)//6593
-                                //dummydata = dummydata.filter(q => q.stock_number == 8054)
+                                //this.jsonData = this.jsonData.filter(q => q.stock_number == 8932)//6593
+                                //dummydata = dummydata.filter(q => q.stock_number == 8932)
 
                                 dummydata.map((item, index) => {
                                     const dummydataItem = item
@@ -518,13 +519,15 @@
                                             let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
                                             //【參數】
                                             var n = this.n
+                                         
 
-                                            let arrlist_dl = dl.map(x => parseInt(x.量能)).slice().reverse()
-                                            let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
-                                            item.增縮BYN天 = differences_dl.slice(-n).reduce((acc, current) => acc + current, 0);
-
-                                            let differences_d2 = dl.map(x => parseInt(x._quote)).slice().reverse()
-                                            item.漲跌BYN天 = differences_d2.slice(-n).reduce((acc, current) => acc + current, 0);
+                                            //let arrlist_dl = dl.map(x => parseInt(x.量能)).slice().reverse()
+                                            //let differences_dl = arrlist_dl.slice(0, -1).map((item, index) => arrlist_dl[index + 1] - item)
+                                               
+                                            //item.增縮BYN天 = differences_dl.slice(-n).reduce((acc, current) => acc + current, 0);
+                                            
+                                            //let differences_d2 = dl.map(x => parseInt(x._quote)).slice().reverse()
+                                            //item.漲跌BYN天 = differences_d2.slice(-n).reduce((acc, current) => acc + current, 0);
 
                                             item.量能均 = dl.map(x => parseInt(x.量能)).slice().reverse().slice(-n).reduce((acc, current) => acc + current, 0)
                                             item.量能均 = parseInt(item.量能均 / n)
@@ -545,14 +548,14 @@
                                             item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
                                             // ###【Flag】------    　end 
 
-                                            item.增縮BYN天Diff = dd1.map(x => parseInt(x.增縮BYN天)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
-                                            item.漲跌BYN天Diff = dd1.map(x => parseInt(x.漲跌BYN天)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
+                                            //item.增縮BYN天Diff = dd1.map(x => parseInt(x.增縮BYN天)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
+                                            //item.漲跌BYN天Diff = dd1.map(x => parseInt(x.漲跌BYN天)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
 
                                             //////////////////////////////////////////////////////////////////////////
-                                            item.textdesc = '價'.concat(item.漲跌BYN天Diff > 2 ? "漲" : item.漲跌BYN天Diff < -3 ? "跌" : "-");
-                                            item.textdesc += '量'.concat(item.增縮BYN天Diff > 2 ? "增" : item.增縮BYN天Diff < -10 ? "縮" : "-");
-                                            item.Full_Summary += '</b>'
-                                            item.Full_Summary += item.textdesc;
+                                            //item.textdesc = '價'.concat(item.漲跌BYN天Diff > 2 ? "漲" : item.漲跌BYN天Diff < -3 ? "跌" : "-");
+                                            //item.textdesc += '量'.concat(item.增縮BYN天Diff > 2 ? "增" : item.增縮BYN天Diff < -10 ? "縮" : "-");
+                                            //item.Full_Summary += '<br/>'
+                                            //item.Full_Summary += item.textdesc;
                                         });
                                         //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)                 
                                         var datalist_last_date = datalist.find(x => x.日期 === this.para_date)
@@ -568,9 +571,11 @@
                                         dummydataItem.當日漲跌 = datalist_last_date?._quote;
                                         dummydataItem.增縮BYN天 = datalist_last_date?.增縮BYN天;
                                         dummydataItem.增縮BYN天Diff = datalist_last_date?.增縮BYN天Diff;
+                                        dummydataItem.漲跌BYN天 = datalist_last_date?.漲跌BYN天;
                                         dummydataItem.漲跌BYN天Diff = datalist_last_date?.漲跌BYN天Diff;
                                         dummydataItem.量能差 = datalist_last_date?.量能差;
                                         dummydataItem.量能均 = datalist_last_date?.量能均;
+                                        dummydataItem.textdesc = datalist_last_date?.textdesc;
                                         dummydataItem.VPC_break = datalist_last_date?.VPC_break;
                                         dummydataItem.Flag = datalist_last_date?.Flag;
 
@@ -602,8 +607,6 @@
                                             }
                                             dummydataItem.frist_uptrend = undefined
                                         }
-
-
 
                                         //dummydataItem.frist_uptrend = datalist.filter(x => x.VPC_break).map(x => x.日期).sort()[0]
                                         dummydataItem.frist_uptrendcheck = datalist.filter(x => x.日期 > dummydataItem.frist_uptrend).map(x => parseInt(x._quote)).slice().reduce((acc, current) => acc + current, 0);
