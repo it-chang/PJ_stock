@@ -23,10 +23,8 @@
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" :items-per-page="-1" style="white-space: nowrap;">
                     <template v-slot:[`item.${header.value}`]="{ item }"
-                        v-for="header in headers.filter(h => h.value !== 'Typelevel')" :key="header.value">
-                        <span :style="{ 
-                        color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :
-                        'gray'  }">
+                        v-for="header in headers.filter(h => h.value !== 'Typelevel' && h.value !== '0')" :key="header.value">
+                        <span :style="{  color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :'gray'  }">
                             {{parseFloat(item[header.value]).toFixed(1)}}
                             <!--
                             {{parseFloat( item[header.value]/jsonData.map(x=>x[header.value]).sort((a, b) => a -
@@ -43,6 +41,24 @@
                         <a :href="computedHref2(item)" target="_blank" rel="noopener">
                             {{ sanitizedTypelevel(item) }}
                         </a>
+                    </template>
+                    <template v-slot:body.append>  
+                          <tr class="sticky-table-footer">
+                            <td></td>
+                            <td></td>
+                            
+                            <td v-for="(header, index) in headers.filter(h => h.value !== 'Typelevel' && h.value !== '0')" :key="header.value">
+                               <!-- {{headers.filter(h => h.value !== 'Typelevel' && h.value !== '0')[index-1]?.text}}
+                                <br/>
+                                {{header.value}}
+                                (   jsonData.map(x=>x[header.value]).reduce((acc, current) => acc + current, 0).toFixed(1) ) /
+                            -->
+                                <br/>
+                                {{ 
+                                       jsonData.map(x=>x[header.value]).reduce((acc, current) => acc + current, 0).toFixed(1)
+                                }}
+                            </td>
+                          </tr>
                     </template>
                 </v-data-table>
             </v-container>
