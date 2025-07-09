@@ -60,12 +60,14 @@
                             <div v-if="index==0" style="position: sticky; min-height: 100%;" :class="[
                                     (data['VPC_break']=='True' ) ? 'hightlight_line_box' : '',  
                                     (item.highlight_date <= header.value  && item.highlight_date !='') ? 'hightlight_line_under' : '',
-                                    (  data.Flag_負向) ? 'big-x' : '',  
+                                    (data.Flag_負向) ? 'big-x' : '',  
                                     (data.Flag_三階段 ) ? 'circle-x' : '',  
                                     ].filter(Boolean)">
                                 <v-tooltip slot="append" bottom color="#E5E5E5">
                                     <template v-slot:activator="{ on }">
                                         <div v-on="on">
+                                            <span> {{data['Type0']}}</span>
+                                            <span>{{data['MACD_%']}}</span>
                                             <span>
                                                 {{data.Typelevel.replace(data.Type1,'')}}
                                             </span>
@@ -96,7 +98,7 @@
                                             color: (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.5) ? 'red' : 
                                                    (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.2) ? 'orange' : 
                                                 'gray' }">
-                                        量能:data.量能.split('.')[0]
+                                        量能: {{data.量能}}
                                         <BR />
                                         量能均{{data.量能均}}
                                         <BR />
@@ -121,7 +123,6 @@
                                             漲跌:{{data._quote}}
                                         </span>
                                     </template>
-
                                     <span style="color: #285376b8;">
                                         <br />
                                         MA5_% {{ data['MA5_%']}}
@@ -130,13 +131,11 @@
                                         <br />
                                         均價long_% {{ data['均價long_%']}}
                                         <br />
-                                        MA_short {{ data['MA_short']}}
+                                        MACD_% {{ data['MACD_%']}}
                                         <br />
                                         MA_long {{ data['MA_long']}}
                                         <br />
                                         MA_longlong {{ data['MA_longlong']}}
-                                        <br />
-                                        MACD_% {{ data['MACD_%']}}
                                     </span>
                                 </v-tooltip>
                                 <BR />
@@ -148,11 +147,8 @@
                                                parseInt(data._quote) > 1  &&   parseInt(data.量能) > 20 && parseInt(data.量能)> parseInt(data.量能均)* 1.5 ? 'orange' :
                                                parseInt(data._quote) > 1  &&   parseInt(data.量能) > 20 && parseInt(data.量能)> parseInt(data.量能均) ? 'blue' :
                                                 'gray'  }">
-                                            量能:{{data.量能 }}(均: {{data.量能均 }})
+                                            量能:{{data.量能 }}(均: {{data.量能均  }}) 
                                         </span>
-                                        <!--span>
-                                            {{data.flag}} {{data['MACD_%']}}
-                                        </span-->
                                     </template>
                                     【Flag】: 量價同時有長進　Volume_Diff >5 漲跌BYN天>5 本日漲跌 > -1
                                     <br /> &nbsp; Volume_Diff : {{data.Volume_Diff}}
@@ -245,6 +241,26 @@
                                         Volume 差:{{data.Volume_Diff}}
                                     </div>
                                 </div>
+
+                                <!--MACD_% 差 bar -->
+                                <div style="  height:35px;">
+                                    <div :style="{ backgroundColor:  
+                                    parseInt(data['MACD_%']) > 40  ? '#4dffcf40' : 
+                                    parseInt(data['MACD_%']) > 30  ? '#4dffcf30' : 
+                                    parseInt(data['MACD_%']) > 20  ? '#4dffcf20' : 
+                                    parseInt(data['MACD_%']) > 10  ? '#4dffcf20' :
+                                    parseInt(data['MACD_%']) > 0   ? '#4dffcf10' :
+                                    parseInt(data['MACD_%']) > -10 ? '#f7f7f7' :
+                                    parseInt(data['MACD_%']) > -20 ? '#f7f7f7' :
+                                    parseInt(data['MACD_%']) > -60 ? '#f7f7f7' :
+                                    '#f7f7f7' ,
+                                    height: 
+                                    String(Math.sqrt(parseInt( ( data['MACD_%'] ))))+'px'
+                                     }">
+                                        MACD_%:{{data['MACD_%']}}
+                                    </div>
+                                </div>
+
                             </div>
                         </template>
                     </template>
@@ -320,12 +336,11 @@
                     filters: {},
                     arrcount: 0,
                     uniqueValues: {},
-                    //sortBy: ['frist_uptrend', 'MACD_%'],
-
+        
                     sortBy: ['frist_uptrend', '總價差'],
-                    //sortBy: ['當日漲跌','總價差'],
-
                     sortDesc: [true, true],
+                    sortBy: ['frist_uptrendcheck'],
+                    sortDesc: [false],
                     dialog: false,
                     selectedItem: null,
                     realtimedata: [],
@@ -475,8 +490,8 @@
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'Flag',];
                                 // 'MACD-SL', 'MACD','漲跌BYN天', '增縮BYN天', 
                                 arr = ['VPC_break', 'type', 'MACD_%', 'MACD-SL', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能差', '量能均', '量能',
-                                    '漲跌BYN天Diff', '漲跌BYN天', '增縮BYN天Diff', '增縮BYN天', 'textdesc',
-                                    'frist_uptrend', 'frist_uptrendcheck', 'fullsummary']
+                                        '漲跌BYN天Diff', '漲跌BYN天', '增縮BYN天Diff', '增縮BYN天', 'textdesc',
+                                        'frist_uptrend', 'frist_uptrendcheck','量能max','量能min','MACDpercent_max']// 'fullsummary'
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -529,10 +544,12 @@
                                         //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
                                         const targerdate = mindate
                                         dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == this.para_date)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
+                                        dummydataItem.量能min=datalist.map(x => parseInt(x.量能)).sort((a, b) => a - b)[0]
+                                        dummydataItem.量能max= datalist.map(x => parseInt(x.量能)).sort((a, b) => a - b).reverse()[0]
+                                        dummydataItem.MACDpercent_max= datalist.map(x => parseInt(x['MACD_%'])).sort((a, b) => a - b).reverse()[0]
 
                                         //## 處理明細資料
                                         dummydataItem.datalist.forEach((item, index) => {
-
                                             let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
                                             //【參數】
                                             var n = this.n
@@ -542,10 +559,10 @@
 
                                             item.Volume_Diff = dl.map(x => parseInt(x.Volume_Oscillator)).slice().reverse().slice(-2).reduce((acc, current) => -acc + current, 0)
 
-
                                             // 新產判斷邏輯
                                             // ###【Flag】 新產判斷邏輯
                                             item.Flag = dl.filter(x => x["均價_%"] > 0 && x["MA5_%"] < 0).length   // 在表現好的狀況下去尋找有點被回拉的
+
 
                                         });
 
@@ -564,7 +581,6 @@
                                             let arrlist_dll6 = dd1.map(x => parseInt(x.Flag)).slice().reverse()
                                             item.Flag = arrlist_dll6.slice(nDay).filter(x => x > 0).length
                                             // ###【Flag】------    　end 
-
 
                                             let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
 
@@ -594,14 +610,14 @@
                                                 let cond4 = (day_1["均價long_%"] > 0 && day_1["均價_%"] > 0 && day_1["MA5_%"] < 0) &&
                                                     (day_0["均價long_%"] > 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0); // + + -，+ + +
 
-                                                let cond5 =  (day_1["均價long_%"] < 0 && day_1["均價_%"] > 0 && day_1["MA5_%"] < 0) &&
-                                                             (day_0["均價long_%"] < 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0);   //- + -，- + +
+                                                let cond5 = (day_1["均價long_%"] < 0 && day_1["均價_%"] > 0 && day_1["MA5_%"] < 0) &&
+                                                    (day_0["均價long_%"] < 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0);   //- + -，- + +
                                                 let cond11 = (day_1["均價long_%"] > 0 && day_1["均價_%"] > 0 && day_1["MA5_%"] < 0) &&
-                                                             (day_0["均價long_%"] > 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0);   //+ + -，+ + +
+                                                    (day_0["均價long_%"] > 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0);   //+ + -，+ + +
                                                 let cond12 = (day_1["均價long_%"] < 0 && day_1["均價_%"] < 0 && day_1["MA5_%"] > 0) &&
-                                                             (day_0["均價long_%"] < 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0);   //- - + ，- + +
+                                                    (day_0["均價long_%"] < 0 && day_0["均價_%"] > 0 && day_0["MA5_%"] > 0);   //- - + ，- + +
 
-                                                let cond6 = day_0.Full_Summary.includes('下影大於實體兩倍')
+                                                //let cond6 = day_0.Full_Summary.includes('下影大於實體兩倍')
 
                                                 let cond7 = day_0.量能 > day_0.量能均 * 1.2 && day_0.量能均 >= 3 && day_0._quote > -1
                                                 let cond8 = day_0["MACD_%"] > 1000 && day_0["MACD-SL"] > 0
@@ -609,13 +625,13 @@
                                                 // 長線轉好，放量
                                                 let cond9 = day_0["均價long_%"] > -0.50 && day_1["均價long_%"] < 0 // 【價】
                                                 let cond9_1 = day_0.量能 > day_0.量能均 * 1.2 && day_0.量能均 > day_1.量能均 * 1.2 //【量】
-                                                //
-                                                let cond10 = false//day_0["均價_%"]>0 &&day_0["MA5_%"]>0 &&day_0["MACD_%"]>0 && day_0.量能>day_0.量能均*1.2  && day_0.量能均 > day_1.量能均 * 1.2 
-
+                                                
                                                 let cond13 = day_0["MACD_%"] > 0 && day_1["MACD_%"] < 0
                                                 let cond14 = day_0["量能均"] > day_1["量能均"] && day_0["量能均"] > day_2["量能均"] && day_2["量能均"] > 2
 
                                                 let cond15 = day_0.now_price > day_0["MA_longlong"] && day_1["MA_longlong"] > day_1.now_price
+
+                                                let cond16 = day_0.量能  > 2 && (day_0.量能 > day_0.量能均*1.75) && ( !day_0.Full_Summary.includes('負'))  && day_0["MACD_%"] >0
 
                                                 // 將多組邏輯條件包進陣列，每組是一種邏輯成立條件
                                                 let conditionGroups = [
@@ -623,15 +639,12 @@
                                                     //[cond4],               // 可能提前轉強的特例
                                                     //[cond5],
                                                     //[cond7,cond8],   //  for 元太
-                                                    //[cond10],
                                                     //[cond11],
 
-
-                                                    [cond9,cond9_1], // 均線　轉正
-                                                    [cond13,cond14], // MACD 轉正
-                                                    [cond15, cond14]   // 站上 MA_longlong
-
-                                                    // 之後你可以加更多組，例如 [cond5, cond6]
+                                                    //[cond9, cond9_1], // 均線　轉正
+                                                    //[cond13, cond14], // MACD 轉正
+                                                    //[cond15, cond14],   // 站上 MA_longlong
+                                                    [cond16]
                                                 ];
 
                                                 // 判斷是否有任一組邏輯成立
@@ -681,14 +694,15 @@
                                         //計算最大成交股數
                                         item.max股數 = parseInt(Math.max(...datalist.map(x => x.成交股數)));
                                         //
-
+                                        /*
                                         dummydataItem.Flage_q4 = datalist.find(x => x.Flag == 4)?.日期
+                                   
                                         //////////////////////////////////////////////////////////////////////////
                                         //dummydataItem.frist_uptrend = datalist.filter(x => x.Full_Summary.includes('多頭')).map(x => x.日期).sort()[0]
                                         dummydataItem.frist_uptrend = datalist.filter(x => x.textdesc.includes('價漲量增') | x.Full_Summary.includes('多頭') | x.Full_Summary.includes('爆量上攻')).map(x => x.日期).sort()[0]
                                         dummydataItem.last_uptrend = datalist.filter(x => x.textdesc.includes('價漲量增') | x.Full_Summary.includes('多頭') | x.Full_Summary.includes('爆量上攻')).map(x => x.日期)[0]
                                         dummydataItem.last_downtrend = datalist.filter(x => x.textdesc.includes('價跌量增')).map(x => x.日期)[0]
-
+                                        
                                         // 價漲量增 又發生 價跌量增  將取消 frist_uptrend 標記
                                         if (!!dummydataItem.last_downtrend && !!dummydataItem.frist_uptrend
                                             && dummydataItem.last_downtrend > dummydataItem.frist_uptrend
@@ -703,9 +717,9 @@
 
                                         //'均價long_%' '均價_%' 'MA5_%'
                                         dummydataItem.frist_uptrend = datalist.filter(x => x['均價long_%'] > 0 && x['均價_%'] > 0 && x['MA5_%'] > 0).map(x => x.日期).sort()[0]
+                                        */
                                         dummydataItem.frist_uptrend = datalist.filter(x => x.Flag_三階段).map(x => x.日期).sort()[0]
                                         dummydataItem.frist_uptrendcheck = datalist.filter(x => x.日期 >= dummydataItem.frist_uptrend).map(x => parseInt(x._quote)).slice().reduce((acc, current) => acc + current, 0);
-
                                     }
                                     return dummydataItem;
                                 });
