@@ -491,7 +491,7 @@
                                 // 'MACD-SL', 'MACD','漲跌BYN天', '增縮BYN天', 
                                 arr = ['VPC_break', 'type', 'MACD_%', 'MACD-SL', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能差', '量能均', '量能',
                                         '漲跌BYN天Diff', '漲跌BYN天', '增縮BYN天Diff', '增縮BYN天', 'textdesc',
-                                        'frist_uptrend', 'frist_uptrendcheck','量能max','量能min','MACDpercent_max']// 'fullsummary'
+                                        'frist_uptrend', 'frist_uptrendcheck','量能max','量能min','MACDpercent_max','MACDpercent_min']// 'fullsummary'
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -515,8 +515,8 @@
                                     new Map(transformedData.map(item => [item.stock_number, item])).values()
                                 );
 
-                                //this.jsonData = this.jsonData.filter(q => q.stock_number == 4154)//6593
-                                //dummydata = dummydata.filter(q => q.stock_number == 4154)
+                                //this.jsonData = this.jsonData.filter(q => q.stock_number == 4958)//6593
+                                //dummydata = dummydata.filter(q => q.stock_number == 4958)
 
                                 dummydata.map((item, index) => {
                                     const dummydataItem = item
@@ -544,9 +544,11 @@
                                         //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
                                         const targerdate = mindate
                                         dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == this.para_date)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
+                                        debugger;
                                         dummydataItem.量能min=datalist.map(x => parseInt(x.量能)).sort((a, b) => a - b)[0]
                                         dummydataItem.量能max= datalist.map(x => parseInt(x.量能)).sort((a, b) => a - b).reverse()[0]
                                         dummydataItem.MACDpercent_max= datalist.map(x => parseInt(x['MACD_%'])).sort((a, b) => a - b).reverse()[0]
+                                        dummydataItem.MACDpercent_min= datalist.map(x => parseInt(x['MACD_%'])).sort((a, b) => a - b)[0]
 
                                         //## 處理明細資料
                                         dummydataItem.datalist.forEach((item, index) => {
@@ -754,7 +756,10 @@
                     // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0　&&x['均價long_%']>0)
                     //app.jsonData=app.jsonData_.filter(x=>x.VPC_break )
                     //app.jsonData=app.jsonData_.filter(x=>x['總價差']>0 && !!x.frist_uptrend )
-                    // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0)
+                    // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0  && x['均價long_%']>0 )
+                    // app.jsonData=app.jsonData_.filter(x=> x['均價long_%']>0 )
+                    ///app.sortBy = ['highlight_date']
+                    //find 有量
                 }
             }
         });
