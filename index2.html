@@ -31,7 +31,7 @@
                     </v-col>
                     <v-col col="2">
                         <v-btn color="primary" @click="reset">reset</v-btn>
-                        <v-btn color="primary" @click="Flag4">Flag4</v-btn>
+                        <v-btn color="primary" @click="filter">Filter</v-btn>
                     </v-col>
 
                     <v-col col="1">
@@ -489,9 +489,12 @@
 
                                 var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'Flag',];
                                 // 'MACD-SL', 'MACD','漲跌BYN天', '增縮BYN天', 
-                                arr = ['VPC_break', 'type', 'MACD_%', 'MACD-SL', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能差', '量能均', '量能',
+                                arr = ['VPC_break', 'MACD_%', 'MACD-SL', '均價long_%', '均價_%', 'MA5_%', '當日漲跌', '總價差', '量能差', '量能均', '量能',
                                         '漲跌BYN天Diff', '漲跌BYN天', '增縮BYN天Diff', '增縮BYN天', 'textdesc',
-                                        'frist_uptrend', 'frist_uptrendcheck','量能max','量能min','MACDpercent_max','MACDpercent_min']// 'fullsummary'
+                                        'frist_uptrend', 'frist_uptrendcheck','量能max','量能min','MACDpercent_max','MACDpercent_min',
+                                        '均價long_%','MACD_%','量能差','type', 
+                                        ]// 'fullsummary'
+                                         //
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
                                 var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
                                 this.para_date = dates.slice(set_date)[0]
@@ -544,7 +547,7 @@
                                         //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
                                         const targerdate = mindate
                                         dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == this.para_date)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
-                                        debugger;
+                                        
                                         dummydataItem.量能min=datalist.map(x => parseInt(x.量能)).sort((a, b) => a - b)[0]
                                         dummydataItem.量能max= datalist.map(x => parseInt(x.量能)).sort((a, b) => a - b).reverse()[0]
                                         dummydataItem.MACDpercent_max= datalist.map(x => parseInt(x['MACD_%'])).sort((a, b) => a - b).reverse()[0]
@@ -572,11 +575,13 @@
                                         dummydataItem.datalist.forEach((item, index) => {
 
                                             if (index < dummydataItem.datalist.length - 1) {
-                                                item.量能差 = parseInt(item.量能均 - dummydataItem.datalist[index + 1].量能均);
+                                                //item.量能差 = parseInt(item.量能均 - dummydataItem.datalist[index + 1].量能均);
+                                                
                                             } else {
                                                 item.量能差 = 0; // 或者可以設定為 null/undefined 依據需求
                                             }
-
+                                            
+                                            item.量能差 = parseInt(item.量能 -item.量能均);
                                             let dd1 = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
                                             // ###【Flag】------  
                                             nDay = -5 // 抓往前推幾天
@@ -726,7 +731,7 @@
                                     return dummydataItem;
                                 });
 
-                                var para_x = 1 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                var para_x = 2 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
@@ -743,9 +748,13 @@
                     vm.jsonData = vm.jsonData_
                     //vm.sortBy = ['highlight_date']
                 },
-                Flag4() {
+                filter() {
                     var vm = this
-                    vm.jsonData = vm.jsonData.filter(x => parseFloat(x["Flag"]) == 4)
+                    
+                    vm.jsonData=vm.jsonData_.filter(x=> x['MACD_%']>0  && x['均價long_%']>-1 && x['漲跌BYN天']>-1  ) 
+                    vm.sortBy = ['量能差','MACD_%']
+                    vm.sortDesc = [true,true]
+                    //find 有量
                 },
                 jsonDataChange(x) {
                     var vm = this
@@ -757,9 +766,7 @@
                     //app.jsonData=app.jsonData_.filter(x=>x.VPC_break )
                     //app.jsonData=app.jsonData_.filter(x=>x['總價差']>0 && !!x.frist_uptrend )
                     // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0  && x['均價long_%']>0 )
-                    // app.jsonData=app.jsonData_.filter(x=> x['均價long_%']>0 )
-                    ///app.sortBy = ['highlight_date']
-                    //find 有量
+                  
                 }
             }
         });
