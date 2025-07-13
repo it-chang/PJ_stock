@@ -31,6 +31,8 @@
                     </v-col>
                     <v-col col="2">
                         <v-btn color="primary" @click="reset">reset</v-btn>
+                        <v-btn color="primary" @click="reverse">reverse</v-btn>
+                        
                         <v-btn color="primary" @click="filter">Filter</v-btn>
                     </v-col>
 
@@ -760,6 +762,10 @@
                     var vm = this
                     vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)
                     vm.sortBy = ['Typelevel', '總價差']
+                },
+                reverse(x) {
+                    var vm = this
+                    vm.jsonData = vm.jsonData_.filter(i => !vm.jsonData.map(x => x.stock_number).includes(i.stock_number))
                 },
                 memo() {
                     // app.jsonData=app.jsonData_.filter(x=>x['MACD_%']>0　&&x['均價long_%']>0)
