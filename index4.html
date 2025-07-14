@@ -49,6 +49,20 @@
               {{ sanitizedTypelevel(item) }}
             </a>
           </template>
+           <template v-slot:body.append>
+                        <tr class="sticky-table-footer">
+                            <td></td>
+                            <td></td>
+
+                            <td v-for="(header, index) in headers.filter(h => h.value !== 'Typelevel' && h.value !== '0')"
+                                :key="header.value">
+                                <br />
+                                {{
+                                jsonData.map(x=>x[header.value]).reduce((acc, current) => acc + current, 0).toFixed(1)
+                                }}
+                            </td>
+                        </tr>
+                    </template>
         </v-data-table>
       </v-container>
     </v-app>
