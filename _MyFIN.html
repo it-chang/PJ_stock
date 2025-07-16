@@ -110,7 +110,7 @@
                                                     <td>預期</td>
                                                     <td>股利:{{getRemainMonthsOfYear_profit}}</td>
                                                     <td>儲蓄:{{getRemainMonthsOfYear_cash}}</td>
-                                                    <td colspan="2">結餘{{
+                                                    <td colspan="2">餘{{
                                                         mydata.filter(x=>x.Desc=='現金')[0].today
                                                         +mydata.filter(x=>x.Desc=='信用卡')[0].today
                                                         +mydata.filter(x=>x.Desc=='銀行')[0].today
@@ -127,7 +127,7 @@
                                                         <td>預期</td>
                                                         <td>優離(6):{{72300*6}}</td>
                                                         <td/>
-                                                        <td>結餘:{{
+                                                        <td>餘:{{
                                                         mydata.filter(x=>x.Desc=='現金')[0].today
                                                         +mydata.filter(x=>x.Desc=='信用卡')[0].today
                                                         +mydata.filter(x=>x.Desc=='銀行')[0].today
@@ -168,7 +168,7 @@
                                                 parseFloat(item.now)*100).toFixed(1)}}
                                             </template>
                                             <template v-slot:item.calculate_6="{ item }">
-                                                {{item.hold/10 * item.now *item.profit_stock}}
+                                                {{parseFloat(item.hold/10 * item.now *item.profit_stock).toFixed(0)}}
                                             </template>
                                             <template v-slot:item.calculate_7="{ item }">
                                                 {{(item.hold* item.frequency *item.profit).toFixed(0)}}
@@ -584,12 +584,12 @@
                 set_mydata() {
                     this.mydata = [
                         //投入
-                        { "Desc": "invest_input", "N_1":null , "N_2": null },
+                        { "Desc": "invest_input", "N_1":41650 , "N_2": null },
                         //回收
                         { "Desc": "invest_output", "N_1": null, "N_2": null },
                         //損益
                         { "Desc": "income_loss", "N_1": null, "N_2": null },
-                        { "Desc": "現金", "today": 2000 },
+                        { "Desc": "現金", "today":1900 },
                         { "Desc": "信用卡", "today": -26623 },
                         { "Desc": "銀行", "today": 102363 },
                         { "Desc": "預備金", "today": 301102 },
@@ -601,21 +601,21 @@
                 },
                 set_stockdata() {
                     this.stockdata = [
-                       { "Type2": "上市", "name": null, "number": '0050', "hold": 0, "now": 50, "buyin": 47, "profit_stock": null, "profit": 1, "frequency": 2, "month": "1,7" },
-                        { "Type2": "上市", "name": null, "number": '006208', "hold": 0, "now": 117, "buyin": 110, "profit_stock": null, "profit": 2.07, "frequency": 2, "month": "1,7" },
+                       { "Type2": "上市", "name": null, "number": '0050', "hold": 0, "now": 50.4, "buyin": 47, "profit_stock": null, "profit": 1, "frequency": 2, "month": "1,7" },
+                        { "Type2": "上市", "name": null, "number": '006208', "hold": 0, "now": 117.2, "buyin": 110, "profit_stock": null, "profit": 2.07, "frequency": 2, "month": "1,7" },
                         //15000
-                        { "Type2": "上市", "name": null, "number": '0056', "hold": 0, "now": 35.26, "buyin": 35.17, "profit_stock": null, "profit": 0.866, "frequency": 4, "month": "1,4,7,10" },
-                        { "Type2": "上市", "name": null, "number": '00878', "hold": 20000, "now": 21.14, "buyin": 21.64, "profit_stock": null, "profit": 0.47, "frequency": 4, "month": "2,5,8,11" },
-                        { "Type2": "上市", "name": null, "number": '00929', "hold": 2000, "now": 17.56, "buyin": 18.29, "parofit_stock": null, "profit": 0.07, "frequency": 12, "month": "1,2,3,4,5,6,7,8,9,10,11,12" },
-                        { "Type2": "上市", "name": "台泥", "number": 1101, "hold": 26000, "now": 23.35, "buyin": 30.27, "profit_stock": null, "profit": 1, "frequency": 1, "month": 6 },
-                        { "Type2": "上櫃", "name": "宏佳騰", "number": 1599, "hold": 1000, "now": 32.45, "buyin": 35.35, "profit_stock": null, "profit": 0.5, "frequency": 1, "month": 9 },
-                        { "Type2": "上市", "name": "橋椿", "number": 2062, "hold": 10000, "now": 24.5, "buyin": 30.22, "profit_stock": null, "profit": 1.8, "frequency": 1, "month": 7 },
+                        { "Type2": "上市", "name": null, "number": '0056', "hold": 0, "now": 35.48, "buyin": 35.17, "profit_stock": null, "profit": 0.866, "frequency": 4, "month": "1,4,7,10" },
+                        { "Type2": "上市", "name": null, "number": '00878', "hold": 20000, "now": 21.2, "buyin": 21.64, "profit_stock": null, "profit": 0.47, "frequency": 4, "month": "2,5,8,11" },
+                        { "Type2": "上市", "name": null, "number": '00929', "hold": 2000, "now": 17.62, "buyin": 18.29, "parofit_stock": null, "profit": 0.07, "frequency": 12, "month": "1,2,3,4,5,6,7,8,9,10,11,12" },
+                        { "Type2": "上市", "name": "台泥", "number": 1101, "hold": 26000, "now": 23, "buyin": 30.27, "profit_stock": null, "profit": 1, "frequency": 1, "month": 6 },
+                        { "Type2": "上櫃", "name": "宏佳騰", "number": 1599, "hold": 1000, "now": 32.15, "buyin": 35.35, "profit_stock": null, "profit": 0.5, "frequency": 1, "month": 9 },
+                        { "Type2": "上市", "name": "橋椿", "number": 2062, "hold": 10000, "now": 24.05, "buyin": 30.22, "profit_stock": null, "profit": 1.8, "frequency": 1, "month": 7 },
                         //{ "Type2": "上市", "name": "光寶科", "number": 2301, "hold": 29, "now": 118, "buyin": 109.11, "profit_stock": null, "profit": 2.5, "frequency": 2, "month": "3,8" },
-                        { "Type2": "上市", "name": "錸德", "number": 2349, "hold": 47000, "now": 10.7, "buyin": 12.09, "profit_stock": null, "profit": null, "frequency": 0, "month": "" },
-                        { "Type2": "上市", "name": "興富發", "number": 2542, "hold": 13000, "now": 41.5, "buyin": 43.13, "profit_stock": 0.5, "profit": 2, "frequency": 1, "month": 8 },
-                        { "Type2": "上櫃", "name": "李洲", "number": 3066, "hold": 11000, "now": 14.3, "buyin": 24.15, "profit_stock": null, "profit": null, "frequency": 0, "month": "" },
-                        { "Type2": "上櫃", "name": "譜瑞-KY", "number": 4966, "hold": 184, "now": 584, "buyin": 702.76, "profit_stock": null, "profit": 8.93, "frequency": 2, "month": "3,8" },
-                        { "Type2": "上市", "name": "采鈺", "number": 6789, "hold": 260, "now": 226, "buyin": 298.58, "profit_stock": null, "profit": 3, "frequency": 1, "month": 7 }
+                        { "Type2": "上市", "name": "錸德", "number": 2349, "hold": 47000, "now": 10.75, "buyin": 12.09, "profit_stock": null, "profit": null, "frequency": 0, "month": "" },
+                        { "Type2": "上市", "name": "興富發", "number": 2542, "hold": 14000, "now": 41.3, "buyin": 43.04, "profit_stock": 0.5, "profit": 2, "frequency": 1, "month": 8 },
+                        { "Type2": "上櫃", "name": "李洲", "number": 3066, "hold": 11000, "now": 14.45, "buyin": 24.15, "profit_stock": null, "profit": null, "frequency": 0, "month": "" },
+                        { "Type2": "上櫃", "name": "譜瑞-KY", "number": 4966, "hold": 184, "now": 589, "buyin": 702.76, "profit_stock": null, "profit": 8.93, "frequency": 2, "month": "3,8" },
+                        { "Type2": "上市", "name": "采鈺", "number": 6789, "hold": 260, "now": 232, "buyin": 298.58, "profit_stock": null, "profit": 3, "frequency": 1, "month": 7 }
                     ]
 
                     this.stock_headers_profit.push(...this.getYM().map(x => ({ text: x, value: x })));
