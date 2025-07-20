@@ -589,8 +589,8 @@
                         { "Desc": "invest_output", "N_1": null, "N_2": null },
                         //損益
                         { "Desc": "income_loss", "N_1": null, "N_2": null },
-                        { "Desc": "現金", "today":1900 },
-                        { "Desc": "信用卡", "today": -26694 },
+                        { "Desc": "現金", "today":1500 },
+                        { "Desc": "信用卡", "today": -27773 },
                         { "Desc": "銀行", "today": 75000 },
                         { "Desc": "預備金", "today": 328465 },
                         { "Desc": "日幣", "today": 30000 },
@@ -619,7 +619,6 @@
                     ]
 
                     this.stock_headers_profit.push(...this.getYM().map(x => ({ text: x, value: x })));
-
                     this.stockdata.forEach(item => {
                         //var happenMonth = item.month.toString().split(',').map(m => m.padStart(2, '0'))
                         //多取一個月
