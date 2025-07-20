@@ -32,14 +32,16 @@
                     <v-col col="2">
                         <v-btn color="primary" @click="reset">reset</v-btn>
                         <v-btn color="primary" @click="reverse">reverse</v-btn>
-
                         <v-btn color="primary" @click="filter">Filter</v-btn>
                         <v-btn color="primary" @click="filter1">Filter1</v-btn>
-
                     </v-col>
 
                     <v-col col="1">
                         <v-btn color="primary" @click="collapse=!collapse">Collapse</v-btn>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="localStorage.setItem('aalist', JSON.stringify(jsonData.map(x=>x.stock_number)))">set</v-btn>
+                        <v-btn color="primary" @click="jsonData=jsonData.filter(x => JSON.parse(localStorage.getItem('aalist') || '[]').includes(x.stock_number))">get</v-btn>
                     </v-col>
                 </v-row>
                 <v-row no-gutters v-show="collapse">
@@ -430,32 +432,47 @@
                 },
                 async loadExcelData() {
                     let urlParams = new URLSearchParams(window.location.search);
-                    let file = './Result/check.xlsx'; // 預設檔案
+                    let file = ''; // 預設檔案
                     const d = urlParams.get('d');
                     const type = urlParams.get('type');
                     //const date = urlParams.get('date');
                     const setdate = urlParams.get('setdate');
 
                     if (d) {
+                        /*
                         const fileMap = {
                             a: './Result/checksun_a.xlsx',
                             b: './Result/checksun_b.xlsx',
                             c: './Result/checksun_c.xlsx',
                             d: './Result/checksun_d.xlsx',
                             e: './Result/checksun_e.xlsx',
-                            //f: './Result/checksun_f.xlsx',
                             sunmy: './Result/checksunmy.xlsx',
                         };
+
                         file = d === 'f'
                             ? `./Result/checksun_f/${urlParams.get('date')}.xlsx`
                             : (fileMap[d] || file);
                         file = d === 'v'
                             ? `./Result/checksun_v/${urlParams.get('date')}.xlsx`
                             : (fileMap[d] || file);
-                        file = d === 'type'
+                                   file = d === 'type'
                             ? `./Result/checksun/${type}.xlsx`
                             : (fileMap[d] || file);
 
+
+                        */
+
+                        const allowedTypes = ['a', 'aa', 'b', 'c', 'd', 'e', 'f', 'v']; // 可擴充
+                        if (allowedTypes.includes(d)) {
+                            file = `./Result/checksun_${d}/${urlParams.get('date')}.xlsx`;
+                        }
+                        if (d === 'sunmy') {
+                            file = `./Result/checksunmy.xlsx`;
+                        }
+
+                        if (d === 'type') {
+                            file = `./Result/checksun/${type}.xlsx`;
+                        }
                     }
                     if (setdate) {
                         this.set_date = setdate
@@ -571,13 +588,10 @@
                                             // 新產判斷邏輯
                                             // ###【Flag】 新產判斷邏輯
                                             item.Flag = dl.filter(x => x["均價_%"] > 0 && x["MA5_%"] < 0).length   // 在表現好的狀況下去尋找有點被回拉的
-
-
                                         });
 
                                         //二次處理明細  要先經過一次計算
                                         dummydataItem.datalist.forEach((item, index) => {
-
                                             if (index < dummydataItem.datalist.length - 1) {
                                                 //item.量能差 = parseInt(item.量能均 - dummydataItem.datalist[index + 1].量能均);
 
@@ -695,11 +709,11 @@
                                         dummydataItem.textdesc = datalist_last_date?.textdesc;
                                         dummydataItem.VPC_break = datalist_last_date?.VPC_break;
                                         dummydataItem.Flag = datalist_last_date?.Flag;
-                                        
+
                                         dummydataItem.now_price = datalist_last_date?.now_price;
                                         dummydataItem.MA_long = datalist_last_date?.MA_long;
                                         dummydataItem.MA_longlong = datalist_last_date?.MA_longlong;
-                                        
+
 
                                         //                    '量能差','MACD_%' 'now_price'MA_longlong' 'MA_long'
 
@@ -743,7 +757,7 @@
                                     return dummydataItem;
                                 });
 
-                                var para_x = 2 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                var para_x = 5 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
                                 this.arrcount = this.arrcount - para_x
                                 this.headers = this.headers.slice(para_x, this.headers.length)
                                 this.jsonData = dummydata
@@ -770,7 +784,7 @@
                 filter1() {
                     var vm = this
 
-                    vm.jsonData = vm.jsonData_.filter(x => x['MA_long'] > x['MA_longlong'] && x['now_price'] > x['MA_longlong'] && x['now_price'] < x['MA_longlong'] * 1.1 && x['MACD_%'] > 0 )
+                    vm.jsonData = vm.jsonData_.filter(x => x['MA_long'] > x['MA_longlong'] && x['now_price'] > x['MA_longlong'] && x['now_price'] < x['MA_longlong'] * 1.1 && x['MACD_%'] > 0)
                     vm.sortBy = ['量能差', 'MACD_%']
                     vm.sortDesc = [true, true]
                     //find 剛突破
