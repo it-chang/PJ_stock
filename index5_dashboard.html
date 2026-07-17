@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>產業趨勢看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#07090f;color:#c8d8f0;font-family:'Segoe UI','Microsoft JhengHei',sans-serif}
+
+    /* topbar */
+    #topbar{
+      background:#0a0f1e;border-bottom:1px solid #1a2d4a;
+      padding:10px 18px;display:flex;align-items:center;gap:10px;
+      position:sticky;top:0;z-index:200;
+    }
+    #topbar h1{font-size:15px;font-weight:700;color:#7ecfff;letter-spacing:2px}
+    .tbadge{background:#0f1e35;border:1px solid #1a3a5c;color:#7ecfff;font-size:11px;padding:2px 10px;border-radius:3px}
+    .sep{flex:1}
+    .filter-btn{
+      background:#0f1e35;border:1px solid #1a3a5c;color:#7ecfff;
+      font-size:12px;padding:4px 12px;border-radius:3px;cursor:pointer;transition:.15s
+    }
+    .filter-btn.active,.filter-btn:hover{background:#1a4a7a;border-color:#2a6aaa;color:#fff}
+
+    /* grid */
+    #grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+      gap:8px;padding:12px;
+    }
+
+    /* ── 卡片：極簡 ── */
+    .card{
+      background:#0c1020;border-radius:6px;padding:12px 14px;
+      border-left:4px solid #1a3a5c;
+      transition:.15s;cursor:default;position:relative;
+    }
+    .card:hover{background:#0e1630;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+
+    /* 左框顏色 = 狀態 */
+    .card.up      {border-left-color:#16a34a}
+    .card.down    {border-left-color:#2563eb}
+    .card.breakout{border-left-color:#22d3ee;box-shadow:0 0 0 1px #0e7490}
+    .card.topping {border-left-color:#f97316}
+    .card.neutral {border-left-color:#334155}
+
+    /* 產業名稱 */
+    .card-name{
+      font-size:15px;font-weight:700;color:#c8e6ff;
+      margin-bottom:6px;
+    }
+
+    /* 訊號標籤（只有有訊號時才出現） */
+    .sig{
+      display:inline-block;font-size:11px;font-weight:700;
+      padding:1px 7px;border-radius:3px;margin-bottom:6px;
+    }
+    .sig-breakout{background:#083344;color:#67e8f9;border:1px solid #0e7490}
+    .sig-topping {background:#431407;color:#fdba74;border:1px solid #ea580c}
+    .sig-accel   {background:#1a2d00;color:#bef264;border:1px solid #65a30d}
+    .sig-weak    {background:#2e1065;color:#c4b5fd;border:1px solid #6d28d9}
+    .sig-rising  {background:#052e16;color:#86efac;border:1px solid #16a34a}
+
+    /* 火花線 */
+    .spark{height:48px;margin-bottom:8px}
+    .spark canvas{width:100%!important;height:48px!important}
+
+    /* 底部一行：量 + 強勢% */
+    .card-foot{
+      display:flex;justify-content:space-between;align-items:center;
+      font-size:11px;
+    }
+    .vol-label{color:#4a6080}
+    .vol-val{color:#7ecfff;font-weight:600;font-variant-numeric:tabular-nums}
+    .hot-pct{font-weight:700;font-variant-numeric:tabular-nums}
+    .hot-high{color:#ef4444}
+    .hot-mid {color:#f97316}
+    .hot-low {color:#334155}
+
+    /* 代表股（縮成一行） */
+    .reps{margin-bottom:8px;display:flex;gap:6px}
+    .rep{
+      flex:1;min-width:0;
+      background:#080e1c;border-radius:3px;padding:4px 7px;
+    }
+    .rep-name{font-size:11px;color:#7a9ab8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rep-price{font-size:13px;font-weight:700;color:#ddeeff;font-variant-numeric:tabular-nums}
+    .rep-q{font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
+
+    /* 連結（收成底部小字） */
+    .card-links{margin-top:7px;padding-top:6px;border-top:1px solid #0e1828;display:flex;gap:5px}
+    .card-link{font-size:10px;color:#2a4a6a;text-decoration:none;transition:.1s}
+    .card-link:hover{color:#7ecfff}
+
+    /* loading */
+    #loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:14px}
+    .spinner{width:32px;height:32px;border:3px solid #1a3a5c;border-top-color:#7ecfff;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #no-data{display:none;text-align:center;padding:60px;color:#3a5070}
+    .sort-btn{background:transparent;border:1px solid #1a2d4a;color:#4a7090;font-size:11px;padding:2px 10px;border-radius:3px;cursor:pointer;transition:.15s}
+    .sort-btn.active{background:#1a3a5c;border-color:#2a5a8c;color:#7ecfff}
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>📊 族群動向</h1>
+  <span class="tbadge" id="badge-date">—</span>
+  <span class="tbadge" id="badge-count">—</span>
+  <div class="sep"></div>
+  <button class="filter-btn active" data-filter="all">全部</button>
+  <button class="filter-btn" data-filter="breakout">🚀 突破</button>
+  <button class="filter-btn" data-filter="topping">⚠️ 轉弱</button>
+  <button class="filter-btn" data-filter="rising">▲ 連漲</button>
+  <button class="filter-btn" data-filter="hot">🔥 強勢</button>
+  <button class="filter-btn" data-filter="falling">▼ 下跌</button>
+</div>
+
+<div id="sort-bar" style="background:#080c18;border-bottom:1px solid #111d30;padding:6px 16px;display:flex;align-items:center;gap:6px;font-size:12px;color:#4a6080">
+  <span>排序：</span>
+  <button class="sort-btn active" data-sort="signal">訊號強度</button>
+  <button class="sort-btn" data-sort="vol">交易量</button>
+  <button class="sort-btn" data-sort="hot">強勢%</button>
+  <button class="sort-btn" data-sort="name">名稱</button>
+</div>
+
+<div id="loading"><div class="spinner"></div><p>載入中…</p></div>
+<div id="grid"></div>
+<div id="no-data">無符合條件的產業</div>
+
+<script>
+const jsonUrl = './Result/summary.json';
+let all = [], maxVol = 1, latestDate = '';
+let curFilter = 'all', curSort = 'signal';
+
+const SIG = {
+  breakout:     { label:'🚀 突破', cls:'sig-breakout' },
+  accelerate:   { label:'📈 加速', cls:'sig-accel'   },
+  topping:      { label:'⚠️ 轉弱', cls:'sig-topping' },
+  weak_continue:{ label:'📉 持弱', cls:'sig-weak'    },
+};
+const SIG_RANK = { breakout:4, accelerate:3, topping:2, weak_continue:1 };
+
+function baseUrl(){ return location.href.split('/').slice(0,4).join('/'); }
+function links(name){
+  const sn = name.replace(/[\\/:*?"<>|]/g,'_'), b = baseUrl();
+  return [
+    { t:'☀ 太陽', h:`${b}/index2.html?d=type2&type=${sn}` },
+    { t:'📋 分類',  h:`${b}/index3.html?d=A&date=${latestDate}&type=${name}` },
+    { t:'📊 走勢',  h:`${b}/index.html?d=A&date=${latestDate}&type=${name}` },
+  ];
+}
+
+async function init(){
+  let raw;
+  try{ raw = await (await fetch(jsonUrl)).json(); }
+  catch(e){
+    document.getElementById('loading').innerHTML='<p style="color:#f87171">❌ 無法載入 summary.json</p>';
+    return;
+  }
+
+  all = Object.entries(raw).map(([name,d])=>{
+    const vols = (d.vol||[]).map(v=>v??0);
+    const hots = (d.hot||[]).map(v=>v??0);
+    const total   = d.total||0;
+    const todayV  = vols.at(-1)||0;
+    const todayH  = hots.at(-1)||0;
+    const hotPct  = total>0 ? todayH/total : 0;
+    const slope   = vols.length>=2 ? vols.at(-1)-vols.at(-2) : 0;
+    const rising  = vols.length>=3 && vols.at(-1)>vols.at(-2) && vols.at(-2)>vols.at(-3);
+    const tc      = d.trend_change||null;
+    const hotSec  = d.hot_sector||false;
+    return { name, dates:d.dates||[], vols, hots, total,
+             stockCount: d.stock_count||0,
+             reps:d.rep_stocks||[], todayV, todayH, hotPct,
+             slope, rising, tc, hotSec };
+  });
+
+  maxVol = Math.max(...all.map(s=>s.todayV), 1);
+  latestDate = all[0]?.dates?.at(-1)||'';
+  document.getElementById('badge-date').textContent  = '最新 '+(latestDate||'—');
+  document.getElementById('badge-count').textContent = all.length+' 個產業';
+  document.getElementById('loading').style.display   = 'none';
+
+  render();
+
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      curFilter = b.dataset.filter;
+      render();
+    });
+  });
+  document.querySelectorAll('.sort-btn').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.sort-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      curSort = b.dataset.sort;
+      render();
+    });
+  });
+}
+
+function render(){
+  let list = all.filter(s=>{
+    if(curFilter==='breakout') return s.tc==='breakout';
+    if(curFilter==='topping')  return s.tc==='topping';
+    if(curFilter==='rising')   return s.rising;
+    if(curFilter==='hot')      return s.hotSec;
+    if(curFilter==='falling')  return s.slope<0;
+    return true;
+  });
+
+  // 排序
+  list.sort((a,b)=>{
+    if(curSort==='vol')    return b.todayV - a.todayV;
+    if(curSort==='hot')    return b.hotPct - a.hotPct;
+    if(curSort==='name')   return a.name.localeCompare(b.name,'zh-Hant');
+    // signal（預設）：訊號強度 → 今日量
+    const ra = SIG_RANK[a.tc]||0, rb = SIG_RANK[b.tc]||0;
+    if(rb!==ra) return rb-ra;
+    return b.todayV - a.todayV;
+  });
+
+  const grid = document.getElementById('grid');
+  const noData = document.getElementById('no-data');
+  if(!list.length){ grid.innerHTML=''; noData.style.display='block'; return; }
+  noData.style.display='none';
+  grid.innerHTML = list.map(cardHTML).join('');
+  list.forEach(drawSpark);
+}
+
+function cardHTML(s){
+  // 卡片狀態
+  const cls = s.tc==='breakout' ? 'card breakout' :
+              s.tc==='topping'  ? 'card topping'  :
+              s.rising          ? 'card up'        :
+              s.slope<0         ? 'card down'      : 'card neutral';
+
+  // 訊號標籤
+  let sigHTML = '';
+  if(s.tc && SIG[s.tc]){
+    const m = SIG[s.tc];
+    sigHTML = `<div><span class="sig ${m.cls}">${m.label}</span></div>`;
+  } else if(s.rising){
+    sigHTML = `<div><span class="sig sig-rising">▲ 連漲</span></div>`;
+  }
+
+  // 量
+  const vl = s.todayV>=1000 ? (s.todayV/1000).toFixed(1)+' B' : s.todayV.toFixed(0)+' M';
+
+  // 強勢%
+  const hp = Math.round(s.hotPct*100);
+  const hcls = hp>=40?'hot-high':hp>=20?'hot-mid':'hot-low';
+
+  // 代表股（最多2支，只秀名稱+價格+漲跌）
+  const repHTML = s.reps.slice(0,2).map(r=>{
+    if(!r) return '';
+    const q = r.quote||0;
+    const qcls = q>0?'q-up':q<0?'q-down':'';
+    const arr  = q>0?'▲':q<0?'▼':'';
+    const qstr = arr + Math.abs(q).toFixed(1)+'%';
+    const price = r.price!=null ? r.price.toLocaleString('zh-TW',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+    return `<div class="rep">
+      <div class="rep-name" title="${r.name}">${r.name}</div>
+      <div class="rep-price">${price}</div>
+      <div class="rep-q ${qcls}">${qstr}</div>
+    </div>`;
+  }).join('');
+
+  const linksHTML = links(s.name).map(l=>`<a class="card-link" href="${l.h}" target="_blank">${l.t}</a>`).join('');
+
+  return `<div class="${cls}">
+    <div class="card-name">${s.name}</div>
+    ${sigHTML}
+    <div class="spark"><canvas id="sp-${s.name}"></canvas></div>
+    <div class="reps">${repHTML}</div>
+    <div class="card-foot">
+      <span><span class="vol-label">量 </span><span class="vol-val">${vl}</span></span>
+      <span class="hot-pct ${hcls}">強 ${hp}%</span>
+      <span style="color:#4a6080;font-size:11px">${s.stockCount} 支</span>
+    </div>
+    <div class="card-links">${linksHTML}</div>
+  </div>`;
+}
+
+const charts={};
+function drawSpark(s){
+  const el = document.getElementById('sp-'+s.name);
+  if(!el) return;
+  if(charts[s.name]){ charts[s.name].destroy(); delete charts[s.name]; }
+
+  const c = s.tc==='breakout'     ? '#22d3ee' :
+            s.tc==='accelerate'   ? '#84cc16' :
+            s.tc==='topping'      ? '#f97316' :
+            s.tc==='weak_continue'? '#7c3aed' :
+            s.rising              ? '#22c55e' :
+            s.slope<0             ? '#3b82f6' : '#475569';
+
+  charts[s.name] = new Chart(el.getContext('2d'),{
+    type:'line',
+    data:{
+      labels: s.dates.map(d=>d.slice(5)),
+      datasets:[{
+        data: s.vols, borderColor:c, backgroundColor:c+'18',
+        borderWidth:1.8, pointRadius:3, pointBackgroundColor:c,
+        fill:true, tension:0.3
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#0d1b2e',borderColor:'#1e3a5f',borderWidth:1,
+          titleColor:'#7ecfff',bodyColor:'#c8e6ff',padding:6,
+          callbacks:{ label:ctx=>{ const v=ctx.parsed.y; return ' '+(v>=1000?(v/1000).toFixed(1)+'B':v.toFixed(0)+'M'); } }
+        }
+      },
+      scales:{x:{display:false},y:{display:false}}
+    }
+  });
+}
+
+// 漲跌顏色 class（加到 style）
+const st = document.createElement('style');
+st.textContent = '.q-up{color:#ef4444}.q-down{color:#60a5fa}';
+document.head.appendChild(st);
+
+init();
+</script>
+</body>
+</html>

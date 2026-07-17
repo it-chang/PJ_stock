@@ -1,0 +1,42 @@
+ # 閱讀 https://www.finlab.tw/%e5%8f%b2%e4%b8%8a%e6%9c%80%e5%bc%b7%e5%a4%a7%e7%9a%84%e5%8f%b0%e8%82%a1%e6%9d%bf%e5%a1%8a%e5%9c%96-%e6%93%8d%e4%bd%9c%e8%aa%aa%e6%98%8e%e6%9b%b8/
+
+
+ # 爬蟲 個體公司所屬產業鏈
+	https://ic.tpex.org.tw/company_chain.php?stk_code=2308
+
+ # 股票圖很醜很雜
+
+
+# 各產業
+	https://ic.tpex.org.tw/
+
+
+	
+//****************************************************************
+//****************************************************************
+//****************************************************************
+//[ Google IDE 工具] 藉由 Google Antigravity IDE 工具，來體驗 AI 直接實作個人網站
+// gemini 3
+//---------------------------------------------
+
+
+
+
+//https://sol.auo.com/PLMORM/COTDMZ/COT/DataList
+//https://tw.tradingview.com/chart/flWtRF5S/?symbol=2441 
+
+// Bose QC Ultra 
+
+
+// 交易筆記
+// 英文
+// 日本行程
+// 羽球剪片
+
+
+/*
+Focus ABF CPO ASIC 華通 2330  京元電子 高階封測 
+壓到MA20 以上  MA20 加10000 
+*/
+
+

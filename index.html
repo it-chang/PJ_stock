@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 讀取與 Vuetify DataTable 複選過濾示例</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <link href="./Content/stockDialog.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/stockDialog.js"></script>
+    <script src="./Content/getRealTime.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <v-row no-gutters>
+                    <v-col col="3">
+                        <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
+                        <v-btn color="primary" @click="app.sync_realtime()
+                                                       app.sync=true ">SYNC</v-btn>
+                        <v-btn color="primary" @click="app.sync_data() ">sync_data</v-btn>
+                        <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
+                        <span>data count {{filteredData.map(x=>x.stock_number).length}}</span>
+                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="reset">reset</v-btn>
+                        <v-btn color="primary" @click="reverse">reverse</v-btn>
+                        <!--
+                        <v-btn color="primary" @click="setCache()">set</v-btn>
+                        <v-btn color="primary" @click="getCache()">get</v-btn>
+                        <v-btn color="primary" @click="setCache2()">set2</v-btn>
+                        <v-btn color="primary" @click="getCache2()">get2</v-btn>
+                          -->
+                        <v-btn color="primary" @click="
+                        //  JSON.parse(localStorage.getItem('checklist') || '[]')
+                            localStorage.setItem('checklist', JSON.stringify([]));
+                            app.checklist = []
+                        ">clear</v-btn>
+
+
+                        <v-btn color="primary" @click="
+                            app.jsonData.sort((a, b) => {
+                                if (a._lv_major !== b._lv_major) return a._lv_major - b._lv_major;
+                                return a._lv_minor - b._lv_minor;
+                            });
+                            app.jsonData = app.jsonData_.filter(x => true
+                                && !(['0','NA｜'].includes(x.text_desc)) 
+                                && !x.text_desc.includes('NA｜')
+                            );
+                            app.sortBy = ['_lv_major', '_lv_minor']
+                            app.sortDesc = [false, false]
+                        ">LV排序</v-btn>
+                        <v-btn color="primary" @click="
+                            app.jsonData = app.jsonData_.filter(x => true
+                                //&& (['0','NA'].includes(x.text_desc)) 
+                                && x.text_desc.includes('NA')
+                                && !x.text_desc.includes('LV')
+                            );
+                            app.sortBy = ['text_desc']
+                            app.sortDesc = [ true]
+                        ">NA排序</v-btn>
+
+                        <v-btn color="primary" @click="
+                             app.jsonData = app.jsonData_.filter(x => true
+                                && x.text_desc.includes('0')
+                                && !x.text_desc.includes('LV')
+                            );
+                        app.sortBy = ['Type1','總市值x營業利益率']
+                        app.sortDesc = [ true,true]
+                        ">Others</v-btn>
+
+                    </v-col>
+                    <v-col col="8">
+
+                        <v-btn color="primary" @click="
+                            const output = app.checklist
+                            localStorage.setItem('checklist', JSON.stringify(output));
+                            const blob = new Blob(
+                                [JSON.stringify(output, null, 2)],
+                                { type: 'application/json' }
+                            )
+
+                            const link = document.createElement('a')
+                            link.href = URL.createObjectURL(blob)
+                            link.download = `export_${Date.now()}.長交易量`
+                            link.click()
+                            ">下 載</v-btn>
+
+                        <v-btn color="primary" @click="
+                            app.jsonData = app.jsonData_.filter(x => JSON.parse(localStorage.getItem('checklist') || '[]').includes(x.stock_number))
+                            ">選中的
+                        </v-btn>
+
+                        <!--------------------------------------------------------------------------------------------------------------------->
+                   
+ 
+                        <v-btn color="primary" @click="  
+                            app.jsonData = app.jsonData.filter(item => true
+                                && parseFloat(item['Volume_MA_5']) > parseFloat(item['Volume_MA_10']) * 0.9
+                                && parseFloat(item['Volume_MA_50']) > parseFloat(item['成交金額平均']) * 0.8
+                                && parseFloat(item['MACD']) > parseFloat(item['MACD-SL']) - 0.03
+                                && parseFloat(item['now_price']) > parseFloat(item['MA_50'] * 1.04)
+                                && parseFloat(item['成交股數']) > 1000
+                                && parseFloat(item['量能']) > 10
+                                && !(parseFloat(item['_quote']) <-6 && parseFloat(item['量能']) > 50 )
+                            )
+                            app.jsonData = app.jsonData.filter(item => (parseFloat(item['長交易量']) > 0.7))                
+                            app.calculate('沖')
+                        ">預測(當沖)</v-btn>
+
+
+                        <v-btn color="primary" @click="     
+                                app.jsonData=app.jsonData_.filter( x =>true
+                                    && !(['航運業','生技醫療業','塑膠工業','金融保險', '鋼鐵工業','居家生活','貿易百貨'].includes(x.Type1))
+                                    && parseFloat(x['營業利益率']) > 0
+                                    && parseFloat(x['累計營業收入-前期比較增減(%)']) > 0
+                                    && parseFloat(x['MACD']) > parseFloat(x['MACD-SL']) - 0.03
+
+                                    && parseFloat( x['LevelArea']) >-40
+                                    && parseFloat( x['長交易量']) >0.4
+                                    && parseFloat(x['成交股數']) >500
+
+                                    && parseFloat(x['checkpoint_前1日次數']) ==1
+                                )
+                                app.sortBy = ['MACD-SL','checkpoint_前10日次數','分類標籤'] 
+                                app.sortDesc = [false, false,true]
+                        ">checkpoint</v-btn>
+
+                        <v-btn color="primary" @click="     
+                                
+                                // 基本面非常好的股票 來自__fundamental_score.ipynb
+                                stockSet = new Set(['1233','6206','6151','6005','5538','5536','5386','5340','5289','5236','5234','4904','4766','4721','1268','4111','4106','3716','3702','3577','3479','3388','3305','3293','3264','6173','6223','3167','6274','9937','8390','8358','8341','8299','8271','8210','8091','8086','8028','8021','7765','7750','6907','6805','6757','6753','6721','6651','6584','6510','6509','6417','3260','4576','2610','2467','1726','1618','2645','2707','2753','2762','2633','2478','2423','1590','1503','2027','1733','1773','3017','2308','3026','3028','3037','2330','2377','2451','2025','6679','1802','6770','2032','2030','6834','2035','2103','6506','6505','6431','6265','2337','1785','3081','6844','1586','1303','9929','8935','8489','8473','8423','1313','1326','1447','8131','1776','8105','8096','8046','8044','8040','2344','1727','1762','7610','6209','2399','6195','2351','4764','4711','4569','4502','4426','4147','3691','3685','3632','3623','2908','3555','3550','3522','3508','3006','3372','3048','3224','3054','3135','2486','4807','2485','5351','6154','6150','6016','6015','3122','2406','2408','5475','5468','2440','4923','5228','4991','4989','4973','4971','4967','4956','4949','4939','9944']);
+
+                                // 將上面再拆出 : 前八季都是賺錢的
+                                stockSet = new Set(['4576', '2645', '6223', '3028', '3026', '6274', '3017', '6417', '2762', '6509', '2753', '6584', '2707', '2633', '6206', '6651', '2610', '6721', '2478', '2467', '6753', '2451', '6757', '6805', '2423', '2377', '3037', '6173', '2330', '3577', '4766', '4721', '1233', '4904', '4111', '4106', '3716', '5234', '5236', '3702', '5289', '5340', '6151', '5386', '3479', '3388', '5536', '5538', '6005', '3305', '3293', '3264', '3260', '3167', '6907', '6510', '8390', '8299', '1503', '8086', '8091', '8028', '8021', '1590', '1773', '7765', '1733', '8358', '8341', '2027', '1618', '1268', '2308', '9937', '8271', '8210', '7750', '1726', '7820', '6908', '6841', '7711', '6811', '6903', '6894', '7768', '7556', '6727', '5471', '6023', '6196', '6215', '5607', '6277', '5478', '8415', '5434', '6712', '4749', '6570', '8438', '5276', '6640', '5274', '5243', '5285', '1216', '9958', '3045', '1623', '1709', '1717', '2404', '1788', '2049', '3467', '3014', '2368', '3357', '3324', '2108', '2316', '3090', '2441', '3645', '1341', '4506', '2752', '1476', '2727', '1264', '4735', '2608', '6899', '6667', '6739', '2618', '6913', '2360', '6924', '6732', '2436', '6789', '6790', '6791', '2481', '6792', '6715', '2515', '6821', '6683', '6914', '2105', '6936', '6944', '8416', '1560', '8432', '8917', '9911', '9917', '9926', '9942', '1256', '1612', '1614', '8261', '2069', '6951', '2317', '2303', '7805', '2072', '8147', '2059', '2015', '8069', '1730', '1720', '8112', '2641', '6613', '3515', '3711', '3709', '3611', '3587', '3583', '3556', '3529', '5410', '5904', '5425', '3491', '5515', '5520', '5530', '5209', '4441', '4952', '4305', '4979', '5007', '2912', '6257', '3029', '6290', '6291', '6416', '6435', '6438', '6449', '2901', '6525', '3030', '6117', '3130', '6165', '6183', '3046', '6197', '3044', '6530']);
+                                
+                                //將上面再拆出 : 前八季都有賠錢的
+                                stockSet1 = new Set(['2025','6679','1802','6770','2032','2030','6834','2035','2103','6506','6505','6431','6265','2337','1785','3081','6844','1586','1303','9929','8935','8489','8473','8423','1313','1326','1447','8131','1776','8105','8096','8046','8044','8040','2344','1727','1762','7610','6209','2399','6195','2351','4764','4711','4569','4502','4426','4147','3691','3685','3632','3623','2908','3555','3550','3522','3508','3006','3372','3048','3224','3054','3135','2486','4807','2485','5351','6154','6150','6016','6015','3122','2406','2408','5475','5468','2440','4923','5228','4991','4989','4973','4971','4967','4956','4949','4939','9944']);
+
+                                app.jsonData = app.jsonData.filter(x =>
+                                    stockSet.has(x.stock_number)
+                                    //&& (['半導體業','電腦及週邊設備業','電子零組件業','光電業','電機機械','通信網路業'].includes(x.Type1))
+                                    //&&  parseFloat(x['BB_UPPER_pct_short'])	>  parseFloat(x['BB_UPPER_pct_long'])
+                                );
+
+                                app.sortBy = ['MACD_last_cross_date','BB_golden_cross_area','MACD-SL']
+                                app.sortDesc = [true, true,false]
+                                app.sortBy = ['BB_last_cross_date','MACD-SL']
+                                app.sortDesc = [ true,false]
+
+                        ">收益佳</v-btn>
+
+                        <v-btn color="primary" @click="   
+
+                                stockSet = new Set(['2330', '2383', '2454', '2327', '2345', '6223', '2308', '3017', '6669', '3037', '3665', '2368', '3711', '2303', '8046', '3653', '5274', '6274', '6515', '6510', '8210', '6805', '3533', '2317', '2404', '6187', '6147', '8996', '5439', '3443', '8150', '4966', '2449', '6278', '4958', '1590', '8358', '6191', '3376', '6271', '2002', '2313', '1319', '1815', '2439', '2382', '3661', '3264', '2481', '3008', '5347']);
+                                
+                                app.jsonData = app.jsonData_.filter(x =>
+                                    stockSet.has(x.stock_number)
+                                );
+
+                                app.sortBy = ['MACD_last_cross_date','BB_golden_cross_area','MACD-SL']
+                                app.sortDesc = [true, true,false]
+                                app.sortBy = ['BB_last_cross_date','MACD-SL']
+                                app.sortDesc = [ true,false]
+
+                        ">00981A</v-btn>
+
+                         <v-btn color="primary" @click="     
+                             app.jsonData = app.jsonData_.filter( x =>true
+                                && x['現價年線比']<1.3
+                                && x['現價年線比'] >= 0.97
+
+                                && parseFloat(x['MACD']) > parseFloat(x['MACD-SL'])
+                                && parseFloat(x['MACD_hist_diff']) >0
+
+                                && parseFloat(x['長交易量']) < 0.8
+                                && parseFloat(x['短交易量']) > 1.2
+
+                                && parseFloat(x['High_15d']) == parseFloat(x['High_90d'])
+                                && parseFloat(x['Low_15d']) > parseFloat(x['Low_90d'])
+                            )
+                        ">低檔過年線起量</v-btn>
+
+                    </v-col>
+                </v-row>
+                <!-- Vuetify DataTable  -->
+                <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="appheaderData"
+                    v-show="appmode" :items="appfilteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                    :sort-desc.sync="sortDesc" :mobile-breakpoint="0" style="white-space: nowrap;">
+                    <template v-slot:item.stock_number="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.stock_number }} {{ item.Type0 }}
+                        </v-btn>
+                    </template>
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                            )*100).toFixed(1)}}
+                        </span>
+                    </template>
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                        </span>
+                    </template>
+                </v-data-table>
+
+                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
+                    :items="filteredData" v-show="!appmode" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                    :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+                    <template v-slot:item.stock_number="{ item }">
+                        <div
+                            :class="{ 'highlight-red':
+                                            Number(item['MA_20_斜率']) > 0 &&
+                                            Number(item['量短5長30比']) > 0
+                                        }"
+                            >
+                            <v-icon
+                                v-if="checklist.filter(x => x == item.stock_number).length > 0"
+                                color="orange"
+                            >
+                                mdi-star
+                            </v-icon>
+
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.stock_number }}
+                                {{ item.Type0 }}
+                                {{ item['Volume_%'] }}
+                            </v-btn>
+                        </div>
+                    </template>
+                     <template v-slot:item.價="{ item }">
+                            <!-- 🔴 最強：MA5、MA10、MA20 三線同步向上 -->
+                            <template v-if="Number(item['MA_5_斜率']) > 0.001 
+                                            && Number(item['MA_10_斜率']) > 0.001 
+                                            && Number(item['MA_20_斜率']) > 0.001">
+                                <v-icon color="red">mdi-arrow-up-bold-circle</v-icon>
+                                <span style="color:red; font-size:12px;">三線同揚</span>
+                            </template>
+
+                            <!-- 🟠 中等：MA5、MA10 向上（MA20未確認） -->
+                            <template v-else-if="Number(item['MA_5_斜率']) > 0.001 
+                                                && Number(item['MA_10_斜率']) > 0.001">
+                                <v-icon color="orange">mdi-arrow-up-bold-circle</v-icon>
+                                <span style="color:orange; font-size:12px;">短中線向上</span>
+                            </template>
+
+                            <!-- 🟣 中弱：MACD柱放大 且 KD黃金交叉（%K>%D）且 %K>30 -->
+                            <template v-else-if="Number(item['MACD_hist_diff']) > 0 
+                                                && Number(item['%K']) > 30 
+                                                && Number(item['%K']) > Number(item['%D'])">
+                                <v-icon color="#523bffb3">mdi-arrow-up-bold-circle</v-icon>
+                                <span style="color:#523bffb3; font-size:12px;">KD交叉向上</span>
+                            </template>
+
+                            <!-- 🔵 弱（A）：MACD 上穿訊號線 -->
+                            <template v-else-if="Number(item['MACD']) > Number(item['MACD-SL'])">
+                                <v-icon color="#1565C0">mdi-arrow-up-bold</v-icon>
+                                <span style="color:#1565C0; font-size:12px;">MACD穿訊號線</span>
+                            </template>
+
+                            <!-- 💠 最弱（B）：MACD柱放大 且 %K>30（無KD交叉） -->
+                            <template v-else-if="Number(item['MACD_hist_diff']) > 0 
+                                                && Number(item['%K']) > 30">
+                                <v-icon color="#90CAF9">mdi-arrow-up-bold</v-icon>
+                                <span style="color:#90CAF9; font-size:12px;">MACD動能增強</span>
+                            </template>
+                            
+                    </template>
+                    <template v-slot:item.量="{ item }">
+                          
+                        <!-- 🔴 最強：MA5>MA10*1.1 且 量短5長30比 超過歷史平均水準 -->
+                        <template v-if="Number(item['Volume_MA_5']) > Number(item['Volume_MA_10']) * 1.1
+                                        && Number(item['量短5長30比']) >= 1
+                                        && Number(item['成交金額']) > Number(item['成交金額平均']) * 1.2">
+                            <v-icon color="red">mdi-arrow-up-bold-circle</v-icon>
+                            <span style="color:red; font-size:12px;">量能全面擴張</span>
+                        </template>
+
+                        <!-- 🟠 中等：MA5>MA10 -->
+                        <template v-else-if="Number(item['Volume_MA_5']) > Number(item['Volume_MA_10'])">
+                            <v-icon color="orange">mdi-arrow-up-bold-circle</v-icon>
+                            <span style="color:orange; font-size:12px;">短期量能擴張</span>
+                        </template>
+
+                        <!-- 🔵 最弱：今日量 > MA5*1.3 -->
+                        <template v-else-if="Number(item['成交金額']) > Number(item['Volume_MA_5']) * 1.5">
+                            <v-icon color="blue">mdi-arrow-up-bold-circle</v-icon>
+                            <span style="color:blue; font-size:12px;">單日突發爆量</span>
+                        </template>
+                     
+                    </template>
+                    
+                    <template v-slot:item.stock_name="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.stock_number }} {{ item.Type0 }} {{item['Volume_%']}}
+                        </v-btn>
+                    </template>
+
+                    <template v-slot:item.now_price="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
+                            </span>
+                            {{ item.now_price }}
+                            <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.a}}|
+                                {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.f}}
+                            </span>
+                        </v-btn>
+                    </template>
+
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(((realtimedata.filter(x=>x.c==item.stock_number)[0]?.a / item.now_price)-1
+                            )*100).toFixed(1)}}
+                        </span>
+                    </template>
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: rgb(124, 169, 173);"
+                            v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                            {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                        </span>
+                    </template>
+
+                    <template v-slot:item.成交股數="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.成交股數 }} <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
+                        </v-btn>
+                    </template>
+                </v-data-table>
+                <stock-dialog :value="dialog" :item="selectedItem" :checklist="checklist" :url="url" @input="dialog = $event"
+                    @update-check="handleCheckUpdate" />
+            </v-container>
+        </v-app>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    checked: false,
+                    checklist: [],
+                    appmode: false,
+                    sync: false,
+                    url: '',
+                    jsonData: [],
+                    headers: [],
+                    appheaderscol: ['stock_number', '_quote', 'rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
+                    filters: {},
+                    uniqueValues: {},
+                    sortBy: '短交易量',
+                    sortDesc: true,
+                    dialog: false,
+                    selectedItem: null,
+                    realtimedata: [],
+                    paraDate: null,
+                };
+            },
+            created() {
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                if (window.location.host.indexOf("it-chang") !== -1) {
+                    this.url = this.url.replace('PJ_stock/Html', 'PJ_Stock2')
+                };
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('mode')) {
+                    // &mode=app 
+                    this.appmode = urlParams.get('mode') == 'app';
+                }
+                if (urlParams.has('sync')) {
+                    this.sync = urlParams.get('sync') == 'Y';
+                }
+
+                this.init();
+                this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
+            },
+            computed: {
+                appheaderData() {
+                    return this.headers.filter(x => this.appheaderscol.includes(x.text))
+                },
+                appfilteredData() {
+                    let cols = this.appheaderscol.slice() // 創造一個新的陣列副本
+                    cols.push('Type0')
+                    cols.push('Type')
+                    cols.push('成交股數')
+                    cols.push('now_price')
+
+                    return this.filteredData.map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
+                },
+
+                filteredData() {
+                    return this.jsonData
+                }
+            },
+            methods: {
+                handleCheckUpdate({ stock, checked }) {
+       
+                    if (checked) {
+                        if (!this.checklist.includes(stock)) {
+                            this.checklist.push(stock)
+                        }
+                    } else {
+                        this.checklist = this.checklist.filter(x => x !== stock)
+                    }
+                    console.log(this.checklist)
+                    localStorage.setItem('checklist', JSON.stringify(this.checklist))
+                },
+               
+                // 類別名稱淨化
+                sanitizedTypelevel(x) {
+                    return (x || '').replace(/[\\/:*?"<>|]/g, "_");
+                    /*
+                        return (x.Typelevel || '')
+                            .replace('右上', '')
+                            .replace('平', '')
+                            .replace('右下', '')
+                            .replace('上市', '')
+                            .replace('上櫃', '');
+                    */
+                },
+                computedHref(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/');
+                    var para_data = app.paraDate_str().replaceAll('/', '-');
+                    //return `${baseUrl}/index.html?d=A&date=${para_data}&type=${this.sanitizedTypelevel(x)}`;
+                    return `${baseUrl}/index.html?d=A&date=${para_data}&type=${x}`;
+                },
+              
+                paraDate_str() {
+                    const d = new Date(this.paraDate);
+                    return `${d.getFullYear()}/` +
+                        `${String(d.getMonth() + 1).padStart(2, '0')}/` +
+                        `${String(d.getDate()).padStart(2, '0')}`;
+                },
+
+                paraDateMinus(x) {
+                    const d = new Date(this.paraDate);
+                    d.setDate(d.getDate() - x);
+
+                    return `${d.getFullYear()}/` +
+                        `${String(d.getMonth() + 1).padStart(2, '0')}/` +
+                        `${String(d.getDate()).padStart(2, '0')}`;
+                },
+
+                getHeaderStyle(headerText) {
+                    const specialHeaders = ['盤後量', '成交量', '淨值倍率', '貝他值', '價能'];
+                    if (specialHeaders.includes(headerText)) {
+                        return 'background-color: #ffeb3b; color: #000;';
+                    }
+                    return '';
+                },
+                async init() {
+                    await this.loadExcelData();
+                    if (this.sync) {
+                        await this.sync_realtime();
+                    }
+                    this.loadExcelData();
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.filteredData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+                openDialog(item) {
+                    this.selectedItem = item;
+                    this.checked = this.checklist.filter(x => x == item.stock_number).length > 0
+                    this.dialog = true;
+                },
+              
+                openNextPage(i) {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    const date = this.paraDate;
+                    date.setDate(date.getDate() + i);
+                    const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const url = window.location.href.replace(urlParams.get('date'), nextDateStr);
+                    window.open(url, '_blank');
+                },
+                reset() {
+                    var vm = this
+                    vm.jsonData = vm.jsonData_
+                    //vm.sortBy = ['highlight_date']
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                getMinValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.min(...values) : 0;
+                },
+                getMaxValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.max(...values) : 100;
+                },
+                sync_data() {
+                    this.jsonData.forEach(item => {
+                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a
+                        item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
+                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
+                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
+                    })
+                },
+
+                async loadExcelData() {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    file = './Result/check.xlsx'
+                    if (urlParams.has('d')) {
+                        if (urlParams.get('d') == 'M') {
+                            file = './Result/checkmy.xlsx'
+                        }
+                        if (urlParams.get('d') == 'checkGreat') {
+                            file = './Result/checkGreat.xlsx'
+                        }
+                        /**********************/
+                        if (urlParams.get('d') == 'C') {
+                            file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
+                            // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
+                        }
+                        /**********************/
+                        if (urlParams.get('d') == 'O') {
+                            file = './Result/checksun_others/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
+                        }
+                        /**********************/
+                        this.type = urlParams.get('type');
+                        if (urlParams.get('d') == 'A') {
+                            file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
+                        }
+                    }
+                    await fetch(file)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+                                if (this.realtimedata.length > 0) {
+                                    this.sync_data()
+                                }
+                                //arr_基本面=[
+                                // http://localhost/IT/index.html?d=A&date=2026-06-02&type=IC%E8%A8%AD%E8%A8%88
+                                //　可用'EPS(元)','毛利率',　 排序一下同類型的哪個比較賺　
+
+                                arr = [   'MarketState','MarketState_prev',
+                                         'my_signal_3d','my_signal_5d','my_signal_10d','my_signal',
+                                    //'BB_last_cross_date','BB_golden_cross_area',
+                                    // '分類標籤',  'diff_quote','成交股數', 'rt_量',
+                                    'text_desc',
+                                    'MACD交叉天數',
+                                    'stock_number','LevelArea',
+                                    '價', // 'MA_20_斜率',
+                                    '量', // '量短5長30比',
+                                    '綜合Flag','綜合Flag_1d', '綜合Flag_2d', '綜合Flag_3d',
+                                    '外資_累計買賣超', '投信_累計買賣超', '自營商_累計買賣超', '三大法人_累計買賣超',  '外資連續天數',
+                                    '投信連續天數', 
+
+                                    //'BB_UPPER_cross_date',
+                                    
+                                    'diff_quote',
+                                    '分類標籤',  
+                                    'Type2', 'Type1', 'stock_number',  'rt_量','_quote', 'now_price', 'rt_price',
+                                    '淨值倍率', 
+                                    '現價年線比','總市值x營業利益率',
+
+
+                                     'BB_last_cross_date','highlight_date','MACD_last_cross_date',
+
+
+                                     'EPS(元)','毛利率','EPS增', 'GM增', '本益比', '同業平均本益比',
+                                     
+                                     '去年同季比較','總市值x營業利益率',
+                                     '底部與現價比',
+                                     '殖利率', '貝他值',
+                                     'EPS_前8季全為正',
+                                    
+                                    'EPS(元)','EPS_MA_8', 'EPS增', 'EPS_QoQ', 'EPS_QoQ_%',  'EPS_YoY','EPS_YoY_%',
+                                    '毛利率','GM_MA_8', 'GM增', 'GM_QoQ', 'GM_QoQ_%', 'GM_YoY', 'GM_YoY_%', 
+                                    '季別', '營業收入', '營業成本', '營業毛利',  '營業利益', '營益率','業外收支', '稅前淨利', '稅後淨利', 
+                                    'EPS_維持','毛利率_維持', 'EPS_創新高', '毛利率_創新高', '財報健康', '財報強勢',
+                                    'EPS_成長', 'EPS_YoY成長', '毛利率成長','毛利率YoY成長', '財報動能強',
+                                ]
+                                arrX = [ '量短5長30比',
+                                    'LevelArea','淨值倍率', '總市值x營業利益率',
+                                    'MACD交叉天數','MA擴大','MACD-SL', 'MACD', 
+                                    'MACD_hist_diff','MACD_last_cross_date','BB_last_cross_date',
+                                    'highlight_date', 'highlight_enddate',
+
+                                    'Type2', 'Type1', 'stock_number',  'rt_量','_quote', 'now_price', 'rt_price','diff_quote',
+
+                                    'up', 'up_last_cross_date', '短交易量', '長交易量','量5d50d比',
+                                ]
+                                //arr__ = [
+                                arr1 = [
+                                    'text_desc','底部與現價比',  
+                                    //'diff_quote',
+                                    'BB_last_cross_date',
+                                    'BB_UPPER_cross_date','MACD_last_cross_date','量短5長30比','LevelArea',
+
+                                    '分類標籤',  'Type2', 'Type1', 'stock_number','成交股數',
+                                    '總市值x營業利益率',
+
+                                    'TrendScore', 'TrendType',
+                                    'BB_golden_cross_area',
+                                    'checkpoint_前1日次數','checkpoint_前10日次數', 
+                                    'voc_cross_d','highlight_date', 
+
+                                    
+                                    'MACD_%','MACD-SL',  '%K', '%D', 
+                                    'MA_5','現價年線比','長交易量', '短交易量','量能',
+                                ]
+                                arr1 = [
+                                      //'BB_MID', 'BB_UPPER', 'BB_LOWER', 'BB_WIDTH', 
+                                       //'BB_MID_斜率',    'BB_UPPER_斜率', 'BB_WIDTH_斜率','BB_WIDTH_avg',
+                                       'BB_MID_斜率',
+                                    'BB_WIDTH', 'BB上限與現價比','BB中限與現價比', 'BB_WIDTH_RATIO', 'BB_last_cross_date',
+                                    '底部與現價比',//'收盤價', '最小收盤價',
+                                    '長交易量', '短交易量','MACD-SL','MACD_%',
+                                    'Type2', 'Type1', '分類標籤', 'stock_number',
+
+                                    '成交股數', '量能', 'rt_量',
+                                    '_quote', 'now_price', 'rt_price',
+
+                                    'diff_quote','voc_cross_d','highlight_date', 
+                                    'MACD_last_cross_date','MACD_hist_diff',
+                                  
+                                     '%K', '%D', 
+
+                                    'LevelArea','現價年線比',
+                                    'TrendScore', 'TrendType', //'TrendScorertxt', 
+                                    'MA_5_斜率', 'MA_50_斜率','MA_80_斜率',
+
+                                    //'MA_5_斜率', 'MA_10_斜率', 'MA_20_斜率', 'MA_50_斜率','MA_80_斜率','MA_240_斜率',
+
+                                    'MA_break','MA_break_前15日次數', 
+
+                                    'checkpoint_前1日次數','checkpoint_前10日次數', 
+                                    
+                                    'MA_last_cross_date', 'MA_last_cross_date收盤價',
+
+
+                                   
+
+                                    //'tempdesc',  
+                                    
+                                    '現價年線比','15d高低比','現價15d均比','量5d50d比',
+                                                                                                 
+                                    'voc_cross_d', 
+
+                                    'Volume_MA_5', 'MA_break_前15日次數', 
+                                  
+                                     '總市值x營業利益率','淨值倍率', '殖利率', '貝他值',
+                                     '均價longlong_%','均價long_%', '均價_%',  '%K', '%D',
+                                    
+                                    'checkpoint_前2日次數', 'checkpoint_前5日次數', 
+                                    '價過5日_前15日次數','量短5長30比',
+                                    
+                                    //-----------------------------------------------------------------------------------
+                                    'MACD-SL', 'highlight_date', 'voc_cross_d',
+
+                                    'MA5_last_cross_date', 'Type1',
+                                    //----------------------------------------------------------------------------------
+
+                                    '下跌帶量_前15日次數', '盤整震盪_前15日次數', '多頭排列_前5日次數',
+                                    'MA_break_前15日次數', '抄底訊號_前15日次數', '黃金交叉_前15日次數', '量起點_前15日次數',
+                                    'MA_50_15',
+                                    'MA_last_cross_date', 'MA_last_cross_d2', 'MA_last_cross_%',
+                                    'MACD-SL', 'MACD_hist_diff', '%K', '%D', 'MA5_%', '均價longlong_%',
+
+                                    //'Volume_MA_1050','成交金額平均','成交金額','Volume_MA_5',
+                                    'stock_name', 'Type0', 'Type2', '總市值', '營業利益率', '總市值x營業利益率',
+                                    '營業收入-上月比較增減(%)', '營業收入-去年同月增減(%)', '累計營業收入-前期比較增減(%)',
+                                    '營業毛利率', '每股營收(元)', '本益比', '同業平均本益比',
+                                    'Type', 'Typelevel',
+
+                                    'MA_last_cross_date收盤價', 'MACD_death_cross_d收盤價',
+
+
+                                    //'highlight_stardate_1', 'highlight_enddate_1', 'highlight_stardate收盤價_1', 'highlight_enddate收盤價_1',
+                                    //'highlight_stardate_2', 'highlight_enddate_2', 'highlight_stardate收盤價_2', 'highlight_enddate收盤價_2',
+                                    //'highlight_%_1', 'highlight_%_2',
+
+                                    'highlight_收盤價', 'highlight_%',
+
+                                    '日期', '價能', 'cond_entry', 'MA_break',
+
+                                    '%K', '%D', 'MA5_%', '均價_%', '均價long_%', '均價longlong_%',
+                                    
+                                     'MA_5', 'MA_10', 'MA_20', 'MA_50', 'MA_80',
+                                    'MACD_%', 'MACD', 'MACD-SL_max', 'MACDSL_%',
+                                    '成交金額平均', '成交金額', 'Volume_MA_5', 'Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
+                                    // 'volume_threshold',
+
+                                    'VPC_MACD', 'Volume_Price_Change', 'highlight_enddate',
+
+                                    // '開盤價', '最高價', '最低價', '收盤價', '每股淨值(元)', 
+                                    'text_desc', '盤後量', '成交量', '量倍率',
+                                    'desc', 'flag_stat',
+
+                                    'MA_last_cross_d2', 'MA_last_cross_d2收盤價',
+                                    'MA_death_cross', 'MA_death_cross_d', 'MA_death_cross_d收盤價', 'MA_death_cross_d2', 'MA_death_cross_d2收盤價',
+                                    //'MACD_death_cross_d', 'MACD_death_cross_d收盤價','MACD_death_cross_d2',
+                                    'MACD_death_cross_d2收盤價',
+                                    // 文字多的
+                                    '營收比重', 'Full_Summary',
+                                ]
+
+
+                                this.headers = arr.map(header => ({ text: header, value: header }));
+
+                                this.headers.forEach(header => {
+                                    if (this.isNumberField(header.value)) {
+                                        this.$set(this.filters, header.value, [
+                                            this.getMinValue(header.value),
+                                            this.getMaxValue(header.value),
+                                        ]);
+                                    } else {
+                                        this.$set(this.filters, header.value, []);
+                                    }
+                                    this.$set(this.uniqueValues, header.value, []);
+                                });
+
+                                this.jsonData.forEach(row => {
+                                    this.headers.forEach(header => {
+                                        const value = row[header.value];
+                                        if (value != null) {
+                                            const strValue = value.toString();
+                                            if (!this.uniqueValues[header.value].includes(strValue)) {
+                                                this.uniqueValues[header.value].push(strValue);
+                                            } else {
+                                            }
+                                        }
+                                    });
+                                });
+                                //# -- 
+                                this.jsonData.map(x => x.長交易量 = '-')
+                                this.jsonData.map(x => x.短交易量 = '-')
+                                this.jsonData.map(x => x.tempdesc = '')
+                                this.jsonData.map(x => x.現價年線比 = '')
+                                this.jsonData.map(x => x.BB上限與現價比 = '-')
+                                this.jsonData.map(x => x.BB中限與現價比 = '-')
+                                this.jsonData.map(x => x.底部與現價比 = '-')
+                                this.jsonData.map(x => x['15d高低比'] = '')
+                                this.jsonData.map(x => x['現價15d均比'] = '')
+                                this.jsonData.map(x => x['量5d50d比'] = '')
+                                this.jsonData.map(x => x.總市值x營業利益率 = '')
+                                this.jsonData.map(x => x.EPS增 = '-')
+                                this.jsonData.map(x => x.GM增 = '-')
+                                this.jsonData.map(x => x.MACD交叉天數 = '-')
+                                this.jsonData.map(x => x.MA擴大 = '-')
+                                this.jsonData.map(x => x.綜合Flag = '-')
+
+
+                               
+
+                                //this.jsonData.map(item => item.tempdesc = (parseFloat(item['now_price']) / parseFloat(item['MA_240'])).toFixed(2))
+                                this.jsonData.map(item => item.現價年線比 = (parseFloat(item['now_price']) / parseFloat(item['MA_240'])).toFixed(2))
+                                this.jsonData.map(item => item.底部與現價比 = (parseFloat(item['now_price']) / parseFloat(item['最小收盤價'])).toFixed(2))
+                                
+                                this.jsonData.map(item => item.BB中限與現價比 = (parseFloat(item['now_price']) / parseFloat(item['BB_MID'])).toFixed(2))
+                                this.jsonData.map(item => item.BB上限與現價比 = (parseFloat(item['now_price']) / parseFloat(item['BB_UPPER'])).toFixed(2))
+
+                                this.jsonData.map(item => item['15d高低比']  = (parseFloat(item['High_15d']) / parseFloat(item['Low_15d'])).toFixed(2))
+                                this.jsonData.map(item => item['現價15d均比']  = (parseFloat(item['now_price']) / ( (parseFloat(item['High_15d'])+parseFloat(item['Low_15d']))/2 )).toFixed(2))
+                            
+                                //  Volume_MA_1050     
+                                this.jsonData.map(item => item['量5d50d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['成交金額平均'])).toFixed(2))                                
+                                this.jsonData.map(item => item.總市值x營業利益率 = (parseFloat(item['總市值']) * parseFloat(item['營業利益率']) / 100).toFixed(2))
+
+                                this.jsonData.map(item => item.EPS增 = (parseFloat(item['EPS(元)']) / parseFloat(item['EPS_MA_8'])).toFixed(2))
+                                this.jsonData.map(item => item.GM增 = (parseFloat(item['毛利率']) / parseFloat(item['GM_MA_8'])).toFixed(2))
+
+                                this.jsonData.forEach(item => {
+                                    const sl   = parseFloat(item['MACD-SL'])
+                                    const macd = parseFloat(item['MACD'])
+                                    const diff = parseFloat(item['MACD_hist_diff'])
+
+                                    if (isNaN(diff) || isNaN(sl) || isNaN(macd)) {
+                                        item.MACD交叉天數 = null
+                                        return
+                                    }
+
+                                    const isCrossed  = macd > sl       // 已交叉
+                                    const isConverge = diff > 0        // 收斂中（往交叉方向走）
+
+                                    if (diff === 0) {
+                                        // 剛好交叉或靜止
+                                        item.MACD交叉天數 = 0
+                                        return
+                                    }
+
+                                    if (!isConverge) {
+                                        // hist_diff 為負 → 發散中，天數無意義
+                                        item.MACD交叉天數 = isCrossed ? '收斂暫緩' : '交叉暫緩'
+                                        return
+                                    }
+
+                                    const distance = parseFloat((Math.abs(sl - macd) / diff).toFixed(2))
+                                    item.MACD交叉天數 = isCrossed ? +distance : -distance
+                                })
+
+                                this.jsonData.forEach(item => {
+                                    let flag = 0
+
+                                    // === 量能 Flag ===
+                                    const vol_ma5    = parseFloat(item['Volume_MA_5'])
+                                    const vol_ma10   = parseFloat(item['Volume_MA_10'])
+                                    const vol_ratio  = parseFloat(item['量短5長30比'])
+                                    const amt        = parseFloat(item['成交金額'])
+                                    const amt_avg    = parseFloat(item['成交金額平均'])
+
+                                    if (vol_ma5 > vol_ma10 * 1.1 && vol_ratio >= 1 && amt > amt_avg * 1.2) {
+                                        flag += 3  // 🔴 量能全面擴張
+                                    } else if (vol_ma5 > vol_ma10) {
+                                        flag += 2  // 🟠 短期量能擴張
+                                    } else if (amt > vol_ma5 * 1.5) {
+                                        flag += 1  // 🔵 單日突發爆量
+                                    }
+
+                                    // === 均線斜率 Flag ===
+                                    const ma5_slope  = parseFloat(item['MA_5_斜率'])
+                                    const ma10_slope = parseFloat(item['MA_10_斜率'])
+                                    const ma20_slope = parseFloat(item['MA_20_斜率'])
+
+                                    if (ma5_slope > 0.001 && ma10_slope > 0.001 && ma20_slope > 0.001) {
+                                        flag += 3  // 🔴 三線同揚
+                                    } else if (ma5_slope > 0.001 && ma10_slope > 0.001) {
+                                        flag += 2  // 🟠 短中線向上
+                                    }
+
+                                    // === MACD / KD Flag ===
+                                    const macd      = parseFloat(item['MACD'])
+                                    const macd_sl   = parseFloat(item['MACD-SL'])
+                                    const hist_diff = parseFloat(item['MACD_hist_diff'])
+                                    const k         = parseFloat(item['%K'])
+                                    const d         = parseFloat(item['%D'])
+
+                                    if (hist_diff > 0 && k > 30 && k > d) {
+                                        flag += 3  // 🟣 KD交叉向上
+                                    } else if (macd > macd_sl) {
+                                        flag += 2  // 🔵 MACD穿訊號線
+                                    } else if (hist_diff > 0 && k > 30) {
+                                        flag += 1  // 💠 MACD動能增強
+                                    }
+
+                                    item['綜合Flag'] = isNaN(flag) ? null : flag
+                                })
+
+
+
+                                this.jsonData.map(item => item.MA擴大 = (parseFloat(item['MA_20']) / parseFloat(item['MA_80'])).toFixed(2))
+
+
+                                // 解析 text_desc 的 LV 編號
+                                this.jsonData.map(item => {
+                                    const m = (item['text_desc'] || '').match(/LV\.(\d+)-(\d+)/);
+                                    item['_lv_major'] = m ? parseInt(m[1]) : 999;
+                                    item['_lv_minor'] = m ? parseInt(m[2]) : 999;
+                                });
+
+
+                                //成交金額50日均 vs 總體成交金額平均 比較 (長交易量)
+                                this.jsonData.map(item => item.長交易量 = (parseFloat(item['Volume_MA_50']) / parseFloat(item['成交金額平均'])).toFixed(2))
+                                //當日成交金額 vs 5日均 比較 (短交易量)
+                                this.jsonData.map(item => item.短交易量 = (parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))
+
+
+
+                                ///////////////////////////////////////////////////////////////////
+                                if (!!this.paraDate) {
+                                    this.jsonData.filter(item => item['MACD_last_cross_date'] > this.paraDate_str()).map(x => x.MACD_last_cross_date = '')
+                                    this.jsonData.filter(item => item['MA_last_cross_date'] > this.paraDate_str()).map(x => x.MA_last_cross_date = '')
+                                    //this.jsonData.filter(item => item['voc_cross_d'] > this.paraDate_str().replaceAll('/', '-')).map(x => x.voc_cross_d = '')
+                                }
+                                //# -- 
+                                this.jsonData.map(x => x.營業毛利率 = x.營業毛利率.replace('%', ''))
+                                this.jsonData.map(x => x.營業利益率 = x.營業利益率.replace('%', ''))
+                                this.jsonData.map(x => x['每股營收(元)'] = parseFloat(x['每股營收(元)'].replace(',', '')))
+
+                                //#  另外處理資料-- 
+                                this.jsonData.filter(item => parseFloat(item['MACD']) < parseFloat(item['MACD-SL'])).map(x => x.MACD_last_cross_date = '')
+                                this.jsonData.filter(item => parseFloat(item['均價long_%']) < 0).map(x => x.MA_last_cross_date = '')
+                                this.jsonData_ = JSON.parse(JSON.stringify(this.jsonData))
+
+                                // 過濾Type
+                                if (this.type) {
+                                    //this.jsonData = this.jsonData_.filter(x => x.Typelevel.includes(this.type) || x.desc.includes(this.type) | x.text_desc.includes(this.type));
+                                    debugger;
+                                    this.type.split('_')
+                                    t1=this.type.split('_')[0]
+                                    t2=this.type.split('_')[1]
+                                    if(!!t1){
+                                        this.jsonData = this.jsonData_.filter(x =>x.text_desc.includes(t1) );
+                                    }
+                                    if(!!t2){
+                                        this.jsonData = this.jsonData.filter(x =>x.text_desc.includes(t2) );
+                                    }
+                                    
+                                }
+
+                                Object.keys(this.uniqueValues).forEach(key => {
+                                    this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
+                                    this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
+                                });
+                            }
+
+                            //app.sortBy = ['MACD_last_cross_date','Type1','LevelArea']
+                            app.sortBy = ['MACD_last_cross_date','GM_QoQ_%']
+                            app.sortDesc = [true, true]
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                },
+
+                reverse(x) {
+                    var vm = this
+                    vm.jsonData = vm.jsonData_.filter(i => !vm.jsonData.map(x => x.stock_number).includes(i.stock_number))
+                },
+                dataCache() {
+                    //app.jsonData=app.jsonData_.filter(x=>parseFloat(x.now_price)>parseFloat(x.highlight_enddate收盤價_1)&& parseFloat(x.now_price)>parseFloat(x.highlight_enddate收盤價_2)&&parseFloat(x.now_price)>parseFloat(x.highlight_stardate收盤價_2) &&parseFloat(x.now_price)>parseFloat(x.highlight_stardate收盤價_1)  &&x.highlight_stardate收盤價_1!=0 &&x.Type2!='上櫃' && x.highlight_date!='0')
+                    app.sortBy = 'highlight_%'
+                    return app.jsonData.sort(function (a, b) { return b['highlight_%'] - a['highlight_%']; })
+                        .map((str, idx) => ({
+                            key: idx + 1,   // 根據排序結果給 key (從 1 開始)
+                            value: str.stock_number
+                        }));
+                },
+
+                setCache() {
+                    var vm = this
+                    localStorage.setItem('cache', JSON.stringify(vm.dataCache()));
+                    var cache = JSON.parse(localStorage.getItem('cache') || '[]')
+                    app.jsonData.map(y => y.分類標籤 = (cache.find(x => x.value == y.stock_number)?.key + y.分類標籤))
+
+                },
+                getCache() {
+                    var vm = this
+                    localStorage.setItem('cachenew', JSON.stringify(vm.dataCache()));
+                    var cachenew = JSON.parse(localStorage.getItem('cachenew') || '[]')
+                    app.jsonData.map(y => y.分類標籤 = (cachenew.find(x => x.value == y.stock_number)?.key + y.分類標籤))
+
+                    var cache = JSON.parse(localStorage.getItem('cache') || '[]')
+                    app.jsonData.map(y => y.分類標籤 = (cache.find(x => x.value == y.stock_number)?.key + '->' + y.分類標籤))
+
+                    app.jsonData.map(y => y.分類標籤 = (cachenew.find(x => x.value == y.stock_number)?.key < cache.find(x => x.value == y.stock_number)?.key ? 'T' : '') + '   ' + y.分類標籤)
+
+                    /**/
+                    var cache = JSON.parse(localStorage.getItem('cache') || '[]')
+                    var cachenew = JSON.parse(localStorage.getItem('cachenew') || '[]')
+                    //app.jsonData = app.jsonData.filter(y => (cachenew.find(x => x.value == y.stock_number)?.key < cache.find(x => x.value == y.stock_number)?.key))
+                    app.jsonData.map(y => y.分類標籤 = (-cachenew.find(x => x.value == y.stock_number)?.key + cache.find(x => x.value == y.stock_number)?.key))
+
+                },
+                setCache2() {
+                    localStorage.setItem('cache2', JSON.stringify(
+                        app.jsonData_.filter(item => true
+                            //&&  parseFloat( item['Volume_MA_5'])> parseFloat(item['Volume_MA_1050']*1.05) 
+                            && parseFloat(item['Volume_MA_5']) > parseFloat(item['Volume_MA_10'])
+                            && parseFloat(item['Volume_MA_50']) > parseFloat(item['成交金額平均']) * 0.8
+                            && parseFloat(item['MACD']) > parseFloat(item['MACD-SL'])
+                            && parseFloat(item['now_price']) > parseFloat(item['MA_50'] * 1.05)
+                            && parseFloat(item['成交股數']) > 1000
+                        ).map(x => x.stock_number)
+                    ))
+                    app.jsonData = app.jsonData_.filter(item => true
+                        //&&  parseFloat( item['Volume_MA_5'])> parseFloat(item['Volume_MA_1050']*1.05) 
+                        && parseFloat(item['Volume_MA_5']) > parseFloat(item['Volume_MA_10'])
+                        && parseFloat(item['Volume_MA_50']) > parseFloat(item['成交金額平均']) * 0.8
+                        && parseFloat(item['MACD']) > parseFloat(item['MACD-SL'])
+                        && parseFloat(item['now_price']) > parseFloat(item['MA_50'] * 1.05)
+                        && parseFloat(item['成交股數']) > 1000
+                    )
+
+                },
+                getCache2() {
+                    var a = JSON.parse(localStorage.getItem('cache2') || '[]')
+                    var b = app.jsonData_.filter(item => true
+                        //&&  parseFloat( item['Volume_MA_5'])> parseFloat(item['Volume_MA_1050']*1.05) 
+                        && parseFloat(item['Volume_MA_5']) > parseFloat(item['Volume_MA_10'])
+                        && parseFloat(item['Volume_MA_50']) > parseFloat(item['成交金額平均']) * 0.8
+                        && parseFloat(item['MACD']) > parseFloat(item['MACD-SL'])
+                        && parseFloat(item['now_price']) > parseFloat(item['MA_50'] * 1.05)
+                        && parseFloat(item['成交股數']) > 1000
+                    ).map(x => x.stock_number)
+                    app.jsonData = app.jsonData_.filter(x => b.filter(item => !a.includes(item)).includes(x.stock_number))
+
+                },
+                filter_test() {
+                    var vm = this;
+                    var alist =
+
+                        app.jsonData_.map(x => ({
+                            stock_number: x.stock_number,
+                            stock_name: x.Type,
+                            Ongoing: x.highlight_date != '0',
+                            Check: (x.highlight_date != 0 ? parseFloat(x.now_price) : parseFloat(x.highlight_stardate收盤價_1)) > parseFloat(x.highlight_enddate收盤價_2),
+                            Period: 1,
+                            "date Start": x.highlight_stardate_1,
+                            date_End: x.highlight_enddate_1,
+                            "price Start": x.highlight_stardate收盤價_1,
+                            price_End: x.highlight_date != 0 ? x.now_price : x.highlight_enddate收盤價_1,
+                            u_gain: (parseFloat(((x.highlight_date != 0 ? x.now_price : x.highlight_enddate收盤價_1) - x.highlight_stardate收盤價_1) / x.highlight_stardate收盤價_1) * 100).toFixed(1),
+                            u_gaind: ((Math.abs(new Date(x.highlight_enddate_1) - new Date(x.highlight_stardate_1))) / (1000 * 60 * 60 * 24))
+                        })
+                        ).concat(
+                            app.jsonData_.map(x => ({
+                                stock_number: x.stock_number,
+                                stock_name: x.Type,
+                                Ongoing: x.highlight_date != '0',
+                                Period: 2,
+                                "date Start": x.highlight_stardate_2,
+                                date_End: x.highlight_enddate_2,
+                                "price Start": x.highlight_stardate收盤價_2,
+                                price_End: x.highlight_enddate收盤價_2,
+                                u_gain: ((parseFloat(x.highlight_enddate收盤價_2 - x.highlight_stardate收盤價_2) / x.highlight_stardate收盤價_2) * 100).toFixed(1),
+                                u_gaind: ((Math.abs(new Date(x.highlight_enddate_2) - new Date(x.highlight_stardate_2))) / (1000 * 60 * 60 * 24))
+                            }))
+                        )
+                            .filter(x => x.Check && x.Ongoing && x.u_gain > 1 && x.u_gaind > 10)
+                            .map(x => x.stock_number)
+
+                },
+                calculate(desc) {
+                    const total = app.jsonData.length
+                    const col = 'diff_quote' // '_quote'
+
+                    const data = [
+                        { desc: col + ': >5 	', count: (app.jsonData.filter(x => parseFloat(x[col]) > 5).length / total * 100).toFixed(2) + '%' },
+                        { desc: col + ': >1 	', count: (app.jsonData.filter(x => parseFloat(x[col]) > 1).length / total * 100).toFixed(2) + '%' },
+                        { desc: col + ': <-2	', count: (app.jsonData.filter(x => parseFloat(x[col]) < -2).length / total * 100).toFixed(2) + '%' },
+                    ];
+
+                    app.jsonData_.filter(x => app.jsonData.map(y => y.stock_number).includes(x.stock_number)).map(x => x.tempdesc += desc + ' ')
+
+                    console.table(data)
+                },
+                set_tempdesc() {
+
+                    const total = app.jsonData.length
+                    const col = 'diff_quote' // '_quote'
+
+                    const data = [
+                        { desc: '5', count: (app.jsonData.filter(x => parseFloat(x[col]) > 5).length / total * 100).toFixed(2) + '%' },
+                        { desc: '0', count: (app.jsonData.filter(x => parseFloat(x[col]) > 0).length / total * 100).toFixed(2) + '%' },
+                        { desc: '-0', count: (app.jsonData.filter(x => parseFloat(x[col]) <= -0).length / total * 100).toFixed(2) + '%' },
+                        { desc: '-5', count: (app.jsonData.filter(x => parseFloat(x[col]) <= -5).length / total * 100).toFixed(2) + '%' },
+                        { desc: 'all', count: app.jsonData.length },
+                    ];
+
+
+                    // 【數值型】
+
+                    // 【分類型】
+
+                    const setPara = [...new Set(app.jsonData.map(x => x.分類標籤))].sort()
+                    const setTarget = '分類標籤'
+                    //[90, 60,0,-1]
+                    //const setPara= [...new Set(app.jsonData.map(x=>x.LevelArea))].sort((a, b) => a - b)
+                    //const setTarget= 'LevelArea'
+                    //const setPara= [...new Set(app.jsonData.map(x=>x.多頭排列_前5日次數))].sort((a, b) => a - b)
+                    //const setTarget= '多頭排列_前5日次數'
+
+                    setPara.forEach(tag => {
+                        data.forEach(d => {
+                            _total = app.jsonData.filter(x => x[setTarget] == tag).length
+                            if (d.desc == 'all') {
+                                d['_' + tag] = _total
+                            } else {
+                                if (!d.desc.includes('-')) {
+                                    d['_' + tag] = (app.jsonData.filter(x => parseFloat(x[col]) > parseFloat(d.desc) && x[setTarget] == tag).length / _total * 100).toFixed(2) + '%'
+                                    //d['_'+tag]=  app.jsonData.filter(x => parseFloat(x[col]) > parseFloat(d.desc)  && x[setTarget]==tag).length 
+                                } else {
+                                    d['_' + tag] = (app.jsonData.filter(x => parseFloat(x[col]) <= parseFloat(d.desc) && x[setTarget] == tag).length / _total * 100).toFixed(2) + '%'
+                                    //d['_'+tag]=  app.jsonData.filter(x => parseFloat(x[col]) <= parseFloat(d.desc)  && x[setTarget]==tag).length 
+                                }
+                            }
+                        })
+                    })
+                    console.table(data)
+
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>

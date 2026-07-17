@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 讀取與 Vuetify DataTable 複選過濾示例</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
+                    :items="filteredData" :items-per-page="-1" style="white-space: nowrap;">
+                    <template v-slot:[`item.${header.value}`]="{ item }"
+                        v-for="header in headers.filter(h => h.value !== 'Typelevel' && h.value !== '0')"
+                        :key="header.value">
+                        <!--span
+                            :style="{  color: jsonData.map(x=>x[header.value]).sort((a, b) => a - b).slice(-5)[0]< item[header.value]  ? 'red' :'gray'  }">
+                            {{parseFloat(item[header.value]).toFixed(1)}}
+
+                        </span-->
+                        <span
+                            :style="{ color: jsonData.map(x => x[header.value]).sort((a, b) => a - b).slice(-5)[0] < item[header.value] ? 'red' : 'gray' }">
+                            {{ parseFloat(item[header.value]).toFixed(1) }}
+                            
+                            <template v-if="getGrowthPercent(item, header.value) !== null">
+                                <br/>  <br/>
+                                <small style="font-size: 0.8em;">
+                                    <span
+                                        :style="{ color: getGrowthPercent(item, header.value) >= 0 ? 'red' : 'blue' }">
+                                        ({{ getGrowthPercent(item, header.value) >= 0 ? '▲' : '▼' }}{{
+                                        Math.abs(getGrowthPercent(item, header.value)) }}%)
+                                    </span>
+                                </small>
+                            </template>
+                        </span>
+                    </template>
+                    <template v-slot:item.desc="{ item }">
+                        太陽
+                        <a :href="computedHref(item)" target="_blank" rel="noopener">
+                            {{ sanitizedTypelevel(item) }}
+                        </a>
+                        分類
+                        <a :href="computedHref2(item)" target="_blank" rel="noopener">
+                            {{ sanitizedTypelevel(item) }}
+                        </a>
+                    </template>
+                    <template v-slot:body.append>
+                        <tr class="sticky-table-footer">
+                            <td></td>
+                            <td></td>
+
+                            <td v-for="(header, index) in headers.filter(h => h.value !== 'Typelevel' && h.value !== '0')"
+                                :key="header.value">
+                                <br />
+                                {{
+                                jsonData.map(x=>x[header.value]).reduce((acc, current) => acc + current, 0).toFixed(1)
+                                }}
+                            </td>
+                        </tr>
+                    </template>
+                </v-data-table>
+            </v-container>
+        </v-app>
+    </div>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    url: '',
+                    jsonData: [],
+                    headers: [],
+                    filters: {},
+                    uniqueValues: {},
+                    selectedItem: null,
+                };
+            },
+            created() {
+                this.loadExcelData();
+
+            },
+            computed: {
+                filteredData() {
+                    return this.jsonData
+
+                    return this.jsonData.filter(item => {
+                        return Object.keys(this.filters).every(key => {
+                            const filterValues = this.filters[key];
+
+                            if (!filterValues || filterValues.length === 0) return true;
+                            const value = item[key] ? item[key].toString() : '';
+                            const a = this.isNumberField(key);
+
+                            if (Array.isArray(filterValues) && a) {
+                                //if (Array.isArray(filterValues)) {
+                                const [min, max] = filterValues;
+                                const numericValue = parseFloat(value);
+                                return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
+                            } else {
+                                return filterValues.includes(value);
+                            }
+                        });
+                    });
+                }
+            },
+            methods: {
+                getGrowthPercent(item, header) {
+                    const current = parseFloat(item[header]);
+                    const prevDateIndex = this.headers.findIndex(h => h.value === header) - 1;
+                    if (prevDateIndex < 0) return null;
+
+                    const prevHeader = this.headers[prevDateIndex]?.value;
+                    const prev = parseFloat(item[prevHeader]);
+
+                    if (!isFinite(current) || !isFinite(prev) || prev === 0) return null;
+
+                    const percent = ((current - prev) / Math.abs(prev)) * 100;
+                    return percent.toFixed(1);
+                },
+                sanitizedTypelevel(x) {
+                    return x.Typelevel.replace('右上', '').replace('平', '').replace('右下', '');
+                },
+                computedHref(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                },
+                computedHref2(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    return `${baseUrl}/index3.html?d=A&date=${Object.keys(this.jsonData[0]).slice(-2)[0]}&type=${this.sanitizedTypelevel(x)}`;
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                getMinValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.min(...values) : 0;
+                },
+                getMaxValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.max(...values) : 100;
+                },
+
+                async loadExcelData() {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    file = './Result/analyze_1.xlsx'
+                    if (urlParams.has('d')) {
+                        if (urlParams.get('d') == '2') {
+                            file = './Result/analyze_2.xlsx'
+                        }
+                    }
+                    await fetch(file)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.headers.push({ text: 'desc', value: 'desc' })
+                                this.$renameHeaders(this.headers);
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+                            }
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

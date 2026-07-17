@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交易日誌</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #080808;
+    --bg2:     #0e0e0e;
+    --bg3:     #131313;
+    --bg4:     #181818;
+    --border:  #1c2e1c;
+    --border2: #24422a;
+    --green:   #00e676;
+    --green2:  #00b85a;
+    --green3:  #003d1f;
+    --gdim:    rgba(0,230,118,0.07);
+    --gdim2:   rgba(0,230,118,0.13);
+    --text:    #d4f0d4;
+    --text2:   #5a8a5a;
+    --text3:   #2e5a2e;
+    --red:     #ff3d55;
+    --amber:   #ffaa00;
+    --font:    'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body, #app {
+    background: var(--bg) !important;
+    font-family: var(--font) !important;
+    color: var(--text) !important;
+    height: 100%;
+    margin: 0;
+  }
+
+  /* ── SIDEBAR ── */
+  .tj-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 240px;
+    background: var(--bg2);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .tj-sidebar-header {
+    padding: 16px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tj-logo {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+  .tj-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .tj-list { flex: 1; overflow-y: auto; padding: 6px; }
+  .tj-list::-webkit-scrollbar { width: 3px; }
+  .tj-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .tj-list-item {
+    padding: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 0.5px solid transparent;
+    margin-bottom: 3px;
+    transition: background 0.12s;
+  }
+  .tj-list-item:hover { background: var(--bg3); }
+  .tj-list-item.active { background: var(--gdim); border-color: var(--border2); }
+  .tj-list-code { font-size: 13px; color: var(--green); }
+  .tj-list-name { font-size: 11px; color: var(--text2); margin-left: 6px; }
+  .tj-list-date { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .tj-list-pnl  { float: right; font-size: 11px; }
+  .tj-list-type {
+    font-size: 10px; padding: 1px 6px;
+    border-radius: 1px; margin-top: 4px;
+    display: inline-block; letter-spacing: 0.08em;
+  }
+  .type-wave { border: 0.5px solid var(--green3); color: var(--green2); }
+  .type-day  { border: 0.5px solid #1a3a3a; color: #007a7a; }
+  .type-next { border: 0.5px solid #2a2a1a; color: #7a7a00; }
+  .pnl-pos { color: var(--green); }
+  .pnl-neg { color: var(--red); }
+
+  /* ── MAIN ── */
+  .tj-main {
+    margin-left: 240px;
+    min-height: 100vh;
+    background: var(--bg);
+  }
+  .tj-topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tj-topbar-id { font-size: 12px; color: var(--text3); letter-spacing: 0.15em; }
+
+  .tj-form { padding: 24px 28px 60px; max-width: 920px; }
+
+  /* ── SECTION ── */
+  .tj-sec { margin-bottom: 32px; }
+  .tj-sec-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .tj-sec-num { font-size: 10px; color: var(--green); letter-spacing: 0.2em; }
+  .tj-sec-title { font-size: 12px; letter-spacing: 0.18em; color: var(--text2); text-transform: uppercase; }
+
+  /* ── FIELD OVERRIDE ── */
+  .tj-field .v-label { font-size: 9px !important; letter-spacing: 0.12em !important; color: var(--text3) !important; text-transform: uppercase; }
+  .tj-field .v-input__slot { background: var(--bg3) !important; border: 0.5px solid var(--border) !important; border-radius: 3px !important; }
+  .tj-field .v-input__slot:focus-within { border-color: var(--green2) !important; }
+  .tj-field input, .tj-field textarea { color: var(--text) !important; font-family: var(--font) !important; font-size: 12px !important; caret-color: var(--green) !important; }
+  .tj-field.calc input { color: var(--green2) !important; }
+  .tj-field.calc-red input { color: var(--red) !important; }
+  .tj-field .v-text-field__slot textarea { color: var(--text) !important; font-family: var(--font) !important; font-size: 12px !important; }
+  .v-text-field--outlined fieldset { border-color: var(--border) !important; }
+  .v-text-field--outlined:focus-within fieldset { border-color: var(--green2) !important; }
+  .v-text-field--outlined .v-label { color: var(--text3) !important; font-size: 10px !important; font-family: var(--font) !important; letter-spacing: 0.1em !important; }
+  .v-text-field--outlined input { color: var(--text) !important; font-family: var(--font) !important; font-size: 12px !important; }
+  .v-text-field--outlined textarea { color: var(--text) !important; font-family: var(--font) !important; font-size: 12px !important; }
+
+  /* ── RADIO BTN ── */
+  .tj-rbtn {
+    font-size: 12px; padding: 5px 12px;
+    border-radius: 3px; cursor: pointer;
+    border: 0.5px solid var(--border);
+    color: var(--text2); background: var(--bg3);
+    letter-spacing: 0.06em;
+    transition: all 0.12s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .tj-rbtn.on      { border-color: var(--green);  color: var(--green);  background: var(--gdim); }
+  .tj-rbtn.on-red  { border-color: var(--red);    color: var(--red);    background: rgba(255,61,85,0.08); }
+  .tj-rbtn.on-amb  { border-color: var(--amber);  color: var(--amber);  background: rgba(255,170,0,0.08); }
+
+  /* ── CHECKBOX ── */
+  .tj-chk {
+    display: flex; align-items: center; gap: 7px;
+    cursor: pointer; user-select: none;
+  }
+  .tj-chk-box {
+    width: 13px; height: 13px; border-radius: 2px; flex-shrink: 0;
+    border: 0.5px solid var(--border2); background: var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; transition: all 0.12s;
+  }
+  .tj-chk-box.on { border-color: var(--green); background: var(--gdim); color: var(--green); }
+  .tj-chk-label { font-size: 11px; color: var(--text2); }
+
+  /* ── EMOTION TAG ── */
+  .tj-etag {
+    font-size: 12px; padding: 4px 11px; border-radius: 2px;
+    cursor: pointer; border: 0.5px solid var(--border);
+    color: var(--text2); background: var(--bg3);
+    letter-spacing: 0.07em; transition: all 0.12s; user-select: none;
+  }
+  .tj-etag.on { border-color: var(--amber); color: var(--amber); background: rgba(255,170,0,0.08); }
+
+  /* ── EXEC CARD ── */
+  .tj-exec-card {
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: 3px; padding: 16px;
+    margin-bottom: 10px;
+  }
+  .tj-exec-card.exit { border-color: rgba(255,61,85,0.25); }
+  .tj-exec-card-top {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 14px;
+  }
+  .tj-exec-badge {
+    font-size: 10px; letter-spacing: 0.14em;
+    padding: 3px 10px; border-radius: 2px; text-transform: uppercase;
+  }
+  .badge-init { border: 0.5px solid var(--green); color: var(--green); background: var(--gdim); }
+  .badge-add  { border: 0.5px solid var(--amber); color: var(--amber); background: rgba(255,170,0,0.08); }
+  .badge-exit { border: 0.5px solid var(--red);   color: var(--red);   background: rgba(255,61,85,0.08); }
+  .tj-exec-seq { font-size: 12px; color: var(--text3); margin-left: 8px; }
+  .tj-exec-stat {
+    font-size: 12px; color: var(--text3);
+    padding: 3px 8px; border: 0.5px solid var(--border);
+    border-radius: 2px;
+  }
+  .tj-exec-stat span { color: var(--green2); }
+
+  /* ── ADD BTN ── */
+  .tj-add-btn {
+    width: 100%; padding: 10px;
+    border: 0.5px dashed var(--border2); border-radius: 3px;
+    background: transparent; color: var(--text3);
+    font-family: var(--font); font-size: 12px;
+    letter-spacing: 0.12em; cursor: pointer;
+    transition: all 0.15s; text-transform: uppercase;
+  }
+  .tj-add-btn:hover { border-color: var(--green3); color: var(--green2); background: var(--gdim); }
+
+  /* ── RISK BOX ── */
+  .tj-risk-box {
+    background: var(--gdim); border: 0.5px solid var(--green3);
+    border-radius: 3px; padding: 16px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 12px;
+  }
+  .tj-risk-label { font-size: 10px; color: var(--text3); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+  .tj-risk-value { font-size: 18px; color: var(--green); }
+
+  /* ── PERF CARDS ── */
+  .tj-perf-card {
+    background: var(--bg3); border: 0.5px solid var(--border2);
+    border-radius: 3px; padding: 14px 16px;
+  }
+  .tj-perf-label { font-size: 10px; color: var(--text3); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px; }
+  .tj-perf-val { font-size: 20px; color: var(--green); }
+  .tj-perf-val.neg { color: var(--red); }
+
+  /* ── STOCK INFO BAR ── */
+  .tj-stock-bar {
+    background: var(--bg3); border: 0.5px solid var(--border2);
+    border-radius: 3px; padding: 10px 14px;
+    display: flex; gap: 20px; align-items: center;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .tj-stock-bar-item { display: flex; flex-direction: column; gap: 2px; }
+  .tj-stock-bar-label { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .tj-stock-bar-val   { font-size: 12px; color: var(--text); }
+  .tj-stock-bar-val.green { color: var(--green); }
+  .tj-stock-bar-val.red   { color: var(--red); }
+
+  /* ── EMPTY STATE ── */
+  .tj-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: calc(100vh - 53px);
+    color: var(--text3); font-size: 11px;
+    letter-spacing: 0.15em; gap: 12px;
+  }
+
+  /* ── TOAST ── */
+  .tj-toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--bg3); border: 0.5px solid var(--green2);
+    color: var(--green); font-size: 11px; letter-spacing: 0.1em;
+    padding: 10px 24px; border-radius: 3px;
+    transition: transform 0.25s; z-index: 999; pointer-events: none;
+    font-family: var(--font);
+  }
+  .tj-toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── VUETIFY OVERRIDES ── */
+  .v-application { background: var(--bg) !important; font-family: var(--font) !important; }
+  .v-btn { font-family: var(--font) !important; letter-spacing: 0.1em !important; }
+  .v-dialog > .v-card { background: var(--bg2) !important; border: 0.5px solid var(--border2) !important; }
+  .v-card__title { font-family: var(--font) !important; color: var(--text) !important; font-size: 13px !important; }
+  .v-card__text  { color: var(--text2) !important; font-family: var(--font) !important; font-size: 11px !important; }
+  .theme--dark.v-btn:not(.v-btn--flat):not(.v-btn--text):not(.v-btn--outlined) { background: var(--bg3) !important; }
+
+  .new-btn {
+    margin: 10px 6px 6px;
+    width: calc(100% - 12px);
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <v-app dark>
+
+    <!-- SIDEBAR -->
+    <div class="tj-sidebar">
+      <div class="tj-sidebar-header">
+        <span class="tj-logo">Trading Journal</span>
+        <span class="tj-dot"></span>
+      </div>
+
+      <v-btn class="new-btn" small outlined color="#00e676" @click="newJournal" style="font-size:10px; letter-spacing:0.12em;">
+        ＋ 新增日誌
+      </v-btn>
+
+      <div class="tj-list">
+        <div
+          v-for="j in sortedJournals"
+          :key="j.id"
+          class="tj-list-item"
+          :class="{ active: currentId === j.id }"
+          @click="loadJournal(j.id)"
+        >
+          <span class="tj-list-pnl" :class="pnlClass(j.pnl)">{{ j.pnl !== '—' ? j.pnl : '' }}</span>
+          <div>
+            <span class="tj-list-code">{{ j.code || '—' }}</span>
+            <span class="tj-list-name">{{ j.name }}</span>
+          </div>
+          <div class="tj-list-date">{{ j.date }}</div>
+          <div class="tj-list-type" :class="typeClass(j.tradeType)">{{ j.tradeType }}</div>
+        </div>
+        <div v-if="sortedJournals.length === 0" style="font-size:10px;color:var(--text3);padding:12px 6px;letter-spacing:0.1em;">
+          尚無記錄
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="tj-main">
+      <!-- TOPBAR -->
+      <div class="tj-topbar">
+        <span class="tj-topbar-id">{{ topbarId }}</span>
+        <div style="display:flex; gap:8px;" v-if="currentId">
+          <v-btn x-small outlined color="#5a8a5a" @click="exportJSON" style="font-size:9px; letter-spacing:0.1em;">匯出 JSON</v-btn>
+          <v-btn x-small outlined color="#ff3d55" @click="confirmDelete" style="font-size:9px; letter-spacing:0.1em;">刪除</v-btn>
+          <v-btn x-small outlined color="#00e676" @click="saveJournal" style="font-size:9px; letter-spacing:0.1em;">儲存</v-btn>
+        </div>
+      </div>
+
+      <!-- EMPTY -->
+      <div class="tj-empty" v-if="!currentId">
+        <span style="font-size:28px; color:var(--border2);">⊕</span>
+        <span>點擊「新增日誌」開始記錄</span>
+      </div>
+
+      <!-- FORM -->
+      <div class="tj-form" v-if="currentId">
+
+        <!-- STOCK INFO BAR (from Excel) -->
+        <div class="tj-stock-bar" v-if="stockInfo">
+          <div class="tj-stock-bar-item">
+            <div class="tj-stock-bar-label">現價</div>
+            <div class="tj-stock-bar-val ">{{ stockInfo.now_price }}</div>
+          </div>
+          <div class="tj-stock-bar-item">
+            <div class="tj-stock-bar-label">漲跌</div>
+            <div class="tj-stock-bar-val" :class="stockInfo._quote >= 0 ? 'green' : 'red'">{{ stockInfo._quote }}%</div>
+          </div>
+          <div class="tj-stock-bar-item">
+            <div class="tj-stock-bar-label">趨勢</div>
+            <div class="tj-stock-bar-val">{{ stockInfo.TrendType }}</div>
+          </div>
+          <div class="tj-stock-bar-item">
+            <div class="tj-stock-bar-label">分數</div>
+            <div class="tj-stock-bar-val">{{ stockInfo.TrendScore }}</div>
+          </div>
+          <div class="tj-stock-bar-item">
+            <div class="tj-stock-bar-label">標籤</div>
+            <div class="tj-stock-bar-val">{{ stockInfo['分類標籤'] }}</div>
+          </div>
+          <div class="tj-stock-bar-item" style="flex:1; min-width:200px;">
+            <div class="tj-stock-bar-label">產業</div>
+            <div class="tj-stock-bar-val" style="font-size:10px; color:var(--text2);">{{ stockInfo.text_desc }}</div>
+          </div>
+        </div>
+
+        <!-- 01 基本資訊 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">01</span>
+            <span class="tj-sec-title">基本資訊</span>
+          </div>
+          <v-row dense>
+            <v-col cols="3"><v-text-field v-model="form.date" label="日期" outlined dense dark hide-details class="tj-field" placeholder="YYYY.MM.DD"/></v-col>
+            <v-col cols="2"><v-text-field v-model="form.code" label="股票代碼" outlined dense dark hide-details class="tj-field"/></v-col>
+            <v-col cols="3"><v-text-field v-model="form.name" label="名稱" outlined dense dark hide-details class="tj-field"/></v-col>
+            <v-col cols="4"><v-text-field v-model="form.period" label="預估持倉週期" outlined dense dark hide-details class="tj-field" placeholder="1-2 週"/></v-col>
+          </v-row>
+          <div style="margin-top:12px;">
+            <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">交易類型</div>
+            <div style="display:flex;gap:6px;">
+              <div v-for="t in tradeTypes" :key="t"
+                class="tj-rbtn" :class="form.tradeType === t ? 'on' : ''"
+                @click="form.tradeType = t">{{ t }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 02 決策面 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">02</span>
+            <span class="tj-sec-title">決策面</span>
+          </div>
+          <v-row dense style="margin-bottom:14px;">
+            <v-col cols="4">
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">多空方向</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <div v-for="d in directions" :key="d"
+                  class="tj-rbtn" :class="form.direction === d ? 'on' : ''"
+                  @click="form.direction = d">{{ d }}</div>
+              </div>
+            </v-col>
+            <v-col cols="4">
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">盤面結構</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <div v-for="m in markets" :key="m"
+                  class="tj-rbtn" :class="form.market === m ? 'on' : ''"
+                  @click="form.market = m">{{ m }}</div>
+              </div>
+            </v-col>
+          </v-row>
+          <v-row dense style="margin-bottom:14px;">
+            <v-col cols="5">
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">突破條件</div>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <div v-for="b in breakoutOptions" :key="b" class="tj-chk" @click="toggleArr(form.breakout, b)">
+                  <div class="tj-chk-box" :class="form.breakout.includes(b) ? 'on' : ''">{{ form.breakout.includes(b) ? '✓' : '' }}</div>
+                  <span class="tj-chk-label">{{ b }}</span>
+                </div>
+              </div>
+            </v-col>
+            <v-col cols="7">
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">籌碼面</div>
+              <div style="margin-bottom:10px;">
+                <div style="font-size:9px;color:var(--text3);margin-bottom:4px;">投信</div>
+                <div style="display:flex;gap:6px;">
+                  <div v-for="c in chipOpts" :key="'it'+c" class="tj-rbtn" :class="form.chipItrust === c ? 'on' : ''" @click="form.chipItrust = c">{{ c }}</div>
+                </div>
+              </div>
+              <div style="margin-bottom:10px;">
+                <div style="font-size:9px;color:var(--text3);margin-bottom:4px;">外資</div>
+                <div style="display:flex;gap:6px;">
+                  <div v-for="c in chipOpts" :key="'fo'+c" class="tj-rbtn" :class="form.chipForeign === c ? 'on' : ''" @click="form.chipForeign = c">{{ c }}</div>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--text3);margin-bottom:4px;">主力行為</div>
+                <div style="display:flex;gap:6px;">
+                  <div v-for="c in mainOpts" :key="'ma'+c" class="tj-rbtn" :class="form.chipMain === c ? 'on' : ''" @click="form.chipMain = c">{{ c }}</div>
+                </div>
+              </div>
+            </v-col>
+          </v-row>
+          <v-text-field v-model="form.decision" label="決策結論" outlined dense dark hide-details class="tj-field" placeholder="綜合以上判斷，進場邏輯為..."/>
+        </div>
+
+        <!-- 03 交易計畫 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">03</span>
+            <span class="tj-sec-title">交易計畫</span>
+          </div>
+          <v-row dense style="margin-bottom:12px;">
+            <v-col cols="4"><v-textarea v-model="form.reasonTech" label="技術面進場理由" outlined dense dark hide-details class="tj-field" rows="3" placeholder="K線型態、均線排列..."/></v-col>
+            <v-col cols="4"><v-textarea v-model="form.reasonChip" label="籌碼面進場理由" outlined dense dark hide-details class="tj-field" rows="3" placeholder="外資持續買超..."/></v-col>
+            <v-col cols="4"><v-textarea v-model="form.reasonOther" label="其他" outlined dense dark hide-details class="tj-field" rows="3" placeholder="消息面、產業面..."/></v-col>
+          </v-row>
+          <v-row dense style="margin-bottom:12px;">
+            <v-col cols="4"><v-text-field v-model="form.planAmount" label="預計投入金額" outlined dense dark hide-details class="tj-field"/></v-col>
+            <v-col cols="4"><v-text-field v-model="form.planRatio" label="持股比例 (%)" outlined dense dark hide-details class="tj-field"/></v-col>
+            <v-col cols="4"><v-text-field v-model="form.planTp" label="預計停利點" outlined dense dark hide-details class="tj-field"/></v-col>
+          </v-row>
+          <div>
+            <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">出場方式</div>
+            <div style="display:flex;gap:6px;">
+              <div v-for="e in exitMethods" :key="e" class="tj-rbtn" :class="form.exitMethod === e ? 'on' : ''" @click="form.exitMethod = e">{{ e }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 04 執行記錄 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">04</span>
+            <span class="tj-sec-title">執行記錄</span>
+          </div>
+
+          <!-- BUY CARDS -->
+          <div v-for="(card, idx) in form.execBuy" :key="card.uid" class="tj-exec-card">
+            <div class="tj-exec-card-top">
+              <div style="display:flex;align-items:center;">
+                <span class="tj-exec-badge" :class="idx === 0 ? 'badge-init' : 'badge-add'">{{ idx === 0 ? '初倉' : '加碼' }}</span>
+                <span class="tj-exec-seq">#{{ idx + 1 }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="tj-exec-stat">均成本 <span>{{ execStats.avgCostAt(idx) }}</span></div>
+                <div class="tj-exec-stat">累計持倉 <span>{{ execStats.totalSharesAt(idx) }}</span></div>
+                <v-btn v-if="idx > 0" icon x-small color="#ff3d55" @click="removeBuyCard(idx)">
+                  <v-icon x-small>mdi-close</v-icon>
+                </v-btn>
+              </div>
+            </div>
+            <v-row dense style="margin-bottom:10px;">
+              <v-col cols="3"><v-text-field v-model="card.time"   label="時間"         outlined dense dark hide-details class="tj-field" placeholder="09:32"/></v-col>
+              <v-col cols="3"><v-text-field v-model="card.price"  label="成交價"       outlined dense dark hide-details class="tj-field" @input="calcExec" placeholder="820"/></v-col>
+              <v-col cols="3"><v-text-field v-model="card.shares" label="股數"         outlined dense dark hide-details class="tj-field" @input="calcExec" placeholder="1000"/></v-col>
+              <v-col cols="3"><v-text-field :value="card.amount"  label="投入金額（自動）" outlined dense dark hide-details class="tj-field calc" readonly/></v-col>
+            </v-row>
+            <v-row dense>
+              <v-col cols="3"><v-text-field v-model="card.sl"      label="停損點"           outlined dense dark hide-details class="tj-field calc-red" @input="calcExec" placeholder="795"/></v-col>
+              <v-col cols="5"><v-text-field v-model="card.slBasis" label="停損依據"          outlined dense dark hide-details class="tj-field" placeholder="5日線下方"/></v-col>
+              <v-col cols="4"><v-text-field :value="card.maxLoss"  label="單筆最大虧損（自動）" outlined dense dark hide-details class="tj-field calc-red" readonly/></v-col>
+            </v-row>
+            <v-row dense style="margin-top:8px;">
+              <v-col cols="12"><v-text-field v-model="card.note" :label="idx === 0 ? '初倉備註' : '加碼原因'" outlined dense dark hide-details class="tj-field" :placeholder="idx === 0 ? '初倉理由' : '加碼原因'"/></v-col>
+            </v-row>
+          </div>
+
+          <button class="tj-add-btn" @click="addBuyCard" style="margin-bottom:10px;">＋ 新增加碼記錄</button>
+
+          <!-- EXIT CARD -->
+          <div class="tj-exec-card exit">
+            <div class="tj-exec-card-top">
+              <div style="display:flex;align-items:center;">
+                <span class="tj-exec-badge badge-exit">出場</span>
+                <span class="tj-exec-seq">一次全出</span>
+              </div>
+            </div>
+            <v-row dense style="margin-bottom:10px;">
+              <v-col cols="3"><v-text-field v-model="form.exit.time"   label="時間"         outlined dense dark hide-details class="tj-field" placeholder="13:45"/></v-col>
+              <v-col cols="3"><v-text-field v-model="form.exit.price"  label="出場價"       outlined dense dark hide-details class="tj-field" @input="calcExec" placeholder="855"/></v-col>
+              <v-col cols="3"><v-text-field :value="execStats.totalShares" label="出場股數（自動）" outlined dense dark hide-details class="tj-field calc" readonly/></v-col>
+              <v-col cols="3"><v-text-field :value="form.exit.amount"  label="出場金額（自動）" outlined dense dark hide-details class="tj-field calc" readonly/></v-col>
+            </v-row>
+            <div>
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">出場原因</div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <div v-for="r in exitReasonOpts" :key="r" class="tj-chk" @click="toggleArr(form.exitReasons, r)">
+                  <div class="tj-chk-box" :class="form.exitReasons.includes(r) ? 'on' : ''">{{ form.exitReasons.includes(r) ? '✓' : '' }}</div>
+                  <span class="tj-chk-label">{{ r }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 風險彙整 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">⚡</span>
+            <span class="tj-sec-title">風險彙整</span>
+          </div>
+          <div class="tj-risk-box">
+            <div>
+              <div class="tj-risk-label">整體最大風險敞口</div>
+              <div class="tj-risk-value" style="color:var(--red);">{{ execStats.totalRisk }}</div>
+            </div>
+            <div>
+              <div class="tj-risk-label">加權均成本</div>
+              <div class="tj-risk-value">{{ execStats.avgCost }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 05 交易心理 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">05</span>
+            <span class="tj-sec-title">交易心理</span>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">情緒標籤</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <div v-for="e in emotionOpts" :key="e" class="tj-etag" :class="form.emotions.includes(e) ? 'on' : ''" @click="toggleArr(form.emotions, e)">{{ e }}</div>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">策略相符度</div>
+            <div style="display:flex;gap:6px;">
+              <div v-for="s in strategyOpts" :key="s" class="tj-rbtn" :class="form.strategy === s ? 'on' : ''" @click="form.strategy = s">{{ s }}</div>
+            </div>
+          </div>
+          <v-text-field v-model="form.deviation" label="偏離原因（若有）" outlined dense dark hide-details class="tj-field" placeholder="說明偏離的原因..."/>
+        </div>
+
+        <!-- 06 出場檢討 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">06</span>
+            <span class="tj-sec-title">出場檢討</span>
+          </div>
+          <v-textarea v-model="form.exitChip" label="出場時籌碼狀況" outlined dense dark hide-details class="tj-field" rows="2" placeholder="出場時籌碼是否轉向..." style="margin-bottom:12px;"/>
+        </div>
+
+        <!-- 07 績效結果 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">07</span>
+            <span class="tj-sec-title">績效結果</span>
+          </div>
+          <v-row dense>
+            <v-col cols="4">
+              <div class="tj-perf-card">
+                <div class="tj-perf-label">實際盈虧</div>
+                <div class="tj-perf-val" :class="perfClass(perf.pnl)">{{ perf.pnl }}</div>
+              </div>
+            </v-col>
+            <v-col cols="4">
+              <div class="tj-perf-card">
+                <div class="tj-perf-label">報酬率</div>
+                <div class="tj-perf-val" :class="perfClass(perf.roi)">{{ perf.roi }}</div>
+              </div>
+            </v-col>
+            <v-col cols="4">
+              <div class="tj-perf-card">
+                <div class="tj-perf-label">均成本 → 出場</div>
+                <div class="tj-perf-val" style="font-size:14px;margin-top:4px;">{{ perf.costExit }}</div>
+              </div>
+            </v-col>
+          </v-row>
+        </div>
+
+        <!-- 08 核心檢討 -->
+        <div class="tj-sec">
+          <div class="tj-sec-head">
+            <span class="tj-sec-num">08</span>
+            <span class="tj-sec-title">核心檢討</span>
+          </div>
+          <v-row dense style="margin-bottom:12px;">
+            <v-col cols="6">
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">是否照計畫執行</div>
+              <div style="display:flex;gap:6px;">
+                <div class="tj-rbtn" :class="form.followed === '是' ? 'on' : ''" @click="form.followed = '是'">是</div>
+                <div class="tj-rbtn" :class="form.followed === '否' ? 'on-red' : ''" @click="form.followed = '否'">否</div>
+              </div>
+            </v-col>
+            <v-col cols="6">
+              <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">交易分類</div>
+              <div style="display:flex;gap:6px;">
+                <div class="tj-rbtn" :class="form.quality === '好交易' ? 'on' : ''" @click="form.quality = '好交易'">好交易</div>
+                <div class="tj-rbtn" :class="form.quality === '壞交易' ? 'on-red' : ''" @click="form.quality = '壞交易'">壞交易</div>
+              </div>
+            </v-col>
+          </v-row>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">錯誤類型</div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              <div v-for="e in errorOpts" :key="e" class="tj-chk" @click="toggleArr(form.errors, e)">
+                <div class="tj-chk-box" :class="form.errors.includes(e) ? 'on' : ''">{{ form.errors.includes(e) ? '✓' : '' }}</div>
+                <span class="tj-chk-label">{{ e }}</span>
+              </div>
+            </div>
+          </div>
+          <v-textarea v-model="form.review" label="檢討備註" outlined dense dark hide-details class="tj-field" rows="3" placeholder="這筆交易最大的學習點是..."/>
+        </div>
+
+      </div><!-- /tj-form -->
+    </div><!-- /tj-main -->
+
+    <!-- DELETE DIALOG -->
+    <v-dialog v-model="deleteDialog" max-width="320">
+      <v-card dark>
+        <v-card-title style="font-size:12px;letter-spacing:0.1em;">確認刪除</v-card-title>
+        <v-card-text>此操作無法復原，確定刪除這筆日誌？</v-card-text>
+        <v-card-actions>
+          <v-spacer/>
+          <v-btn text small @click="deleteDialog = false" style="color:var(--text2);">取消</v-btn>
+          <v-btn text small color="#ff3d55" @click="deleteJournal">刪除</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- TOAST -->
+    <div class="tj-toast" :class="{ show: toastShow }">{{ toastMsg }}</div>
+
+  </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+new Vue({
+  el: '#app',
+  vuetify: new Vuetify({ theme: { dark: true } }),
+
+  data() {
+    return {
+      // ── JOURNAL DATA ──
+      journals: {},       // { code: { code, name, journals: [] } }
+      currentCode: null,
+      
+      currentId:   null,
+      stockInfo:   null,
+
+      // ── FORM ──
+      form: this.emptyForm(),
+
+      // ── EXEC CALC CACHE ──
+      execStats: {
+        avgCost:    '—',
+        totalShares: '—',
+        totalRisk:  '—',
+        avgCostAt(idx)      { return this._perCard[idx]?.avgCost    || '—' },
+        totalSharesAt(idx)  { return this._perCard[idx]?.totalShares || '—' },
+        _perCard: []
+      },
+
+      // ── PERF ──
+      perf: { pnl: '—', roi: '—', costExit: '—' },
+
+      // ── UI ──
+      deleteDialog: false,
+      toastShow:    false,
+      toastMsg:     '',
+
+      // ── OPTIONS ──
+      tradeTypes:     ['波段', '當沖', '隔日沖'],
+      directions:     ['多頭排列', '空頭排列', '盤整'],
+      markets:        ['趨勢盤', '盤整盤', '震盪盤'],
+      breakoutOptions:['整理區間', '前高', '均線5日', '均線20日', '均線60日'],
+      chipOpts:       ['買超', '賣超', '無'],
+      mainOpts:       ['建倉', '出貨', '不明'],
+      exitMethods:    ['分批出', '一次出', '移動停利'],
+      exitReasonOpts: ['到價停利', '觸發停損', '策略改變', '情緒干擾'],
+      emotionOpts:    ['FOMO', '焦慮', '猶豫', '衝動', '自信', '冷靜'],
+      strategyOpts:   ['完全依策略', '部分偏離', '完全主觀'],
+      errorOpts:      ['進場太早', '進場太晚', '停損未執行', '停利太早', '停利太晚', '情緒影響'],
+    }
+  },
+
+  computed: {
+    sortedJournals() {
+      if (!this.currentCode || !this.journals[this.currentCode]) return []
+      return [...this.journals[this.currentCode].journals]
+        .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+    },
+    topbarId() {
+      if (!this.currentId || !this.currentCode) return '— 尚未選擇日誌 —'
+      const j = this.findJournal(this.currentCode, this.currentId)
+      return j ? `${j.code || '—'} ${j.name || ''} — ${j.date || '—'}` : '—'
+    },
+  },
+
+  mounted() {
+    this.loadExcel()
+    this.readQueryString()
+  },
+
+  methods: {
+    // ── EMPTY FORM ──
+    emptyForm() {
+      return {
+        date:        '',
+        code:        '',
+        name:        '',
+        period:      '',
+        tradeType:   '波段',
+        direction:   '多頭排列',
+        market:      '趨勢盤',
+        breakout:    [],
+        chipItrust:  '買超',
+        chipForeign: '買超',
+        chipMain:    '建倉',
+        decision:    '',
+        reasonTech:  '',
+        reasonChip:  '',
+        reasonOther: '',
+        planAmount:  '',
+        planRatio:   '',
+        planTp:      '',
+        exitMethod:  '一次出',
+        execBuy:     [this.emptyBuyCard()],
+        exit:        { time: '', price: '', amount: '' },
+        exitReasons: [],
+        emotions:    [],
+        strategy:    '完全依策略',
+        deviation:   '',
+        exitChip:    '',
+        followed:    '是',
+        quality:     '好交易',
+        errors:      [],
+        review:      '',
+      }
+    },
+
+    emptyBuyCard() {
+      return {
+        uid:      Date.now() + Math.random(),
+        time:     '',
+        price:    '',
+        shares:   '',
+        amount:   '',
+        sl:       '',
+        slBasis:  '',
+        maxLoss:  '',
+        note:     '',
+      }
+    },
+
+    // ── QUERY STRING ──
+    readQueryString() {
+      const params = new URLSearchParams(window.location.search)
+      const code   = params.get('code')
+
+      if (!code) return
+      this.currentCode = code.toUpperCase()
+      this.loadJournalFile(this.currentCode)
+    },
+
+    // ── LOAD EXCEL ──
+    loadExcel() {
+      const params = new URLSearchParams(window.location.search)
+      const date   = params.get('date')
+      if (!date) return
+      const file = 'Result/DailyFiles/'+date +'.xlsx'
+      fetch(file)
+        .then(response => response.arrayBuffer())
+        .then(data => {
+          const workbook  = XLSX.read(data, { type: 'array' })
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          const json      = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+
+          if (json.length < 2) return
+
+          const headers = json[0]
+          const rows    = json.slice(1).map(row => {
+            const rowData = {}
+            headers.forEach((h, i) => { rowData[h] = row[i] })
+            return rowData
+          })
+
+          this.stockRows = rows
+
+          // if code already set by query string, find stock info
+          if (this.currentCode) {
+            this.applyStockInfo(this.currentCode)
+          }
+        })
+        .catch(() => {
+          // stockData.xlsx not found, continue without it
+          this.stockRows = []
+        })
+    },
+
+    applyStockInfo(code) {
+      if (!this.stockRows || !this.stockRows.length) return
+      const row = this.stockRows.find(r => String(r['stock_number']) === String(code))
+      if (!row) return
+
+      this.stockInfo = row
+
+      // auto-fill only if form is fresh (new journal)
+      if (!this.currentId) return
+      const j = this.findJournal(this.currentCode, this.currentId)
+      if (j) return  // existing journal, don't overwrite
+
+      this.autoFillFromStock(row)
+    },
+
+    autoFillFromStock(row) {
+      // direction
+      const tt = row.TrendType || ''
+      if (tt.includes('強多') || tt.includes('轉強'))         this.form.direction = '多頭排列'
+      else if (tt.includes('盤整'))                          this.form.direction = '盤整'
+      else                                                   this.form.direction = '空頭排列'
+
+      // breakout
+      const breakout = []
+      if (row.BB_golden_cross_area === true || row.BB_golden_cross_area === 'True') breakout.push('整理區間')
+      if (row.HH === true || row.HH === 'True')                                     breakout.push('前高')
+      if (row.MA_UP === true || row.MA_UP === 'True')                               breakout.push('均線5日')
+      this.form.breakout = breakout
+    },
+
+    // ── LOAD JOURNAL FILE ──
+    loadJournalFile(code) {
+      const file = `TradingJournalData/${code}.json`
+      fetch(file)
+        .then(r => {
+          if (!r.ok) throw new Error('not found')
+          return r.json()
+        })
+        .then(data => {
+          this.$set(this.journals, code, data)
+          // auto-open latest journal
+          if (data.journals && data.journals.length > 0) {
+            const latest = [...data.journals].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))[0]
+            this.loadJournal(latest.id)
+          }
+          this.applyStockInfo(code)
+        })
+        .catch(() => {
+          // no file yet, init empty
+          this.$set(this.journals, code, { code, name: '', journals: [] })
+          this.applyStockInfo(code)
+        })
+    },
+
+    // ── JOURNAL CRUD ──
+    newJournal() {
+      if (!this.currentCode) {
+        // no code from query string, ask
+        const code = prompt('請輸入股票代碼：')
+        if (!code) return
+        this.currentCode = code.trim().toUpperCase()
+        if (!this.journals[this.currentCode]) {
+          this.$set(this.journals, this.currentCode, { code: this.currentCode, name: '', journals: [] })
+        }
+      }
+
+      const id   = 'j_' + Date.now()
+      const today = this.todayStr()
+
+      this.currentId   = id
+      this.form        = this.emptyForm()
+      this.form.date   = today
+      this.form.code   = this.currentCode
+      this.perf        = { pnl: '—', roi: '—', costExit: '—' }
+
+      // apply stock info if available
+      if (this.stockRows) {
+        const row = this.stockRows.find(r => String(r['stock_number']) === String(this.currentCode))
+        if (row) {
+          this.stockInfo = row
+          this.autoFillFromStock(row)
+        }
+      }
+
+      this.calcExec()
+    },
+
+    loadJournal(id) {
+      if (!this.currentCode) return
+      const j = this.findJournal(this.currentCode, id)
+      if (!j) return
+
+      this.currentId = id
+      this.form      = JSON.parse(JSON.stringify(j.formData))
+      this.calcExec()
+    },
+
+    saveJournal() {
+      if (!this.currentId || !this.currentCode) return
+
+      const data    = this.collectAll()
+      const codeObj = this.journals[this.currentCode]
+      if (!codeObj) return
+
+      const idx = codeObj.journals.findIndex(j => j.id === this.currentId)
+      if (idx >= 0) {
+        this.$set(codeObj.journals, idx, data)
+      } else {
+        codeObj.journals.push(data)
+      }
+
+      this.downloadJSON()
+      this.showToast('已儲存並下載')
+    },
+
+    confirmDelete() { this.deleteDialog = true },
+
+    deleteJournal() {
+      this.deleteDialog = false
+      if (!this.currentId || !this.currentCode) return
+
+      const codeObj = this.journals[this.currentCode]
+      codeObj.journals = codeObj.journals.filter(j => j.id !== this.currentId)
+
+      this.currentId = null
+      this.form      = this.emptyForm()
+      this.perf      = { pnl: '—', roi: '—', costExit: '—' }
+      this.stockInfo = null
+
+      this.downloadJSON()
+      this.showToast('已刪除')
+    },
+
+    collectAll() {
+      return {
+        id:        this.currentId,
+        code:      this.form.code,
+        name:      this.form.name,
+        date:      this.form.date,
+        tradeType: this.form.tradeType,
+        pnl:       this.perf.pnl,
+        updatedAt: new Date().toISOString(),
+        formData:  JSON.parse(JSON.stringify(this.form)),
+      }
+    },
+
+    downloadJSON() {
+      const codeObj = this.journals[this.currentCode]
+      const blob    = new Blob([JSON.stringify(codeObj, null, 2)], { type: 'application/json' })
+      const url     = URL.createObjectURL(blob)
+      const a       = document.createElement('a')
+      a.href        = url
+      a.download    = `${this.currentCode}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    },
+
+    exportJSON() {
+      if (!this.currentId) return
+      this.saveJournal()
+    },
+
+    // ── EXEC CARDS ──
+    addBuyCard() {
+      this.form.execBuy.push(this.emptyBuyCard())
+      this.calcExec()
+    },
+
+    removeBuyCard(idx) {
+      this.form.execBuy.splice(idx, 1)
+      this.calcExec()
+    },
+
+    calcExec() {
+      this.$nextTick(() => {
+        let totalAmount = 0
+        let totalShares = 0
+        let totalRisk   = 0
+        const perCard   = []
+
+        this.form.execBuy.forEach((card, idx) => {
+          const price  = parseFloat(String(card.price).replace(/,/g, ''))  || 0
+          const shares = parseFloat(String(card.shares).replace(/,/g, '')) || 0
+          const sl     = parseFloat(String(card.sl).replace(/,/g, ''))     || 0
+
+          const amount  = price * shares
+          const maxLoss = sl > 0 ? (price - sl) * shares : 0
+
+          totalAmount += amount
+          totalShares += shares
+          totalRisk   += maxLoss
+
+          const avgCost = totalShares > 0 ? totalAmount / totalShares : 0
+
+          card.amount  = amount  > 0 ? this.fmtNum(Math.round(amount))  : ''
+          card.maxLoss = maxLoss > 0 ? '-' + this.fmtNum(Math.round(maxLoss)) : ''
+
+          perCard.push({
+            avgCost:     avgCost > 0 ? avgCost.toFixed(1) : '—',
+            totalShares: totalShares > 0 ? this.fmtNum(totalShares) : '—',
+          })
+        })
+
+        const avgCost = totalShares > 0 ? totalAmount / totalShares : 0
+
+        this.execStats = {
+          avgCost:     avgCost > 0 ? avgCost.toFixed(1) : '—',
+          totalShares: totalShares > 0 ? this.fmtNum(totalShares) : '—',
+          totalRisk:   totalRisk > 0 ? '-' + this.fmtNum(Math.round(totalRisk)) : '—',
+          _perCard:    perCard,
+          avgCostAt(idx)     { return this._perCard[idx]?.avgCost     || '—' },
+          totalSharesAt(idx) { return this._perCard[idx]?.totalShares || '—' },
+        }
+
+        // exit amount
+        const exitPrice = parseFloat(String(this.form.exit.price).replace(/,/g, '')) || 0
+        if (exitPrice > 0 && totalShares > 0) {
+          this.form.exit.amount = this.fmtNum(Math.round(exitPrice * totalShares))
+        } else {
+          this.form.exit.amount = ''
+        }
+
+        // perf
+        if (exitPrice > 0 && avgCost > 0 && totalShares > 0) {
+          const pnl = (exitPrice - avgCost) * totalShares
+          const roi = (exitPrice - avgCost) / avgCost * 100
+          const pos = pnl >= 0
+          this.perf = {
+            pnl:      (pos ? '+' : '') + this.fmtNum(Math.round(pnl)),
+            roi:      (pos ? '+' : '') + roi.toFixed(2) + '%',
+            costExit: avgCost.toFixed(1) + ' → ' + exitPrice,
+          }
+        } else {
+          this.perf = {
+            pnl:      '—',
+            roi:      '—',
+            costExit: avgCost > 0 ? avgCost.toFixed(1) + ' → —' : '—',
+          }
+        }
+      })
+    },
+
+    // ── HELPERS ──
+    toggleArr(arr, val) {
+      const idx = arr.indexOf(val)
+      if (idx >= 0) arr.splice(idx, 1)
+      else          arr.push(val)
+    },
+
+    findJournal(code, id) {
+      return this.journals[code]?.journals.find(j => j.id === id)
+    },
+
+    todayStr() {
+      const d = new Date()
+      return d.getFullYear() + '.' +
+        String(d.getMonth() + 1).padStart(2, '0') + '.' +
+        String(d.getDate()).padStart(2, '0')
+    },
+
+    fmtNum(n) { return Number(n).toLocaleString() },
+
+    pnlClass(pnl) {
+      if (!pnl || pnl === '—') return ''
+      return pnl.startsWith('+') ? 'pnl-pos' : 'pnl-neg'
+    },
+
+    typeClass(t) {
+      return t === '波段' ? 'type-wave' : t === '當沖' ? 'type-day' : 'type-next'
+    },
+
+    perfClass(val) {
+      if (!val || val === '—') return ''
+      return val.startsWith('-') ? 'neg' : ''
+    },
+
+    showToast(msg) {
+      this.toastMsg  = msg
+      this.toastShow = true
+      setTimeout(() => { this.toastShow = false }, 2200)
+    },
+  }
+})
+</script>
+</body>
+</html>

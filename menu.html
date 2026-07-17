@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【Menu】</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <!-- Vuetify DataTable -->
+                <v-data-table hide-default-footer :headers="headers" :items="paths" style="white-space: nowrap;"
+                    :items-per-page="50">
+                    <!-- 自訂第一個欄位為超連結 -->
+                    <template v-slot:item.url="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            {{ item.url }}
+                        </v-btn>
+                    </template>
+                    <template v-slot:item.action="{ item }">
+                        <v-btn text @click="openappDialog(item,'app')">
+                            app mode
+                        </v-btn>
+                        <v-btn text @click="openappDialog(item,'sync')">
+                            sync mode
+                        </v-btn>
+
+                    </template>
+
+                </v-data-table>
+            </v-container>
+        </v-app>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    model: [],
+                    urldomain: 'https://itchang0615.github.io/PJ_stock/',
+                    otherstype: [],
+                    paths: [
+                        { title: 'MyFIN', url: '_MyFIN.html?', file: '-', desc: '' },
+                        { title: 'ETF 持股比較系統', url: 'Project_ETF/ETF_Portfolio_Compare.html', file: '-', desc: '' },
+                        { title: '📊 族群動向', url: 'index5_dashboard.html?d=4', file: '-', desc: '' },
+
+                        { title: '資金分類流向-All', url: 'index3.html?d=A&date=', file: 'checkall.xlsx', desc: '' },
+                        { title: '太陽圖-觀察組_SS', url: 'index2.html?d=ss&date=', file: 'checksun_ss.xlsx', desc: 'MACD-SL 剛過０' },
+                        { title: '太陽圖-觀察組_S', url: 'index2.html?d=s&date=', file: 'checksun_s.xlsx', desc: 'MA_long_int> MA_longlong_int' },
+                        { title: '太陽圖-觀察組_Sbk', url: 'index2.html?d=sbk&date=', file: 'checksun_s.xlsx', desc: 'S(all)' },
+                        { title: '太陽圖-觀察組_A', url: 'index2.html?d=a&date=', file: 'checksun_a.xlsx', desc: '+ + ⭐' },
+                        { title: '太陽圖-觀察組_B1', url: 'index2.html?d=b1&date=', file: 'checksun_b1.xlsx', desc: '⭐均價long_%>0，MACD_%>0 ,均價_% > 0' },                        
+                        { title: '太陽圖-觀察組_B2', url: 'index2.html?d=b2&date=', file: 'checksun_b2.xlsx', desc: '均價long_%>0，MACD_%>0 ,均價_% < 0' },                        
+                        { title: '太陽圖-觀察組_C', url: 'index2.html?d=c&date=', file: 'checksun_c.xlsx', desc: '均價long_%>0，MACD_%<0' },                        
+                        { title: '太陽圖-觀察組_D1', url: 'index2.html?d=d1&date=', file: 'checksun_d1.xlsx', desc: '⭐均價long_%<0，MACD_%>0,均價_%>0' },                        
+                        { title: '太陽圖-觀察組_D2', url: 'index2.html?d=d2&date=', file: 'checksun_d2.xlsx', desc: '均價long_%<0，MACD_%>0,均價_% < 0' },                        
+                        { title: '太陽圖-觀察組_E', url: 'index2.html?d=e&date=', file: 'checksun_e.xlsx', desc: '均價long_%<0，MACD_%<0' },      
+                        { title: '太陽圖-觀察組_F', url: 'index2.html?d=f&date=', file: 'checksun_f/.xlsx', desc: '昨日>4' },                   
+                        { title: '太陽圖-觀察組_H', url: 'index2.html?d=h&date=', file: 'checksun_f/.xlsx', desc: 'hightlight date ' },                   
+                        { title: '太陽圖-觀察組_x', url: 'index2.html?d=x&date=', file: 'checksun_x/.xlsx', desc: 'IG 推' },                   
+                        { title: '太陽圖-觀察組_y', url: 'index2.html?d=y&date=', file: 'checksun_y/.xlsx', desc: '創高' },                   
+                        
+                        { title: '太陽圖-持有', url: 'index2.html?d=sunmy', file: 'checksunmy.xlsx', desc: '' }, 
+                        
+                        { title: '--------', url: '-----------------', file: '----------------', desc: '------------' },
+                        //{ title: 'Analyze_1', url: 'index4.html?d=0', file: 'analyze_1.xlsx', desc: '>6 總數' },
+                        { title: 'Analyze_2', url: 'index4.html?d=2', file: 'analyze_2.xlsx', desc: '量' },
+                        { title: 'Analyze_4', url: 'index4.html?d=4', file: 'analyze_4.xlsx', desc: '量' },
+                        { title: '--------', url: '-----------------', file: '----------------', desc: '------------' },
+                        { title: 'RowData 指定日-All', url: 'index.html?d=C&date=', file: '/Result/checkall/', desc: '123' },
+                        { title: 'RowData 自訂-持有', url: 'index.html?d=M', file: 'checkmy.xlsx', desc: '' },
+                        
+                        //{ title: 'RowData 自訂-其他推薦', url: 'index.html?d=dangchong', file: 'checkdangchong.xlsx', desc: 'https://www.threads.net/@dangchongyanjiusuo?hl=zh-tw' },
+                        { title: '--------', url: '-----------------', file: '----------------', desc: '------------' },
+                    ],
+                    headers: [
+                        { text: 'Title', value: 'title', align: 'left', sortable: true },
+                        { text: 'Url', value: 'url', align: 'left', sortable: true },
+                        { text: 'File', value: 'file', align: 'left', sortable: true },
+                        { text: 'Action', value: 'action', align: 'left', sortable: true },
+                        { text: 'Desc', value: 'desc', align: 'left', sortable: true },
+                    ],
+                };
+            },
+            created() {
+                this.urldomain = window.location.href.split('/').slice(0, 4).join('/') + '/'
+                this.paths.forEach(x => {
+                    x.url = x.url.replace("date=", "date=" + this.getPreviousWorkingDay());
+                });
+                // 增加動態 Type 
+                const informationTechnology = ['資訊服務業', '數位雲端'];
+                const electronicsIndustry = [
+                    '通信網路業', '光電業', '其他電子業', '半導體業',
+                    '電器電纜', '電子通路業', '電子零組件業',
+                    '電機機械', '電腦及週邊設備業'
+                ];
+                const traditionalIndustries = [
+                    '化學工業', '塑膠工業', '建材營造', '文化創意業', '橡膠工業',
+                    '水泥工業', '汽車工業', '油電燃氣業', '玻璃陶瓷', '生技醫療業',
+                    '紡織纖維', '綠能環保', '航運業', '觀光事業', '貿易百貨',
+                    '造紙工業', '運動休閒', '食品工業'
+                ];
+                const financialSector = ['金融保險', '金融業'];
+                const otherCategories = ['居家生活', '其他'];
+                this.otherstype = [
+                    ...informationTechnology,
+                    ...electronicsIndustry,
+                    ...traditionalIndustries,
+                    ...financialSector,
+                    ...otherCategories
+                ];
+
+                this.otherstype.forEach(x => {
+                    var newdata ={ title: '太陽圖-分類', url: 'index2.html?d=type&type=', file: '/Result/checksun', desc: '##########' };
+                    newdata.url = newdata.url + x;
+                    newdata.title = newdata.title + '【' + x + '】';
+                    this.paths.push(newdata);
+                });
+            },
+            computed: {
+            },
+            methods: {
+                openDialog(item) {
+                    url = this.urldomain + item.url;
+                    var newTab = window.open(url, '_blank');
+                    newTab.location;
+                },
+                openappDialog(item, mode) {
+                    url = this.urldomain + item.url + '&'
+                    if (mode == 'app') {
+                        url += 'mode=app';
+                    }
+                    if (mode == "sync") {
+                        url += 'sync=Y';
+                    }
+
+                    var newTab = window.open(url, '_blank');
+                    newTab.location;
+                },
+                getPreviousWorkingDay(date = new Date()) {
+                    const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+                    if (day === 0) {
+                        // Sunday → move back to Friday
+                        date.setDate(date.getDate() - 2);
+                    } else if (day === 6) {
+                        // Saturday → move back to Friday
+                        date.setDate(date.getDate() - 1);
+                    } else if (day === 1) {
+                        // Monday → move back to Friday
+                        date.setDate(date.getDate() - 3);
+                    } else {
+                        // Any other weekday → move back one day
+                        date.setDate(date.getDate() - 1);
+                    }
+
+                    return date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                }
+            },
+        });
+    </script>
+</body>
+
+</html>

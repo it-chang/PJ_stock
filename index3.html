@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分類解析</title>
+    <!-- 引入 Vuetify 和 Vue.js -->
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
+    <style>
+        .custom-table .v-data-table__wrapper {
+            max-height: 350px;
+            /* 控制資料區域高度，讓 headers 固定 */
+            overflow-y: auto;
+            /* 讓資料可以垂直捲動 */
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <v-row no-gutters>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
+                    </v-col>
+                    <v-col col="5">
+                        <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
+                        <span> data count {{[...new Set( jsonData.map(obj => obj.stock_number)) ].length}}</span>
+                        <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary" @click="sortBy=['rt_price']">sortBy :rt_price</v-btn>
+                    </v-col>
+                    <v-col col="1">
+                        <v-btn color="primary"
+                            @click="localStorage.setItem('aaalist',JSON.stringify(jsonData.map(x => ({stock_number: x.stock_number,分類標籤: x.分類標籤}))));">set</v-btn>
+                        <v-btn color="primary"
+                            @click="oldlabel=JSON.parse(localStorage.getItem('aaalist')|| '[]')">get</v-btn>
+                        <v-btn color="primary" @click="filterclick()">filter</v-btn>
+                    </v-col>
+                </v-row>
+
+                <div v-for="(type, index) in distinct_type" v-show="appmode">
+                    {{type.Typelevel }} {{parseFloat(type.Volume_Price_Change).toFixed(0)}}
+
+                    <br>
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="appheaderData"
+                        :items="appfilteredData(type.Typelevel )" :items-per-page="-1" item-key="id"
+                        :sort-by.sync="sortBy" :sort-desc.sync="sortDesc" style="white-space: nowrap; ">
+                        <template v-slot:item.stock_number="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.stock_number }} {{ item.Type0 }}
+                            </v-btn>
+                        </template>
+                        <template v-slot:item.rt_price="{ item }">
+                            <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{item.rt_price}}
+                            </span>
+                        </template>
+                        <template v-slot:item.rt_量="{ item }">
+                            <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                            </span>
+                        </template>
+                    </v-data-table>
+                </div>
+
+                <div v-for="(type, index) in distinct_type" v-show="!appmode"
+                    style="max-height: 400px; overflow-x: auto;">
+                    {{ type.Typelevel }} {{parseFloat(type.Volume_Price_Change).toFixed(0)}}
+                    <span>
+                        {{filteredData(type.Typelevel).filter(x=>x._quote>5).length}} /
+                        {{filteredData(type.Typelevel).length}}
+                    </span>
+                    【分類】
+                    <a :href="computedHref2(type)" target="_blank" rel="noopener">
+                        {{ sanitizedTypelevel(type) }}
+                    </a>
+
+                    【太陽】
+                    <a :href="computedHref(type)" target="_blank" rel="noopener">
+                        {{ sanitizedTypelevel(type) }}
+                    </a>
+
+                    <br>
+                    <v-data-table disable-pagination fixed-header hide-default-footer :headers="headers"
+                        :items="filteredData(type.Typelevel)" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                        :sort-desc.sync="sortDesc" style="white-space: nowrap; min-width: 100%; max-height: 400px;"
+                        class="custom-table">
+
+                        <template v-slot:item.分類標籤="{ item }">
+                            <span style="color: rgb(228, 139, 5);"
+                                v-if='oldlabel.filter(x=>x.stock_number==item.stock_number)[0]?.分類標籤.split("【")[1]?.split("】")[0] !=item.分類標籤.split("【")[1]?.split("】")[0] '
+                                v-show='item.分類標籤_=(oldlabel.filter(x=>x.stock_number==item.stock_number)[0]?.分類標籤.split("【")[1]?.split("】")[0] !=item.分類標籤.split("【")[1]?.split("】")[0] )'>
+
+                                {{oldlabel.filter(x=>x.stock_number==item.stock_number)[0]?.分類標籤.split("【")[1]?.split("】")[0]
+                                }}
+                                **
+                                {{ item.分類標籤.split("【")[1]?.split("】")[0] }}
+
+                            </span>
+                            {{ item.分類標籤}}
+                        </template>
+                        <template v-slot:item.stock_number="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                <v-icon v-if=" checklist.filter(x => x == item.stock_number).length > 0  "
+                                    aria-hidden="false" color="orange">mdi-star</v-icon>
+                                {{ item.stock_number }} {{ item.Type0 }}
+                            </v-btn>
+                        </template>
+                        <template v-slot:item.now_price="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                <span style="color: rgb(124, 169, 173);"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.g}} |
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.b}}
+                                </span>
+                                {{ item.now_price }}
+                                <span style="color: rgb(124, 169, 173);"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.a}}|
+                                    {{realtimedata.filter(x=>x.c==item.stock_number)[0]?.f}}
+                                </span>
+                            </v-btn>
+                        </template>
+                        <template v-slot:item.rt_price="{ item }">
+                            <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{item.rt_price}}
+                            </span>
+                        </template>
+                        <template v-slot:item.rt_量="{ item }">
+                            <span style="color: rgb(124, 169, 173);"
+                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.a">
+                                {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
+                            </span>
+                        </template>
+                        <template v-slot:item.成交股數="{ item }">
+                            <v-btn text @click="openDialog(item)">
+                                {{ item.成交股數 }} <span style="color: rgb(124, 169, 173);"
+                                    v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
+                                    ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
+                            </v-btn>
+                        </template>
+                        <template v-slot:column.data="{ item, column }">
+                            {{ item[column.value] }}
+                        </template>
+                    </v-data-table>
+                </div>
+
+
+                <!-- 弹出窗口 -->
+     <v-dialog v-model="dialog" max-width="90vw">
+                    <v-card>
+                        <v-card-title class="headline">
+                            <v-checkbox v-model="checked"
+                                @click="checkboxUpdated(selectedItem?.stock_number)"></v-checkbox>
+                            {{ selectedItem?.stock_number }}
+                        </v-card-title>
+                        <v-card-text style="padding: 0; height:100vh;">
+                            <iframe v-if="selectedItem"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                width="80%" frameborder="0" style="padding: 0; height:70vh; width:140vh;">
+                            </iframe>
+                            <br />
+
+                            <a v-if="selectedItem?.Type2=='上市'"
+                                :href="`https://tw.tradingview.com/chart/?symbol=TWSE%3A${selectedItem?.stock_number}`"
+                                target="_blank"> TradingView </a>
+                            <a v-if="selectedItem?.Type2!='上市'"
+                                :href="`https://tw.tradingview.com/chart/?symbol=TPEX%3A${selectedItem?.stock_number}`"
+                                target="_blank"> TradingView </a> &nap;
+                            <!--
+                            <a :href="`https://statementdog.com/analysis/${selectedItem?.stock_number}`"
+                                target="_blank"> 本益比河流 </a>
+                            -->
+                            <!--
+                            ////'Full_Summary', 'textdesc',  '營收比重',  'desc',
+                                -->
+
+                            <v-row no-gutters>
+                                <v-col col="4">
+                                    【{{ selectedItem?.Type1 }}】 {{ selectedItem?.textdesc }}
+                                    <br />
+
+                                    營業毛利率 <span style="color: blue;">{{ selectedItem?.營業毛利率 }}</span>
+                                    營業利益率 <span style="color: blue;">{{ selectedItem?.營業利益率 }} </span>
+                                    淨值倍率 <span style="color: blue;">{{ selectedItem?.淨值倍率 }} </span>
+                                    殖利率 <span style="color: blue;">{{ selectedItem?.殖利率 }} </span>
+                                    <br />
+                                    營業收入-上月比較增減(%)<span style="color: blue;">{{ parseFloat(
+                                        selectedItem?.['營業收入-上月比較增減(%)'] ).toFixed(1)}} </span>
+                                    營業收入-去年同月增減(%)<span style="color: blue;">{{ parseFloat(
+                                        selectedItem?.['營業收入-去年同月增減(%)'] ).toFixed(1)}} </span>
+                                    累計營業收入-前期比較增減(%)<span style="color: blue;">{{ parseFloat(
+                                        selectedItem?.['累計營業收入-前期比較增減(%)'] ).toFixed(1)}} </span>
+                                    <br />
+                                    <div v-for="x in selectedItem?.text_desc.split('\r\n') ">
+                                        <a :href="computedHref(x.split('｜')[2])" target="_blank"> {{x}}
+                                        </a>
+                                    </div>
+                                </v-col>
+                                <v-col col="4">
+                                    <span v-html="$formatDesc(selectedItem?.Full_Summary)"
+                                        style="color: #285376b8;"></span>
+                                </v-col>
+                                <v-col col="4">
+                                    {{ selectedItem?.desc }}
+                                    <br />
+                                    {{ selectedItem?.營收比重 }}
+                                    <br />
+                                </v-col>
+                            </v-row>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+
+            </v-container>
+        </v-app>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    checked: false,
+                    checklist: [],
+                    appmode: false,
+                    sync: false,
+                    para_type: null,
+                    url: '',
+                    jsonData: [],
+                    oldlabel: [],
+                    headers: [],
+                    appheaderscol: ['stock_number', '_quote', 'rt_price', 'rt_量', 'highlight_date', '遠交易量o'],
+                    filters: {},
+                    uniqueValues: {},
+                    //sortBy: 'highlight_date',
+                    //sortBy: ['_quote'],
+                    //sortBy: ['量能差', 'MACD_%'],
+                    sortBy: ['MA_last_cross_date', 'MACD_%'],
+
+                    sortDesc: [true, true],
+                    dialog: false,
+                    selectedItem: null,
+                    realtimedata: [],
+                    paraDate: null,
+                    filter1: 1,
+                    filter2: -20,
+                };
+            },
+            created() {
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/'
+                if (window.location.host.indexOf("it-chang") !== -1) {
+                    this.url = this.url.replace('PJ_stock/Html', 'PJ_Stock2')
+                };
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('mode')) {
+                    // &mode=app 
+                    this.appmode = urlParams.get('mode') == 'app';
+                }
+                if (urlParams.has('sync')) {
+                    this.sync = urlParams.get('sync') == 'Y';
+                }
+                this.init();
+                this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
+            },
+            computed: {
+                distinct_type() {
+                    var result = [];
+                    this.jsonData.reduce(function (res, value) {
+                        var key = value.Typelevel  // Typelevel //+value.Trend
+                        if (!res[key]) {
+                            res[key] = { Typelevel: key, Volume_Price_Change: 0 };
+                            result.push(res[key])
+                        }
+                        res[key].Volume_Price_Change += Number(value.Volume_Price_Change);
+                        return res;
+                    }, {});
+                    result.sort(function (a, b) {
+                        return -(a.Volume_Price_Change - b.Volume_Price_Change);
+                    });
+                    return result
+                },
+                appheaderData() {
+                    return this.headers.filter(x => this.appheaderscol.includes(x.text))
+                },
+            },
+            methods: {
+                 paraDate_str() {
+                    const d = new Date(this.paraDate);
+                    return `${d.getFullYear()}/` +
+                        `${String(d.getMonth() + 1).padStart(2, '0')}/` +
+                        `${String(d.getDate()).padStart(2, '0')}`;
+                },
+                computedHref33(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    debugger;
+                    return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                },
+                computedHref(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/');
+                    var para_data = app.paraDate_str().replaceAll('/', '-');
+                    if(!!x.Typelevel)
+                        return `${baseUrl}/index.html?d=A&date=${para_data}&type=${this.sanitizedTypelevel(x)}`;
+                    return ''
+                },
+                computedHref2(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/'); // 取得當前網站的根網址
+                    let urlParams = new URLSearchParams(window.location.search);
+                    return `${baseUrl}/index3.html?d=${urlParams.get('d')}&date=${urlParams.get('date')}&type=${this.sanitizedTypelevel(x)}`;
+                },
+               
+                sanitizedTypelevel(x) {
+                    //return x.Type1
+                     //return (x || '').replace(/[\\/:*?"<>|]/g, "_");
+                    return x.Typelevel.replace('右上', '').replace('平', '')
+                    .replace('右下', '').replace('b', '').replace('c', '').replace('d', '').replace('e', '');
+                },
+
+                async init() {
+                    await this.loadExcelData();
+                    if (this.sync) {
+                        await this.sync_realtime();
+                    }
+                    //this.loadExcelData();
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.jsonData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+
+                filteredData(x) {
+                    return this.jsonData.filter(y => y.Typelevel == x)
+                },
+                appfilteredData(x) {
+                    let cols = this.appheaderscol.slice() // 創造一個新的陣列副本
+                    cols.push('Type0')
+                    cols.push('Type')
+                    cols.push('成交股數')
+                    cols.push('now_price')
+
+                    return this.jsonData.filter(y => y.Typelevel == x).map(item => cols.reduce((acc, col) => ({ ...acc, [col]: item[col] }), {}))
+                },
+                openDialog(item) {
+                    this.selectedItem = item;
+                    this.checked = this.checklist.filter(x => x == item.stock_number).length > 0
+                    this.dialog = true;
+                },
+                checkboxUpdated(newValue) {
+                    this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
+                    if (newValue) {
+                        if (this.checked) {
+                            this.checklist.push(newValue)
+                        } else {
+                            this.checklist = this.checklist.filter(x => x != newValue)
+                        }
+                        console.log(this.checklist)
+                    }
+                    localStorage.setItem('checklist', JSON.stringify(this.checklist));
+                },
+                openNextPage(i) {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    const date = this.paraDate;
+                    date.setDate(date.getDate() + i);
+                    const nextDateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+                    const url = window.location.href.replace(urlParams.get('date'), nextDateStr);
+                    window.open(url, '_blank');
+                },
+
+
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+                getMinValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.min(...values) : 0;
+                },
+                getMaxValue(field) {
+                    const values = this.jsonData
+                        .map(item => parseFloat(item[field]))
+                        .filter(value => !isNaN(value));
+                    return values.length ? Math.max(...values) : 100;
+                },
+                set_header() {
+                    const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率', '總市值', '成交量', 'Type1', '營業收入-上月比較增減(%)', '營業收入-去年同月增減(%)', '累計營業收入-前期比較增減(%)',];// 'stock_number'
+                    //(價)
+                    const trendFields = ['MACD_%', '均價long_%', '均價_%', 'MA5_%', 'highlight_date',];//'價_起始日期',
+                    const dateFields = ['量價差天',];
+                    const miscFields = ['當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
+                    //(量)
+                    const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator', 'Volume_Diff']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
+                    const configFlag = ['確認漲跌']
+
+                    var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'Flag',];
+
+                    arr = [...baseFields, 'VPC_break', 'MACD-SL', '成交股數',
+                        '均價long_%', '均價_%', 'MA5_%', 'VPC_MA_%', 'volume_threshold',
+                        //'漲跌BYN天Diff', '漲跌BYN天', '增縮BYN天Diff', '增縮BYN天',
+                        'textdesc', '當日漲跌', '總價差', 'now_price',
+                        'macdpercent', 'desctxt', 'highlight_date', 'cond_entry', '分類標籤', '量能max', '量能avg', '量能差', 'type',
+                    ]
+                    //
+                    arr = [
+                        '分類標籤', '日期', 'stock_number', '_quote', '成交股數', 'rt_量', '量能', 'now_price', 'rt_price', 'diff_quote',
+                        'MACD_last_cross_date', 'MACD_hist_diff', 'MACD_%', 'MACD-SL', '%K', '%D', 'highlight_date',
+
+                        'MA_last_cross_date', 'MA_last_cross_%', '量倍率', 'highlight_%', 'highlight_%_1', 'cond_entry', 'LevelArea',
+                        '均價long_%', '成交量', '盤後量', 'MA5_%', '均價_%', '均價long_%', 'MA_short', 'MA_long', 'MA_longlong',
+                        //'MACD_%', 'MACD', 'MACD-SL', '%K', '%D', 
+                        'VPC_MA_%', 'VPC_break',
+
+                        'highlight_enddate_1', 'highlight_stardate_1', 'highlight_enddate收盤價_1', 'highlight_stardate收盤價_1',
+                        'Volume_MA_short', 'Volume_MA_long', 'Volume_Oscillator', 'volume_threshold', 'Volume_Price_Change', 'highlight_enddate', 'Type0', 'Type1', 'Type2', 'Full_Summary',
+                        'textdesc', '營業收入-上月比較增減(%)', '營業收入-去年同月增減(%)', '累計營業收入-前期比較增減(%)', '淨值倍率', '殖利率', '每股營收(元)', '本益比', '營業毛利率', '營業利益率', '同業平均本益比', '總市值', '營收比重', 'Type',
+                        'Typelevel', '每股淨值(元)', 'desc']
+                    this.headers = arr.map(header => ({ text: header, value: header }));;
+
+                },
+                sync_data() {
+                    this.jsonData.forEach(item => {
+                        var price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.a
+                        item.rt_price = (((price / item.now_price) - 1) * 100).toFixed(1)
+                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v
+                        item.rt_量 = (vol / parseFloat(item.成交股數)).toFixed(1)
+                    })
+                },
+                async loadExcelData() {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    this.type = urlParams.get('type');
+                    if (urlParams.get('d') == 'A') {
+                        file = './Result/checkall/' + urlParams.get('date') + '.xlsx'
+                        this.paraDate = new Date(urlParams.get('date'))
+                    } else {
+                        file = './Result/checksun_others/' + urlParams.get('date') + '.xlsx'
+                        this.paraDate = new Date(urlParams.get('date'))
+                    }
+                    await fetch(file)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+                                if (this.realtimedata.length > 0) {
+                                    this.sync_data()
+                                }
+
+                                this.headers.forEach(header => {
+                                    if (this.isNumberField(header.value)) {
+                                        this.$set(this.filters, header.value, [
+                                            this.getMinValue(header.value),
+                                            this.getMaxValue(header.value),
+                                        ]);
+                                    } else {
+                                        this.$set(this.filters, header.value, []);
+                                    }
+                                    this.$set(this.uniqueValues, header.value, []);
+                                });
+
+                                this.jsonData.forEach(row => {
+                                    this.headers.forEach(header => {
+                                        const value = row[header.value];
+                                        if (value != null) {
+                                            const strValue = value.toString();
+                                            if (!this.uniqueValues[header.value].includes(strValue)) {
+                                                this.uniqueValues[header.value].push(strValue);
+                                            } else {
+                                            }
+                                        }
+                                    });
+                                });
+
+                                if (this.type) {
+                                    this.jsonData = this.jsonData.filter(x => x.Typelevel.includes(this.type) || x.desc.includes(this.type) | x.text_desc.includes(this.type));
+                                }
+                                this.jsonData.forEach(x => {
+                                    x.Typelevel += x?.分類標籤.split("【")[1]?.split("】")[0]
+                                });
+                                //**//
+                                /*
+                                    this.jsonData.filter(x => x.highlight_date == '0').map(x => x['MA_last_cross_%'] = 0)
+                                    this.jsonData.filter(x => x.highlight_date == '0').map(x => x.MA_last_cross_date = 0)
+                                    this.jsonData.filter(x => x['MA_last_cross_%'] < 0).map(x => x.MA_last_cross_date = 0)
+                                    this.jsonData.filter(x => x['MA_last_cross_%'] < 0).map(x => x['MA_last_cross_%'] = 0)
+                                */
+                                //**//
+
+                                this.jsonData_ = JSON.parse(JSON.stringify(this.jsonData))
+                                Object.keys(this.uniqueValues).forEach(key => {
+                                    this.uniqueValues[key] = this.uniqueValues[key].map(val => ({ text: val, value: val }));
+                                    this.uniqueValues[key].sort((a, b) => a.text.localeCompare(b.text));
+                                });
+                                this.set_header()
+
+                                this.oldlabel = JSON.parse(localStorage.getItem('aaalist') || '[]')
+                            }
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                },
+                filterclick() {
+                    var vm = this
+                    this.jsonData = this.jsonData.filter(x => x.分類標籤_)
+                    this.jsonData = this.jsonData.filter(x => x.分類標籤.split("【")[1]?.split("】")[0] != 'e')
+
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>

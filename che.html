@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Vue Chart 加載外部 JSON 資料</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    #app {
+      max-width: 940px;
+      margin: auto;
+      font-family: Arial;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: grab;
+    }
+
+    button {
+      margin: 6px 10px 6px 0;
+      font-size: 1em;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <h2>XY Chart: 讀取 data.json 滑鼠移動 & 滾輪縮放 (含原點 x=0, y=0 虛線)</h2>
+    <button @click="restoreDefault">恢復初始(中心與縮放)</button>
+    <button @click="reloadJson">重新載入 data.json</button>
+    <button @click="reloadlocalStorage">載入 localStorage</button>
+    <span style="margin-left:30px;">
+      <b>中心:</b> X={{xCenter.toFixed(2)}}, Y={{yCenter.toFixed(2)}}
+      <b>縮放:</b> {{zoom.toFixed(2)}}
+    </span>
+    <canvas ref="chartCanvas" width="900" height="600" @mousedown="onMouseDown" @mousemove="onMouseMove"
+      @mouseup="onMouseUp" @mouseleave="onMouseUp" @wheel.prevent="onWheel" @click="handleCanvasClick"></canvas>
+    <small>滑鼠拖曳圖表移動中心，滾輪放大&縮小（以滑鼠位置），點擊資料點跳連結</small>
+    <ol>
+      <li v-for="pt in points">
+        <a v-if="pt.link" :href="pt.link" target="_blank" style="color:#1976d2">{{pt.name}}</a>
+        <span v-else>{{pt.name}}</span>
+        (X={{pt.x}}, Y={{pt.y}})
+      </li>
+    </ol>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        const chartCanvas = ref(null);
+        const canvasWidth = 900, canvasHeight = 600;
+        const paddingX = 80, paddingY = 70;
+
+        const points = reactive([]);
+        // base 範圍
+        let minX, maxX, minY, maxY, baseXrange, baseYrange;
+        // 初始中心和縮放 (動態重算)
+        const INIT_CENTER = { x: 0, y: 0 };
+        const INIT_ZOOM = 1.0;
+        const xCenter = ref(INIT_CENTER.x);
+        const yCenter = ref(INIT_CENTER.y);
+        const zoom = ref(INIT_ZOOM);
+
+        // 載入外部json
+        async function loadPoints(checklocalStorage) {
+
+          let arr;
+          if (checklocalStorage) {
+            arr = JSON.parse(localStorage.getItem('ddata') || '[]');
+          } else {
+            const res = await fetch('Content/data.json');
+            arr = await res.json();
+          }
+
+          arr = arr.map(d => ({
+            ...d,
+            x: Number(d.x),
+            y: Number(d.y),
+            q: Number(d.q),
+            s: Math.max(0, Math.min(100, Number(d.s))) // 保障區間
+          }));
+
+          arr.sort((a, b) => a.name.localeCompare(b.name)); // 日期字串升冪排序
+          points.length = 0;
+          arr.forEach(d => points.push(d));
+          /*
+                    points.length = 0;
+                    arr.forEach(d => points.push(d));
+                    */
+
+
+
+
+
+          // 重新計算範圍
+          minX = Math.min(...points.map(pt => pt.x)); maxX = Math.max(...points.map(pt => pt.x));
+          minY = Math.min(...points.map(pt => pt.y)); maxY = Math.max(...points.map(pt => pt.y));
+          minX -= 2; maxX += 2; minY -= 20; maxY += 20;
+          baseXrange = (maxX - minX) || 10;
+          baseYrange = (maxY - minY) || 10;
+
+          // 初始中心和縮放(重設為原點)
+          xCenter.value = INIT_CENTER.x;
+          yCenter.value = INIT_CENTER.y;
+          zoom.value = INIT_ZOOM;
+          drawChart();
+        }
+
+        // 恢復初始中心&縮放
+        function restoreDefault() {
+          xCenter.value = INIT_CENTER.x;
+          yCenter.value = INIT_CENTER.y;
+          zoom.value = INIT_ZOOM;
+          drawChart();
+        }
+        function reloadJson() {
+          loadPoints();
+        }
+        function reloadlocalStorage() {
+          loadPoints(true);
+        }
+
+        // 鼠標拖曳狀態
+        let dragging = false, dragStart = null, dragCenterStart = null;
+
+        // 當前顯示範圍
+        function getCurrentRange() {
+          const xrange = baseXrange / zoom.value;
+          const yrange = baseYrange / zoom.value;
+          return {
+            x1: xCenter.value - xrange / 2,
+            x2: xCenter.value + xrange / 2,
+            y1: yCenter.value - yrange / 2,
+            y2: yCenter.value + yrange / 2
+          }
+        }
+        function dataToCanvas1(x, y) {
+          const rng = getCurrentRange();
+          const x_px = paddingX + (x - rng.x1) / (rng.x2 - rng.x1) * (canvasWidth - paddingX * 2);
+          const y_px = canvasHeight - paddingY - (y - rng.y1) / (rng.y2 - rng.y1) * (canvasHeight - paddingY * 2);
+          return [x_px, y_px];
+        }
+        function dataToCanvas(x, y) {
+          const rng = getCurrentRange();
+          const x_px = paddingX + (x - rng.x1) / (rng.x2 - rng.x1) * (canvasWidth - paddingX * 2);
+
+          // 開更號 + 支援負值
+          const sqrtY = (y >= 0) ? Math.sqrt(y) : -Math.sqrt(Math.abs(y));
+          const sqrtY1 = (rng.y1 >= 0) ? Math.sqrt(rng.y1) : -Math.sqrt(Math.abs(rng.y1));
+          const sqrtY2 = (rng.y2 >= 0) ? Math.sqrt(rng.y2) : -Math.sqrt(Math.abs(rng.y2));
+
+          const y_px = canvasHeight - paddingY - (sqrtY - sqrtY1) / (sqrtY2 - sqrtY1) * (canvasHeight - paddingY * 2);
+          return [x_px, y_px];
+        }
+        function canvasToData(px, py) {
+          const rng = getCurrentRange();
+          let x = rng.x1 + (px - paddingX) / (canvasWidth - paddingX * 2) * (rng.x2 - rng.x1);
+          let y = rng.y1 + ((canvasHeight - paddingY) - py) / (canvasHeight - paddingY * 2) * (rng.y2 - rng.y1);
+          return [x, y];
+        }
+        // 鼠標拖曳事件
+        function onMouseDown(e) {
+          dragging = true;
+          dragStart = { x: e.offsetX, y: e.offsetY };
+          dragCenterStart = { x: xCenter.value, y: yCenter.value };
+          chartCanvas.value.style.cursor = "grabbing";
+        }
+        function onMouseMove(e) {
+          if (!dragging) return;
+          const dx = e.offsetX - dragStart.x;
+          const dy = e.offsetY - dragStart.y;
+          // 轉成數據座標位移
+          const rng = getCurrentRange();
+          const dataDx = -(dx / (canvasWidth - paddingX * 2)) * (rng.x2 - rng.x1);
+          const dataDy = (dy / (canvasHeight - paddingY * 2)) * (rng.y2 - rng.y1);
+          xCenter.value = dragCenterStart.x + dataDx;
+          yCenter.value = dragCenterStart.y + dataDy;
+          drawChart();
+        }
+        function onMouseUp(e) {
+          dragging = false;
+          chartCanvas.value.style.cursor = "grab";
+        }
+        // 鼠標滾輪縮放（以滑鼠所在座標為中心）
+        function onWheel(e) {
+          if (baseXrange === undefined) return;
+          const oldZoom = zoom.value;
+          const newZoom = Math.max(0.2, Math.min(50, oldZoom * (e.deltaY > 0 ? 0.85 : 1.15)));
+          const rect = chartCanvas.value.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+          const [dataX, dataY] = canvasToData(mouseX, mouseY);
+          xCenter.value = dataX - (dataX - xCenter.value) * (oldZoom / newZoom);
+          yCenter.value = dataY - (dataY - yCenter.value) * (oldZoom / newZoom);
+          zoom.value = newZoom;
+          drawChart();
+        }
+        // 點擊點跳連結
+        function handleCanvasClick(e) {
+          const rect = chartCanvas.value.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          for (let pt of points) {
+            let [cx, cy] = dataToCanvas(pt.x, pt.y);
+            if (Math.hypot(cx - x, cy - y) <= 14 && pt.link) {
+              window.open(pt.link, "_blank");
+              break;
+            }
+          }
+        }
+        function getColorByQ(q) {
+          q = Number(q);
+          if (isNaN(q)) return '#aaa'; // 若無效值
+          q = Math.max(-10, Math.min(10, q));
+          let r, g, b;
+          if (q <= 0) {
+            // q=-10: 0,255,0  q=0:150,150,150
+            let f = (q + 10) / 10; // 0~1
+            r = Math.round(150 * f + 0 * (1 - f));
+            g = Math.round(150 * f + 255 * (1 - f));
+            b = Math.round(150 * f + 0 * (1 - f));
+          } else {
+            // q=0:150,150,150  q=10:255,0,0
+            let f = q / 10; // 0~1
+            r = Math.round(255 * f + 150 * (1 - f));
+            g = Math.round(0 * f + 150 * (1 - f));
+            b = Math.round(0 * f + 150 * (1 - f));
+          }
+          return `rgb(${r},${g},${b})`;
+        }
+
+
+        function drawChart() {
+          const canvas = chartCanvas.value;
+          if (!canvas || baseXrange === undefined) return;
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          const rng = getCurrentRange();
+          // 軸中心位置
+          let [zeroX, zeroY] = dataToCanvas(xCenter.value, yCenter.value);
+
+          ctx.save();
+          ctx.strokeStyle = "#222"; ctx.lineWidth = 2;
+          // X軸
+          ctx.beginPath();
+          ctx.moveTo(paddingX, zeroY);
+          ctx.lineTo(canvasWidth - paddingX, zeroY);
+          ctx.stroke();
+          // Y軸
+          ctx.beginPath();
+          ctx.moveTo(zeroX, canvasHeight - paddingY);
+          ctx.lineTo(zeroX, paddingY);
+          ctx.stroke();
+
+          // x=0 虛線（紅）
+          let [x0_px1, x0_py1] = dataToCanvas(0, rng.y1);
+          let [x0_px2, x0_py2] = dataToCanvas(0, rng.y2);
+          ctx.save();
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.moveTo(x0_px1, x0_py1);
+          ctx.lineTo(x0_px2, x0_py2);
+          ctx.strokeStyle = '#f00';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.6;
+          ctx.stroke();
+          ctx.restore();
+
+          // y=0 虛線（綠）
+          let [y0_px1, y0_py1] = dataToCanvas(rng.x1, 0);
+          let [y0_px2, y0_py2] = dataToCanvas(rng.x2, 0);
+          ctx.save();
+          ctx.setLineDash([8, 6]);
+          ctx.beginPath();
+          ctx.moveTo(y0_px1, y0_py1);
+          ctx.lineTo(y0_px2, y0_py2);
+          ctx.strokeStyle = '#090';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.6;
+          ctx.stroke();
+          ctx.restore();
+
+          // 刻度
+          ctx.font = "13px Arial"; ctx.fillStyle = "#333";
+          let xTicks = 10, yTicks = 6;
+
+/*
+          let stepX = (rng.x2 - rng.x1) / (xTicks - 1), stepY = (rng.y2 - rng.y1) / (yTicks - 1);
+          for (let i = 0; i < xTicks; i++) {
+            let dx = rng.x1 + stepX * i; 
+            let [px] = dataToCanvas(dx, yCenter.value);
+            ctx.beginPath(); ctx.moveTo(px, zeroY - 6); ctx.lineTo(px, zeroY + 6); ctx.stroke();
+            ctx.textAlign = "center"; ctx.fillText(dx.toFixed(2), px, zeroY + 25);
+          }
+          */
+          
+          /*
+// 先取平方根範圍
+let sqrtX1 = Math.sqrt(rng.x1 >= 0 ? rng.x1 : -rng.x1) * (rng.x1 >= 0 ? 1 : -1);
+let sqrtX2 = Math.sqrt(rng.x2 >= 0 ? rng.x2 : -rng.x2) * (rng.x2 >= 0 ? 1 : -1);
+
+let stepSqrtX = (sqrtX2 - sqrtX1) / (xTicks - 1);
+
+for (let i = 0; i < xTicks; i++) {
+  // 先在線性空間中等距取值
+  let tx = sqrtX1 + stepSqrtX * i;
+
+  // 再平方回原始值（保留正負號）
+  let origX = (tx >= 0) ? tx * tx : -tx * tx;
+
+  // 轉換到畫布座標
+  let [px] = dataToCanvas(origX, yCenter.value);
+
+  // 畫刻度線
+  ctx.beginPath();
+  ctx.moveTo(px, zeroY - 6);
+  ctx.lineTo(px, zeroY + 6);
+  ctx.stroke();
+
+  // 顯示原始 X 值
+  ctx.textAlign = "center";
+  ctx.fillText(origX.toFixed(2), px, zeroY + 25);
+}*/
+
+          let sqrtY1 = (rng.y1 >= 0) ? Math.sqrt(rng.y1) : -Math.sqrt(Math.abs(rng.y1));
+          let sqrtY2 = (rng.y2 >= 0) ? Math.sqrt(rng.y2) : -Math.sqrt(Math.abs(rng.y2));
+          for (let i = 0; i < yTicks; i++) {
+            let ty = sqrtY1 + (sqrtY2 - sqrtY1) / (yTicks - 1) * i;
+            //let origY = (ty >= 0) ? ty * ty : -ty * ty; // 開根再平方，回原始y值
+            let origY = sqrtY1 + (sqrtY2 - sqrtY1) / (yTicks - 1) * i;
+            let [, py] = dataToCanvas(xCenter.value, origY);
+            ctx.beginPath();
+            ctx.moveTo(zeroX - 6, py); ctx.lineTo(zeroX + 6, py); ctx.stroke();
+
+            // 顯示刻度原來的Y值
+            ctx.textAlign = "right";
+            ctx.fillText(origY.toFixed(2), zeroX - 10, py + 6);
+          }
+            
+
+
+
+
+          ctx.font = "bold 17px Arial";
+          //ctx.fillText("均價long_%", canvasWidth - paddingX + 25, zeroY);
+          //ctx.fillText("MACD_%", zeroX, paddingY - 30);
+
+        //Volume_MA_long MACD_%
+          ctx.fillText("量:Volume_MA_long", canvasWidth - paddingX + 25, zeroY);
+          ctx.fillText("價:均價long_%", zeroX, paddingY - 30);
+              
+
+         
+          // 資料點 + 依 s 畫大小（只保留這段）
+          for (let pt of points) {
+            let [px, py] = dataToCanvas(pt.x, pt.y);
+
+            // s尺寸，0~100對應 6~22px
+            let r = 6 + (pt.s / 100) * (22 - 6);
+            ctx.beginPath();
+            ctx.arc(px, py, r, 0, Math.PI * 2);
+            ctx.fillStyle = getColorByQ(pt.q);
+            ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+            ctx.font = "15px Arial"; ctx.textAlign = "center";
+            ctx.fillStyle = pt.link ? "#1976d2" : "#333";
+            ctx.fillText(pt.name, px, py - r - 6); // 名稱位置根據圓大小調
+          }
+
+          // 取最後三個資料點，依序畫線
+          if (points.length >= 5) {
+            ctx.save();
+            ctx.strokeStyle = "#e44";   // 用紅線
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const last3 = points.slice(-5);
+            let [p0x, p0y] = dataToCanvas(last3[0].x, last3[0].y);
+            ctx.moveTo(p0x, p0y);
+            for (let i = 1; i < 5; i++) {
+              let [px, py] = dataToCanvas(last3[i].x, last3[i].y);
+              ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        onMounted(() => { loadPoints(true); });
+        Vue.watch(points, drawChart, { deep: true });
+        Vue.watch([zoom, xCenter, yCenter], drawChart);
+
+        return {
+          chartCanvas, points, zoom,
+          xCenter, yCenter,
+          onMouseDown, onMouseMove, onMouseUp,
+          onWheel, handleCanvasClick, restoreDefault, reloadJson, reloadlocalStorage
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+
+</html>

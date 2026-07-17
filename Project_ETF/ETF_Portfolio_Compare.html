@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ETF 持股比較系統</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg-deep:#0a0e1a; --bg-card:#111827; --bg-row:#151d2e; --border:#1e293b;
+      --accent:#38bdf8; --accent2:#818cf8; --green:#34d399; --red:#f87171;
+      --yellow:#fbbf24; --orange:#fb923c; --purple:#e879f9;
+      --text-main:#e2e8f0; --text-muted:#64748b;
+      --mono:'JetBrains Mono',monospace; --sans:'Noto Sans TC',sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg-deep);font-family:var(--sans);color:var(--text-main);min-height:100vh;}
+
+    /* header */
+    .app-header{background:linear-gradient(135deg,#0f172a,#1e1b4b);border-bottom:1px solid var(--border);padding:20px 32px;display:flex;align-items:center;gap:16px;}
+    .app-header .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .app-header h1{font-size:20px;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .app-header .subtitle{font-size:12px;color:var(--text-muted);font-family:var(--mono);}
+
+    /* tabs */
+    .tab-bar{display:flex;gap:4px;padding:16px 32px 0;border-bottom:1px solid var(--border);}
+    .tab-btn{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.5px;padding:10px 22px;border-radius:8px 8px 0 0;cursor:pointer;border:1px solid transparent;border-bottom:none;transition:all .2s;color:var(--text-muted);background:transparent;}
+    .tab-btn:hover{color:var(--accent);}
+    .tab-btn.active{background:var(--bg-card);border-color:var(--border);color:var(--accent);border-bottom:2px solid var(--accent);}
+
+    /* control panel */
+    .control-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:20px 32px;}
+    .panel-title{font-size:11px;font-family:var(--mono);color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+    .panel-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+    .panel-row:last-child{margin-bottom:0;}
+    .panel-divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+    .etf-label{font-size:11px;color:var(--text-muted);font-family:var(--mono);letter-spacing:1px;margin-bottom:8px;}
+
+    /* chips */
+    .etf-chips{display:flex;gap:8px;flex-wrap:wrap;}
+    .etf-chip{font-family:var(--mono);font-size:12px;font-weight:600;padding:7px 16px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--bg-deep);color:var(--text-muted);transition:all .2s;}
+    .etf-chip:hover{border-color:var(--accent2);color:var(--accent2);}
+    .etf-chip.active{background:linear-gradient(135deg,rgba(129,140,248,.2),rgba(56,189,248,.2));border-color:var(--accent2);color:#c4b5fd;}
+    /* multi-select chip for tab2 */
+    .etf-chip.sel2{border-color:var(--purple);color:var(--purple);background:rgba(232,121,249,.12);}
+    .etf-chip.all-chip.active{background:linear-gradient(135deg,rgba(56,189,248,.2),rgba(232,121,249,.2));border-color:var(--accent);color:var(--accent);}
+
+    /* date slots */
+    .date-slots{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+    .date-slot{display:flex;flex-direction:column;gap:5px;}
+    .slot-label{font-size:10px;font-family:var(--mono);letter-spacing:1px;color:var(--text-muted);padding-left:2px;}
+    .slot-label.d1{color:#38bdf8;} .slot-label.d2{color:#818cf8;} .slot-label.d3{color:#34d399;} .slot-label.d4{color:#fbbf24;} .slot-label.d5{color:#fb923c;}
+    .date-select{background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-family:var(--mono);font-size:13px;padding:9px 32px 9px 12px;outline:none;cursor:pointer;min-width:148px;transition:border-color .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+    .date-select:hover,.date-select:focus{border-color:var(--accent);}
+    .date-select option{background:var(--bg-card);}
+    .date-select.sel-d1:hover,.date-select.sel-d1:focus{border-color:#38bdf8;}
+    .date-select.sel-d2:hover,.date-select.sel-d2:focus{border-color:#818cf8;}
+    .date-select.sel-d3:hover,.date-select.sel-d3:focus{border-color:#34d399;}
+    .date-select.sel-d4:hover,.date-select.sel-d4:focus{border-color:#fbbf24;}
+    .date-select.sel-d5:hover,.date-select.sel-d5:focus{border-color:#fb923c;}
+
+    /* buttons */
+    .compare-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0e1a;font-weight:700;font-family:var(--mono);letter-spacing:1px;border-radius:8px;padding:0 24px;height:42px;border:none;cursor:pointer;font-size:13px;transition:opacity .2s;white-space:nowrap;}
+    .compare-btn:disabled{opacity:.35;cursor:not-allowed;}
+    .icon-btn{background:var(--bg-deep);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-family:var(--mono);font-size:12px;padding:0 14px;height:42px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+    .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+    /* stats */
+    .stats-bar{display:flex;gap:10px;flex-wrap:wrap;margin:0 32px 14px;}
+    .stat-chip{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;font-family:var(--mono);display:flex;align-items:center;gap:8px;}
+    .stat-chip .sn{font-size:15px;font-weight:600;}
+    .stat-chip.s-total .sn{color:var(--accent);} .stat-chip.s-added .sn{color:var(--green);} .stat-chip.s-removed .sn{color:var(--red);} .stat-chip.s-changed .sn{color:var(--yellow);}
+
+    /* filter bar */
+    .filter-bar{display:flex;align-items:center;gap:10px;margin:0 32px 12px;flex-wrap:wrap;}
+    .filter-btn{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:5px 13px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text-muted);transition:all .2s;}
+    .filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+    .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#0a0e1a;font-weight:700;}
+    .filter-btn.active.fb-green{background:var(--green);border-color:var(--green);}
+    .filter-btn.active.fb-red{background:var(--red);border-color:var(--red);color:#fff;}
+    .filter-btn.active.fb-yellow{background:var(--yellow);border-color:var(--yellow);}
+    .search-box{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-family:var(--mono);font-size:12px;padding:5px 12px;outline:none;transition:border-color .2s;width:170px;}
+    .search-box:focus{border-color:var(--accent);}
+    .search-box::placeholder{color:var(--text-muted);}
+
+    /* table */
+    .table-wrap{margin:0 32px 32px;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+    .table-scroll{overflow-x:auto;}
+    .etf-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .etf-table thead tr{background:linear-gradient(90deg,#0f172a,#1e1b4b);}
+    .etf-table th{padding:11px 14px;text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+    .etf-table th.r{text-align:right;}
+    .etf-table th.sortable{cursor:pointer;user-select:none;}
+    .etf-table th.sortable:hover{color:var(--accent);}
+    .th-d1{color:#38bdf8!important;} .th-d2{color:#818cf8!important;} .th-d3{color:#34d399!important;} .th-d4{color:#fbbf24!important;} .th-d5{color:#fb923c!important;} .th-summary{color:#e879f9!important;}
+    .etf-table tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
+    .etf-table tbody tr:last-child{border-bottom:none;}
+    .etf-table tbody tr:hover{background:rgba(56,189,248,.05)!important;}
+    .etf-table tbody tr:nth-child(even){background:var(--bg-row);}
+    .etf-table tbody tr.row-added{background:rgba(52,211,153,.06)!important;border-left:3px solid var(--green);}
+    .etf-table tbody tr.row-removed{background:rgba(248,113,113,.06)!important;border-left:3px solid var(--red);}
+    .etf-table tbody tr.row-up{background:rgba(251,191,36,.04)!important;}
+    .etf-table tbody tr.row-down{background:rgba(251,191,36,.04)!important;}
+    .etf-table td{padding:9px 14px;vertical-align:top;}
+    .etf-table td.r{text-align:right;}
+    .etf-table td.mid{vertical-align:middle;}
+    .stock-code{font-family:var(--mono);font-weight:600;color:var(--accent);}
+    .num-val{font-family:var(--mono);}
+    .dash-val{color:var(--text-muted);font-family:var(--mono);}
+    .up{color:var(--green);font-family:var(--mono);font-weight:600;}
+    .down{color:var(--red);font-family:var(--mono);font-weight:600;}
+    .zero{color:var(--text-muted);font-family:var(--mono);}
+    .row-tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;padding:1px 6px;border-radius:3px;margin-left:5px;}
+    .tag-added{background:rgba(52,211,153,.18);color:var(--green);border:1px solid rgba(52,211,153,.35);}
+    .tag-removed{background:rgba(248,113,113,.18);color:var(--red);border:1px solid rgba(248,113,113,.35);}
+    .th-group-sep{border-left:2px solid rgba(255,255,255,.06);}
+    .td-group-sep{border-left:2px solid rgba(255,255,255,.06);}
+    .rank-col{font-family:var(--mono);font-size:11px;color:var(--text-muted);width:36px;}
+    .summary-val{font-family:var(--mono);font-weight:700;font-size:12px;}
+    .td-summary{background:rgba(232,121,249,.04);border-left:2px solid rgba(232,121,249,.2)!important;}
+
+    /* Tab2 diff lines */
+    .diff-lines{display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+    .diff-line{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+    .etf-badge{font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;letter-spacing:.5px;}
+    .badge-colors{--c0:#38bdf8;--c1:#818cf8;--c2:#34d399;--c3:#fbbf24;--c4:#fb923c;--c5:#e879f9;--c6:#22d3ee;--c7:#a78bfa;--c8:#4ade80;}
+
+    /* alerts */
+    .center-msg{text-align:center;padding:70px 0;color:var(--text-muted);font-family:var(--mono);font-size:14px;}
+    .center-msg .big-icon{font-size:44px;margin-bottom:14px;opacity:.35;}
+    .spin-wrap{display:flex;align-items:center;justify-content:center;gap:12px;padding:60px 0;color:var(--text-muted);font-family:var(--mono);}
+    .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .alert-box{margin:12px 32px;padding:12px 16px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:8px;font-family:var(--mono);font-size:12px;color:var(--red);display:flex;align-items:center;gap:8px;}
+    .info-box{margin:0 32px 10px;padding:9px 14px;background:rgba(56,189,248,.07);border:1px solid rgba(56,189,248,.2);border-radius:8px;font-size:12px;font-family:var(--mono);color:var(--text-muted);}
+    .info-box b{color:var(--accent);}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="logo-icon">📊</div>
+    <div>
+      <h1>ETF 持股比較系統</h1>
+      <div class="subtitle">ETF Investment Portfolio · Multi-Date Diff Viewer</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tab-bar">
+    <button class="tab-btn" :class="{active:activeTab===1}" @click="switchTab(1)">📁 Tab 1 · 單一ETF跨日比較</button>
+    <button class="tab-btn" :class="{active:activeTab===2}" @click="switchTab(2)">🗂 Tab 2 · 全ETF持股總覽</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 1
+  ═══════════════════════════════════════════════════ -->
+  <div v-show="activeTab===1">
+    <div class="control-panel">
+      <div class="panel-title">▸ STEP 1 · 選擇 ETF</div>
+      <div class="panel-row">
+        <div>
+          <div class="etf-label">可用 ETF 資料夾</div>
+          <div class="etf-chips">
+            <div v-if="t1.etfFolders.length===0" style="font-family:var(--mono);font-size:12px;color:var(--text-muted);">掃描中...</div>
+            <div v-for="f in t1.etfFolders" :key="f" class="etf-chip" :class="{active:t1.selectedEtf===f}" @click="t1SelectEtf(f)">{{ f }}</div>
+          </div>
+        </div>
+        <button class="icon-btn" @click="refreshAll" style="margin-left:auto;">🔄 重新掃描</button>
+      </div>
+      <hr class="panel-divider"/>
+      <div class="panel-title">▸ STEP 2 · 選擇最多 5 個日期（D1 為基準）</div>
+      <div class="panel-row">
+        <div class="date-slots">
+          <div class="date-slot" v-for="(slot,i) in t1.dateSlots" :key="i">
+            <div class="slot-label" :class="'d'+(i+1)">D{{ i+1 }}{{ i===0?' (基準)':'' }}</div>
+            <select class="date-select" :class="'sel-d'+(i+1)" v-model="slot.value" :disabled="!t1.selectedEtf">
+              <option value="">-- 不選 --</option>
+              <option v-for="d in t1.availableDates" :key="d.value" :value="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="panel-row">
+        <button class="compare-btn" :disabled="!t1CanCompare||t1.loading" @click="t1DoCompare">
+          <span v-if="t1.loading">⏳ 載入中...</span><span v-else>▶ 開始比較</span>
+        </button>
+        <span v-if="t1.selectedEtf&&!t1CanCompare&&!t1.loading" style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">請至少選擇 D1 及另一個日期</span>
+      </div>
+    </div>
+
+    <div class="alert-box" v-if="t1.scanError">⚠ {{ t1.scanError }}</div>
+    <div class="alert-box" v-if="t1.loadError">⚠ {{ t1.loadError }}</div>
+    <div class="info-box" v-if="!t1.selectedEtf&&t1.etfFolders.length===0&&!t1.scanError">
+      <b>提示：</b>正在掃描 <b>./ETF_Investment_Portfolio/</b>，請確認 IIS 已開啟 Directory Browsing。
+    </div>
+
+    <template v-if="t1.compared">
+      <div class="stats-bar">
+        <div class="stat-chip s-total"><span>持股總數</span><span class="sn">{{ t1Stats.total }}</span></div>
+        <div class="stat-chip s-added"><span>新增</span><span class="sn">{{ t1Stats.added }}</span></div>
+        <div class="stat-chip s-removed"><span>移除</span><span class="sn">{{ t1Stats.removed }}</span></div>
+        <div class="stat-chip s-changed"><span>異動</span><span class="sn">{{ t1Stats.changed }}</span></div>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn" :class="{active:t1.filter==='all'}" @click="t1.filter='all'">全部</button>
+        <button class="filter-btn fb-green" :class="{active:t1.filter==='added'}" @click="t1.filter='added'">🟢 新增</button>
+        <button class="filter-btn fb-red"   :class="{active:t1.filter==='removed'}" @click="t1.filter='removed'">🔴 移除</button>
+        <button class="filter-btn fb-yellow":class="{active:t1.filter==='changed'}" @click="t1.filter='changed'">🟡 異動</button>
+        <input class="search-box" v-model="t1.search" placeholder="搜尋代號 / 名稱..."/>
+        <span style="font-size:11px;color:var(--text-muted);font-family:var(--mono);">{{ t1FilteredRows.length }} / {{ t1.compareRows.length }} 筆</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="etf-table">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th><th>代號</th><th>名稱</th>
+                <th class="r th-d1">D1 股數<br><span style="opacity:.5;font-size:9px;">{{ t1.activeLabels[0] }}</span></th>
+                <template v-for="(lbl,i) in t1.activeLabels.slice(1)">
+                  <th class="r th-group-sep" :class="'th-d'+(i+2)">D{{ i+2 }} 股數<br><span style="opacity:.5;font-size:9px;">{{ lbl }}</span></th>
+                  <th class="r" :class="'th-d'+(i+2)">vs D{{ i+1 }}<br><span style="opacity:.5;font-size:9px;font-weight:400;">差異</span></th>
+                </template>
+                <th class="r th-group-sep th-summary sortable" @click="t1.sortDir=(t1.sortDir+1)%3">
+                  總變化 (最後-D1)
+                  <span style="margin-left:4px;"><span v-if="t1.sortDir===0">⇅</span><span v-else-if="t1.sortDir===1" style="color:var(--green)">↑</span><span v-else style="color:var(--red)">↓</span></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="t1.loading"><td :colspan="4+t1.activeLabels.slice(1).length*2"><div class="spin-wrap"><div class="spinner"></div>讀取中...</div></td></tr>
+              <tr v-else-if="t1FilteredRows.length===0"><td :colspan="4+t1.activeLabels.slice(1).length*2"><div class="center-msg"><div class="big-icon">🔍</div><div>沒有符合條件的資料</div></div></td></tr>
+              <template v-else>
+                <tr v-for="(row,i) in t1FilteredRows" :key="row.code" :class="t1RowClass(row)">
+                  <td class="rank-col mid">{{ i+1 }}</td>
+                  <td class="mid"><span class="stock-code">{{ row.code }}</span></td>
+                  <td class="mid">{{ row.name }}<span v-if="row.summaryType==='added'" class="row-tag tag-added">NEW</span><span v-if="row.summaryType==='removed'" class="row-tag tag-removed">DEL</span></td>
+                  <td class="r mid"><span v-if="row.shares[0]!==null" class="num-val">{{ fmtNum(row.shares[0]) }}</span><span v-else class="dash-val">—</span></td>
+                  <template v-for="(_,ci) in t1.activeLabels.slice(1)">
+                    <td class="r mid td-group-sep"><span v-if="row.shares[ci+1]!==null" class="num-val">{{ fmtNum(row.shares[ci+1]) }}</span><span v-else class="dash-val">—</span></td>
+                    <td class="r mid">
+                      <span v-if="row.diffs[ci]===null" class="dash-val">—</span>
+                      <span v-else-if="row.diffs[ci]==='NEW'" class="up">＋ 新增</span>
+                      <span v-else-if="row.diffs[ci]==='DEL'" class="down">✕ 移除</span>
+                      <span v-else :class="diffClass(row.diffs[ci])">{{ row.diffs[ci]>0?'+':'' }}{{ fmtNum(row.diffs[ci]) }}</span>
+                    </td>
+                  </template>
+                  <td class="r mid td-summary td-group-sep">
+                    <span v-if="row.summaryType==='added'" class="summary-val up">＋ 新增</span>
+                    <span v-else-if="row.summaryType==='removed'" class="summary-val down">✕ 移除</span>
+                    <span v-else class="summary-val" :class="diffClass(row.summaryDiff)">{{ row.summaryDiff>0?'+':'' }}{{ fmtNum(row.summaryDiff) }}</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </template>
+
+    <div v-if="!t1.compared&&!t1.loading" class="center-msg" style="margin-top:50px;">
+      <div class="big-icon">📂</div><div>請選擇 ETF 與日期後按「開始比較」</div>
+      <div style="margin-top:8px;font-size:11px;">路徑：<span style="color:var(--accent)">./ETF_Investment_Portfolio/{ETF代號}/ETF_Investment_Portfolio_YYYYMMDD.xlsx</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TAB 2
+  ═══════════════════════════════════════════════════ -->
+  <div v-show="activeTab===2">
+    <div class="control-panel">
+      <div class="panel-title">▸ STEP 1 · 選擇 ETF（可多選 / 全選）</div>
+      <div class="panel-row">
+        <div>
+          <div class="etf-label">ETF 篩選</div>
+          <div class="etf-chips">
+            <div class="etf-chip all-chip" :class="{active:t2.selectedEtfs.length===t2.etfList.length&&t2.etfList.length>0}" @click="t2ToggleAll">全選</div>
+            <div v-for="f in t2.etfList" :key="f" class="etf-chip" :class="{sel2:t2.selectedEtfs.includes(f)}" @click="t2ToggleEtf(f)">{{ f }}</div>
+          </div>
+        </div>
+      </div>
+      <hr class="panel-divider"/>
+      <div class="panel-title">▸ STEP 2 · 選擇日期（最多 5 個，D1 為基準）</div>
+      <div class="panel-row">
+        <div class="date-slots">
+          <div class="date-slot" v-for="(slot,i) in t2.dateSlots" :key="i">
+            <div class="slot-label" :class="'d'+(i+1)">D{{ i+1 }}{{ i===0?' (基準)':'' }}</div>
+            <select class="date-select" :class="'sel-d'+(i+1)" v-model="slot.value">
+              <option value="">-- 不選 --</option>
+              <option v-for="d in t2.availableDates" :key="d.value" :value="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="panel-row">
+        <button class="compare-btn" :disabled="!t2CanCompare||t2.loading" @click="t2DoCompare">
+          <span v-if="t2.loading">⏳ 載入中...</span><span v-else>▶ 開始比較</span>
+        </button>
+        <span v-if="!t2CanCompare&&!t2.loading" style="font-family:var(--mono);font-size:11px;color:var(--text-muted);">請選擇 ETF 並至少選擇 D1 及另一個日期</span>
+      </div>
+    </div>
+
+    <div class="alert-box" v-if="t2.scanError">⚠ {{ t2.scanError }}</div>
+    <div class="alert-box" v-if="t2.loadError">⚠ {{ t2.loadError }}</div>
+
+    <template v-if="t2.compared">
+      <div class="stats-bar">
+        <div class="stat-chip s-total"><span>股票總數</span><span class="sn">{{ t2Stats.total }}</span></div>
+        <div class="stat-chip s-added"><span>新增</span><span class="sn">{{ t2Stats.added }}</span></div>
+        <div class="stat-chip s-removed"><span>移除</span><span class="sn">{{ t2Stats.removed }}</span></div>
+        <div class="stat-chip s-changed"><span>異動</span><span class="sn">{{ t2Stats.changed }}</span></div>
+        <div class="stat-chip" style="gap:6px;">
+          <span style="color:var(--text-muted)">ETF：</span>
+          <span v-for="e in t2.selectedEtfs" :key="e" style="font-family:var(--mono);font-size:11px;" :style="{color:t2EtfColor(e)}">{{ e }}</span>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <button class="filter-btn" :class="{active:t2.filter==='all'}" @click="t2.filter='all'">全部</button>
+        <button class="filter-btn fb-green" :class="{active:t2.filter==='added'}"   @click="t2.filter='added'">🟢 新增</button>
+        <button class="filter-btn fb-red"   :class="{active:t2.filter==='removed'}" @click="t2.filter='removed'">🔴 移除</button>
+        <button class="filter-btn fb-yellow":class="{active:t2.filter==='changed'}" @click="t2.filter='changed'">🟡 異動</button>
+        <input class="search-box" v-model="t2.search" placeholder="搜尋代號 / 名稱..."/>
+        <span style="font-size:11px;color:var(--text-muted);font-family:var(--mono);">{{ t2FilteredRows.length }} / {{ t2.compareRows.length }} 筆</span>
+      </div>
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="etf-table">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th><th>代號</th><th>名稱</th>
+                <th class="r th-d1">D1 總持股<br><span style="opacity:.5;font-size:9px;">{{ t2.activeLabels[0] }}</span></th>
+                <template v-for="(lbl,i) in t2.activeLabels.slice(1)">
+                  <th class="r th-group-sep" :class="'th-d'+(i+2)">D{{ i+2 }} 總持股<br><span style="opacity:.5;font-size:9px;">{{ lbl }}</span></th>
+                  <th class="r" :class="'th-d'+(i+2)">vs D{{ i+1 }}<br><span style="opacity:.5;font-size:9px;font-weight:400;">各ETF異動</span></th>
+                </template>
+                <th class="r th-group-sep th-summary sortable" @click="t2.sortDir=(t2.sortDir+1)%3">
+                  總變化 (最後-D1)
+                  <span style="margin-left:4px;"><span v-if="t2.sortDir===0">⇅</span><span v-else-if="t2.sortDir===1" style="color:var(--green)">↑</span><span v-else style="color:var(--red)">↓</span></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="t2.loading"><td colspan="10"><div class="spin-wrap"><div class="spinner"></div>讀取中...</div></td></tr>
+              <tr v-else-if="t2FilteredRows.length===0"><td colspan="10"><div class="center-msg"><div class="big-icon">🔍</div><div>沒有符合條件的資料</div></div></td></tr>
+              <template v-else>
+                <tr v-for="(row,i) in t2FilteredRows" :key="row.code" :class="t2RowClass(row)">
+                  <td class="rank-col mid">{{ i+1 }}</td>
+                  <td class="mid"><span class="stock-code">{{ row.code }}</span></td>
+                  <td class="mid">{{ row.name }}<span v-if="row.summaryType==='added'" class="row-tag tag-added">NEW</span><span v-if="row.summaryType==='removed'" class="row-tag tag-removed">DEL</span></td>
+                  <!-- D1 總持股 -->
+                  <td class="r mid">
+                    <span v-if="row.totals[0]>0" class="num-val">{{ fmtNum(row.totals[0]) }}</span>
+                    <span v-else class="dash-val">—</span>
+                  </td>
+                  <!-- D2~D5 -->
+                  <template v-for="(_,ci) in t2.activeLabels.slice(1)">
+                    <td class="r mid td-group-sep">
+                      <span v-if="row.totals[ci+1]>0" class="num-val">{{ fmtNum(row.totals[ci+1]) }}</span>
+                      <span v-else class="dash-val">—</span>
+                    </td>
+                    <td class="r">
+                      <!-- 各ETF異動明細 -->
+                      <div v-if="row.diffLines[ci]&&row.diffLines[ci].length>0" class="diff-lines">
+                        <div v-for="(line,li) in row.diffLines[ci]" :key="li" class="diff-line">
+                          <span :class="line.d>0?'up':line.d<0?'down':'zero'">{{ line.d>0?'+':'' }}{{ fmtNum(line.d) }}</span>
+                          <span class="etf-badge" :style="{background:t2EtfBg(line.etf),color:t2EtfColor(line.etf)}">{{ line.etf }}</span>
+                        </div>
+                      </div>
+                      <span v-else class="dash-val">—</span>
+                    </td>
+                  </template>
+                  <!-- 總結 -->
+                  <td class="r mid td-summary td-group-sep">
+                    <span v-if="row.summaryType==='added'" class="summary-val up">＋ 新增</span>
+                    <span v-else-if="row.summaryType==='removed'" class="summary-val down">✕ 移除</span>
+                    <span v-else class="summary-val" :class="diffClass(row.summaryDiff)">{{ row.summaryDiff>0?'+':'' }}{{ fmtNum(row.summaryDiff) }}</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </template>
+
+    <div v-if="!t2.compared&&!t2.loading" class="center-msg" style="margin-top:50px;">
+      <div class="big-icon">🗂</div><div>請選擇 ETF 與日期後按「開始比較」</div>
+      <div style="margin-top:8px;font-size:11px;">路徑：<span style="color:var(--accent)">./ETF_Investment_Portfolio/ETF_HOLDING_ALL_YYYYMMDD.csv</span></div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── ETF 色盤 ──────────────────────────────────────────────────
+const ETF_COLORS = ['#38bdf8','#818cf8','#34d399','#fbbf24','#fb923c','#e879f9','#22d3ee','#a78bfa','#4ade80','#f472b6'];
+const ETF_BG     = ETF_COLORS.map(c => c + '22');
+
+new Vue({
+  el: '#app',
+  data: {
+    activeTab: 1,
+    rootFolder: './ETF_Investment_Portfolio',
+    filePrefix: 'ETF_Investment_Portfolio_',
+    csvPrefix:  'ETF_HOLDING_ALL_',
+
+    // ── TAB1 ──
+    t1: {
+      etfFolders: [], selectedEtf: '', availableDates: [],
+      dateSlots: [{value:''},{value:''},{value:''},{value:''},{value:''}],
+      loading: false, compared: false, compareRows: [], activeLabels: [],
+      filter: 'all', search: '', sortDir: 0,
+      scanError: '', loadError: '',
+    },
+
+    // ── TAB2 ──
+    t2: {
+      etfList: [], selectedEtfs: [], availableDates: [],
+      dateSlots: [{value:''},{value:''},{value:''},{value:''},{value:''}],
+      loading: false, compared: false, compareRows: [], activeLabels: [],
+      filter: 'all', search: '', sortDir: 0,
+      scanError: '', loadError: '',
+      etfColorMap: {},
+    },
+  },
+
+  computed: {
+    // ── TAB1 ──
+    t1ActiveSlots() { return this.t1.dateSlots.map((s,i)=>({i,v:s.value})).filter(s=>s.v); },
+    t1CanCompare()  { return this.t1ActiveSlots.length>=2 && this.t1ActiveSlots[0].i===0; },
+    t1Stats() {
+      const r=this.t1.compareRows;
+      return { total:r.length, added:r.filter(x=>x.summaryType==='added').length, removed:r.filter(x=>x.summaryType==='removed').length, changed:r.filter(x=>x.summaryType!=='added'&&x.summaryType!=='removed'&&x.summaryDiff!==0).length };
+    },
+    t1FilteredRows() {
+      let r=this.t1.compareRows;
+      if(this.t1.filter==='added')   r=r.filter(x=>x.summaryType==='added');
+      if(this.t1.filter==='removed') r=r.filter(x=>x.summaryType==='removed');
+      if(this.t1.filter==='changed') r=r.filter(x=>x.summaryType!=='added'&&x.summaryType!=='removed'&&x.summaryDiff!==0);
+      if(this.t1.search.trim()){const k=this.t1.search.trim().toLowerCase();r=r.filter(x=>String(x.code).includes(k)||x.name.toLowerCase().includes(k));}
+      if(this.t1.sortDir!==0){r=[...r].sort((a,b)=>{const va=a.summaryType==='added'?Infinity:a.summaryType==='removed'?-Infinity:(a.summaryDiff??0);const vb=b.summaryType==='added'?Infinity:b.summaryType==='removed'?-Infinity:(b.summaryDiff??0);return this.t1.sortDir===1?va-vb:vb-va;});}
+      return r;
+    },
+
+    // ── TAB2 ──
+    t2ActiveSlots() { return this.t2.dateSlots.map((s,i)=>({i,v:s.value})).filter(s=>s.v); },
+    t2CanCompare()  { return this.t2.selectedEtfs.length>0 && this.t2ActiveSlots.length>=2 && this.t2ActiveSlots[0].i===0; },
+    t2Stats() {
+      const r=this.t2.compareRows;
+      return { total:r.length, added:r.filter(x=>x.summaryType==='added').length, removed:r.filter(x=>x.summaryType==='removed').length, changed:r.filter(x=>x.summaryType!=='added'&&x.summaryType!=='removed'&&x.summaryDiff!==0).length };
+    },
+    t2FilteredRows() {
+      let r=this.t2.compareRows;
+      if(this.t2.filter==='added')   r=r.filter(x=>x.summaryType==='added');
+      if(this.t2.filter==='removed') r=r.filter(x=>x.summaryType==='removed');
+      if(this.t2.filter==='changed') r=r.filter(x=>x.summaryType!=='added'&&x.summaryType!=='removed'&&x.summaryDiff!==0);
+      if(this.t2.search.trim()){const k=this.t2.search.trim().toLowerCase();r=r.filter(x=>String(x.code).includes(k)||x.name.toLowerCase().includes(k));}
+      if(this.t2.sortDir!==0){r=[...r].sort((a,b)=>{const va=a.summaryType==='added'?Infinity:a.summaryType==='removed'?-Infinity:(a.summaryDiff??0);const vb=b.summaryType==='added'?Infinity:b.summaryType==='removed'?-Infinity:(b.summaryDiff??0);return this.t2.sortDir===1?va-vb:vb-va;});}
+      return r;
+    },
+  },
+
+  mounted() { this.refreshAll(); },
+
+  methods: {
+    switchTab(n) { this.activeTab=n; },
+
+    // ── 共用：掃描 ETF 資料夾 & CSV 日期 ─────────────────────
+    async refreshAll() {
+      await this.t1RefreshEtfs();
+      await this.t2ScanCsvDates();
+    },
+
+    // ── TAB1: 掃描 ETF 子資料夾 ──────────────────────────────
+    async t1RefreshEtfs() {
+      this.t1.etfFolders=[]; this.t1.selectedEtf=''; this.t1.availableDates=[]; this.t1.compared=false; this.t1.scanError='';
+      try {
+        const res=await fetch(this.rootFolder+'/');
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html=await res.text();
+        const re=/&lt;dir&gt;\s*<A\s+HREF="[^"]*">([^<]+)<\/A>/gi;
+        const found=new Set(); let m;
+        while((m=re.exec(html))!==null){ const n=m[1].trim(); if(n) found.add(n); }
+        if(found.size===0){ this.t1.scanError='未找到 ETF 子資料夾，請確認 IIS Directory Browsing 已啟用。'; return; }
+        this.t1.etfFolders=Array.from(found).sort();
+      } catch(e){ this.t1.scanError=`掃描 ETF 資料夾失敗：${e.message}`; }
+    },
+
+    async t1SelectEtf(folder) {
+      this.t1.selectedEtf=folder; this.t1.availableDates=[]; this.t1.dateSlots.forEach(s=>s.value=''); this.t1.compared=false; this.t1.scanError='';
+      try {
+        const res=await fetch(`${this.rootFolder}/${folder}/`);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html=await res.text();
+        const re=new RegExp(this.filePrefix.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\$&')+'(\\d{8})\\.xlsx','gi');
+        const found=new Set(); let m;
+        while((m=re.exec(html))!==null) found.add(m[1]);
+        if(found.size===0){ this.t1.scanError=`${folder} 未找到 xlsx 檔案`; return; }
+        const sorted=Array.from(found).sort((a,b)=>b.localeCompare(a)); // 新到舊
+        this.t1.availableDates=sorted.map(v=>({value:v,label:`${v.slice(0,4)}/${v.slice(4,6)}/${v.slice(6,8)}`}));
+        // 取最新 5 筆，由小到大填入 slots
+        const newest=sorted.slice(0,5).reverse();
+        this.t1.dateSlots.forEach((s,i)=>{ s.value = newest[i] || ''; });
+      } catch(e){ this.t1.scanError=`掃描 ${folder} 失敗：${e.message}`; }
+    },
+
+    async t1DoCompare() {
+      this.t1.loadError=''; this.t1.loading=true; this.t1.compared=false; this.t1.filter='all'; this.t1.search=''; this.t1.sortDir=0;
+      const slots=this.t1ActiveSlots;
+      try {
+        const datasets=await Promise.all(slots.map(s=>this.t1LoadFile(this.t1.selectedEtf,s.v)));
+        this.t1.activeLabels=slots.map(s=>`${s.v.slice(0,4)}/${s.v.slice(4,6)}/${s.v.slice(6,8)}`);
+        this.t1.compareRows=this.buildMultiDiff(datasets);
+        this.t1.compared=true;
+        debugger;
+      } catch(e){ this.t1.loadError=`讀取失敗：${e.message}`; }
+      finally{ this.t1.loading=false; }
+    },
+
+    async t1LoadFile(etf, dateStr) {
+      const url=`${this.rootFolder}/${etf}/${this.filePrefix}${dateStr}.xlsx`;
+      const res=await fetch(url);
+      if(!res.ok) throw new Error(`找不到 ${etf}/${this.filePrefix}${dateStr}.xlsx (HTTP ${res.status})`);
+      const buf=await res.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+      let startRow=-1;
+      for(let i=0;i<raw.length;i++){ if(raw[i]&&String(raw[i][0]).includes('股票代號')){startRow=i+1;break;} }
+      if(startRow<0) throw new Error(`${dateStr} 找不到「股票代號」欄位`);
+      const stocks=[];
+      for(let i=startRow;i<raw.length;i++){
+        const row=raw[i]; if(!row||row[0]===null||row[0]==='') break;
+        const code=String(row[0]).trim(); const name=String(row[1]??'').trim(); const shares=this.parseNum(row[2]);
+        if(/^(C_|RDI_|RP_|FX_)/i.test(code)) continue; // 排除非股票（C_NTD、RDI_NTD 等）
+        if(/_NTD/i.test(code)) continue; // 排除含 _NTD 的代號
+        if(code&&name) stocks.push({code,name,shares});
+      }
+      return stocks;
+    },
+
+    // ── TAB1/共用 diff builder（單 ETF）──────────────────────
+    buildMultiDiff(datasets) {
+      const n=datasets.length;
+      const maps=datasets.map(d=>new Map(d.map(s=>[s.code,s])));
+      const allCodes=new Set(); maps.forEach(m=>m.forEach((_,k)=>allCodes.add(k)));
+      const rows=[];
+      for(const code of allCodes){
+        const entries=maps.map(m=>m.get(code)||null);
+        const name=entries.find(e=>e!==null).name;
+        const shares=entries.map(e=>e?e.shares:null);
+        const diffs=[];
+        for(let i=1;i<n;i++){
+          const prev=shares[i-1],curr=shares[i];
+          if(prev===null&&curr!==null) diffs.push('NEW');
+          else if(prev!==null&&curr===null) diffs.push('DEL');
+          else if(prev===null&&curr===null) diffs.push(null);
+          else diffs.push(curr-prev);
+        }
+        const last=shares[n-1],first=shares[0];
+        let summaryType='same',summaryDiff=0;
+        if(first===null&&last!==null) summaryType='added';
+        else if(first!==null&&last===null) summaryType='removed';
+        else if(first!==null&&last!==null){ summaryDiff=last-first; summaryType=summaryDiff>0?'increased':summaryDiff<0?'decreased':'same'; }
+        rows.push({code,name,shares,diffs,summaryType,summaryDiff});
+      }
+      const order={added:0,removed:1,increased:2,decreased:3,same:4};
+      rows.sort((a,b)=>{ const oa=order[a.summaryType],ob=order[b.summaryType]; return oa!==ob?oa-ob:Math.abs(b.summaryDiff)-Math.abs(a.summaryDiff); });
+      return rows;
+    },
+
+    // ── TAB2: 掃描 CSV 日期 ──────────────────────────────────
+    async t2ScanCsvDates() {
+      this.t2.availableDates=[]; this.t2.etfList=[]; this.t2.scanError='';
+      try {
+        const res=await fetch(this.rootFolder+'/');
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html=await res.text();
+        const re=new RegExp(this.csvPrefix.replace(/[-\/\\^$*+?.()|[\]{}]/g,'\\$&')+'(\\d{8})\\.csv','gi');
+        const found=new Set(); let m;
+        while((m=re.exec(html))!==null) found.add(m[1]);
+        if(found.size===0) return; // 沒 CSV 不報錯，Tab1 可正常使用
+        const sorted=Array.from(found).sort((a,b)=>b.localeCompare(a)); // 新到舊
+        this.t2.availableDates=sorted.map(v=>({value:v,label:`${v.slice(0,4)}/${v.slice(4,6)}/${v.slice(6,8)}`}));
+        // 取最新 5 筆，由小到大填入 slots
+        const newest=sorted.slice(0,5).reverse();
+        this.t2.dateSlots.forEach((s,i)=>{ s.value = newest[i] || ''; });
+        // 讀最新一份 CSV 取 ETF 清單
+        await this.t2LoadEtfList(sorted[0]);
+      } catch(e){ this.t2.scanError=`掃描 CSV 失敗：${e.message}`; }
+    },
+
+    async t2LoadEtfList(dateStr) {
+      try {
+        const text=await this.fetchCsv(dateStr);
+        const lines=text.trim().split(/\r?\n/);
+        const etfs=new Set();
+        for(let i=1;i<lines.length;i++){
+          const cols=lines[i].split(','); if(cols.length<7) continue;
+          const unit=cols[5].trim(); if(unit!=='股') continue;
+          const etf=cols[6].trim(); if(etf) etfs.add(etf);
+        }
+        this.t2.etfList=Array.from(etfs).sort();
+        this.t2.selectedEtfs=[...this.t2.etfList]; // 預設全選
+        // 建立色彩對應
+        const map={};
+        this.t2.etfList.forEach((e,i)=>{ map[e]=ETF_COLORS[i%ETF_COLORS.length]; });
+        this.t2.etfColorMap=map;
+      } catch(e){ /* 不中斷 */ }
+    },
+
+    t2AutoFillDates() {
+      const vals=this.t2.availableDates.map(d=>d.value); // 已是新到舊
+      const newest=vals.slice(0,5).reverse();
+      this.t2.dateSlots.forEach((s,i)=>{ s.value = newest[i] || ''; });
+    },
+    t2ToggleAll() {
+      if(this.t2.selectedEtfs.length===this.t2.etfList.length) this.t2.selectedEtfs=[];
+      else { this.t2.selectedEtfs=[...this.t2.etfList]; this.t2AutoFillDates(); }
+    },
+    t2ToggleEtf(f) {
+      const idx=this.t2.selectedEtfs.indexOf(f);
+      if(idx>=0) this.t2.selectedEtfs.splice(idx,1);
+      else { this.t2.selectedEtfs.push(f); this.t2AutoFillDates(); }
+    },
+
+    async t2DoCompare() {
+      this.t2.loadError=''; this.t2.loading=true; this.t2.compared=false; this.t2.filter='all'; this.t2.search=''; this.t2.sortDir=0;
+      const slots=this.t2ActiveSlots;
+      try {
+        // 讀取每個日期的 CSV（只保留選中的 ETF）
+        const datasets=await Promise.all(slots.map(s=>this.t2LoadCsv(s.v)));
+        this.t2.activeLabels=slots.map(s=>`${s.v.slice(0,4)}/${s.v.slice(4,6)}/${s.v.slice(6,8)}`);
+        this.t2.compareRows=this.t2BuildDiff(datasets);
+        this.t2.compared=true;
+      } catch(e){ this.t2.loadError=`讀取失敗：${e.message}`; }
+      finally{ this.t2.loading=false; }
+    },
+
+    async fetchCsv(dateStr) {
+      const url=`${this.rootFolder}/${this.csvPrefix}${dateStr}.csv`;
+      const res=await fetch(url);
+      if(!res.ok) throw new Error(`找不到 ${this.csvPrefix}${dateStr}.csv (HTTP ${res.status})`);
+      return await res.text();
+    },
+
+    // 解析單份 CSV → { code -> { name, perEtf:{etf->shares}, total } }
+    async t2LoadCsv(dateStr) {
+      const text=await this.fetchCsv(dateStr);
+      const lines=text.trim().split(/\r?\n/);
+      const map=new Map(); // code -> {name, perEtf}
+      const selectedSet=new Set(this.t2.selectedEtfs);
+      for(let i=1;i<lines.length;i++){
+        const cols=lines[i].split(','); if(cols.length<7) continue;
+        const code=cols[1].trim(); const name=cols[2].trim();
+        const shares=this.parseNum(cols[4]); const unit=cols[5].trim(); const etf=cols[6].trim();
+        if(unit!=='股') continue; // 過濾現金、應收款等非股票項目
+        if(/_NTD/i.test(code)) continue; // 排除 C_NTD、RDI_NTD 等
+        if(!selectedSet.has(etf)) continue;
+        if(!map.has(code)) map.set(code,{name,perEtf:{}});
+        const entry=map.get(code);
+        entry.perEtf[etf]=(entry.perEtf[etf]||0)+shares;
+      }
+      // 計算 total
+      map.forEach(e=>{ e.total=Object.values(e.perEtf).reduce((s,v)=>s+v,0); });
+      return map;
+    },
+
+    // Tab2 多日期 diff（以股票為主軸）
+    t2BuildDiff(datasets) {
+      const n=datasets.length;
+      const allCodes=new Set(); datasets.forEach(m=>m.forEach((_,k)=>allCodes.add(k)));
+      const rows=[];
+      for(const code of allCodes){
+        const entries=datasets.map(m=>m.get(code)||null);
+        const name=entries.find(e=>e!==null).name;
+        // totals[i] = 第 i 日的跨ETF總持股
+        const totals=entries.map(e=>e?e.total:0);
+
+        // diffLines[i] = D(i+1) vs D(i)，各 ETF 的異動明細
+        const diffLines=[];
+        for(let i=1;i<n;i++){
+          const prev=entries[i-1]; const curr=entries[i];
+          const allEtfs=new Set([
+            ...Object.keys(prev?prev.perEtf:{}),
+            ...Object.keys(curr?curr.perEtf:{}),
+          ]);
+          const lines=[];
+          for(const etf of [...allEtfs].sort()){
+            const p=(prev&&prev.perEtf[etf])||0;
+            const c=(curr&&curr.perEtf[etf])||0;
+            if(c!==p) lines.push({etf,d:c-p});
+          }
+          // 排序：大異動排前面
+          lines.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
+          diffLines.push(lines);
+        }
+
+        // 總結：最後 vs 第一日 總持股
+        const first=totals[0], last=totals[n-1];
+        const summaryDiff=last-first;
+        let summaryType='same';
+        if(first===0&&last>0) summaryType='added';
+        else if(first>0&&last===0) summaryType='removed';
+        else if(summaryDiff>0) summaryType='increased';
+        else if(summaryDiff<0) summaryType='decreased';
+
+        rows.push({code,name,totals,diffLines,summaryType,summaryDiff});
+      }
+      const order={added:0,removed:1,increased:2,decreased:3,same:4};
+      rows.sort((a,b)=>{ const oa=order[a.summaryType],ob=order[b.summaryType]; return oa!==ob?oa-ob:Math.abs(b.summaryDiff)-Math.abs(a.summaryDiff); });
+      return rows;
+    },
+
+    // ── ETF 色彩 helpers ─────────────────────────────────────
+    t2EtfColor(etf) { return this.t2.etfColorMap[etf]||'#94a3b8'; },
+    t2EtfBg(etf)    { return (this.t2.etfColorMap[etf]||'#94a3b8')+'22'; },
+
+    // ── 共用 helpers ──────────────────────────────────────────
+    parseNum(v){ if(v===null||v===undefined||v==='') return 0; return parseInt(String(v).replace(/,/g,''),10)||0; },
+    fmtNum(n){ if(n===null||n===undefined) return '—'; return Number(n).toLocaleString(); },
+    diffClass(v){ if(v===null) return 'zero'; if(v>0) return 'up'; if(v<0) return 'down'; return 'zero'; },
+    t1RowClass(row){ if(row.summaryType==='added') return 'row-added'; if(row.summaryType==='removed') return 'row-removed'; if(row.summaryType==='increased') return 'row-up'; if(row.summaryType==='decreased') return 'row-down'; return ''; },
+    t2RowClass(row){ return this.t1RowClass(row); },
+  },
+});
+</script>
+</body>
+</html>

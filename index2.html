@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>太陽圖</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/getRealTime.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <v-container style="max-width: 95%;">
+                <v-row no-gutters>
+                    <v-col col="3">
+                        <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
+                        <v-btn color="primary" @click="app.sync_realtime()
+                                                       app.sync=true">SYNC2</v-btn>
+                        <v-btn color="primary" @click="app.sync_data()">Set</v-btn>
+
+                        <a href="JavaScript: location.reload(true);">Refresh page</a>
+                        data count {{[...new Set( filteredData.map(obj => obj.stock_number)) ].length}}
+                        【targer date】 {{para_date}}
+                        <a href="#"
+                            onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
+                        【N:{{n}}】
+                    </v-col>
+                    <v-col col="5">
+                        <v-btn color="primary" @click="reset">reset</v-btn>
+                        <v-btn color="primary" @click="reverse">reverse</v-btn>
+
+                        <v-btn color="primary" @click="
+                                                        app.jsonData=app.jsonData_.filter(x=> x['Flag_macd']);
+                                                        app.jsonData=app.jsonData.filter(x=> parseFloat(x['Volume_MA_short']) > parseFloat(x['Volume_MA_long50']) );
+                                                        app.jsonData=app.jsonData.filter(x=> parseFloat(x['當日漲跌']) >-3);
+                                                        app.sortBy = ['Type1','長均交叉日','MA_last_cross_%'];
+                                                        app.sortDesc = [true,true,true]">均價long(寬鬆)</v-btn>
+
+                        <v-btn color="primary" @click=" app.jsonData=app.jsonData_.filter(x=> parseFloat(x['均價long_%']) >0);
+                                                        app.jsonData=app.jsonData.filter(x=> x['Flag_macd']);
+                                                        app.jsonData=app.jsonData.filter(x=> parseFloat(x['Volume_MA_short']) > parseFloat(x['Volume_MA_long50']) );
+
+                                                        app.sortBy = ['Type1','MA_last_cross_date','MA_last_cross_%'];
+                                                        app.sortDesc = [true,true,true]">均價long</v-btn>
+
+                        <v-btn color="primary"
+                            @click=" app.jsonData=app.jsonData.filter(item=>item.datalist.filter(x=> x._quote>8).length ==0 && item.datalist.filter(x=> x._quote>2).length >2) ">star</v-btn>
+
+                        <v-btn color="primary" @click=" app.jsonData = app.jsonData_.filter(item=>(item['均價longlong_%'] > 0  && item['Flag_macd']))
+                                                        app.sortBy =   ['MACD_minus','uptrend_b','均價long_%'];
+                                                        app.sortDesc = [true,true,false] ">C tag</v-btn>
+
+                        <v-btn color="primary" @click=" app.jsonData=app.jsonData_.filter(x=>parseFloat(x['量'])>0.8)
+                                                        app.sortBy =   ['uptrend_d1','均價long_%','量'];
+                                                        app.sortDesc = [true,false,true] ">D1 tag</v-btn>
+
+                    </v-col>
+
+                    <v-col col="1">
+                        <v-btn color="primary" @click="collapse=!collapse">Collapse</v-btn>
+                        <v-btn color="primary"
+                            @click="localStorage.setItem('aalist', JSON.stringify(jsonData.map(x=>x.stock_number)))">set</v-btn>
+                        <v-btn color="primary"
+                            @click="jsonData=jsonData.filter(x => JSON.parse(localStorage.getItem('aalist') || '[]').includes(x.stock_number))">get</v-btn>
+                    </v-col>
+                </v-row>
+                <v-row no-gutters v-show="collapse">
+                    <v-col col="1" v-for="(le, index) in [...new Set(jsonData.map(x=>x.Typelevel))].sort()">
+                        <v-btn color="primary" @click="jsonDataChange(le)">{{le}}</v-btn>
+                    </v-col>
+                </v-row>
+                <!--
+           :item-class="item => (  
+                            d=='c' &&  item['均價longlong_%'] > 0  && item['Flag_macd'] ? 'row-up' : 
+                            d=='b' &&  item['MA5_%'] > 2  && item['量'] > 0.5  && item['Flag_macd'] ? 'row-up' : 
+                            
+                            'row-down')        " 
+-->
+                <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="headers"
+                    :items="filteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
+                    :sort-desc.sync="sortDesc" style="white-space: nowrap;  " :item-class="classifiedData">
+
+                    <!--background-color: lavender;  
+                        :style="{ background-color: (parseFloat(data['MACD-SL']) > 0  ) ? 'lavender' :'gray'  }  "
+                    -->
+                    <template v-slot:[`item.${header.value}`]="{ item }" v-for="header in headers.slice(0,arrcount)"
+                        :key="header.value">
+                        <template v-for="(data, index) in item.datalist.filter(x => x.日期 === header.value)"
+                            :key="index">
+                            <!--
+                                (item.highlight_date <= header.value  && item.highlight_date !='0' && item.highlight_date !='') ? 'hightlight_line_under' : '',
+                                parseInt( data.成交金額平均) < parseInt(data.成交金額 ) && 
+                            -->
+                            <div v-if="index==0" class="cell-flex" style="position: sticky; min-height: 100%;" :class="[
+                                    ((data.短量 )> 1&& (data.長量 )>1  )       ? 'hightlight_line_box' : '',  
+                                    (parseFloat(data['MACD-SL']) >= 0 ) ? 'hightlight_line_under' : '',
+                                    (data.Flag_負向) ? 'big-x' : '',  
+                                    (data.Flag_三階段 ) ? 'circle-x' : '',  
+                                    ].filter(Boolean)">
+                                <!-- 左側：原本的 tooltip 與數據 -->
+                                <div class="cell-info">
+
+                                    <v-tooltip slot="append" bottom color="#E5E5E5">
+                                        <template v-slot:activator="{ on }">
+                                            <div v-on="on">
+                                                <span> 【{{data['分類標籤']}}】</span>
+
+                                                <span>{{data.有量}} </span>
+                                                <span>{{data.MACD_minus}} </span>
+                                                <v-icon v-if="data['Flag_macd'] " aria-hidden="false" color="red"> mdi
+                                                    mdi-plus </v-icon>
+                                                <v-icon
+                                                    v-if="parseFloat(data['Volume_MA_short']) >parseFloat(data['Volume_MA_long50'])  "
+                                                    aria-hidden="false" color="orange"> mdi mdi-plus </v-icon>
+                                                <v-icon v-if="data['flag_stat']=='True'" aria-hidden="false"
+                                                    color="orange"> mdi mdi-star </v-icon>
+                                                <BR />
+                                                <span v-on="on" :style="{
+                                                color: parseInt(data.量能) > 10 && parseInt(data._quote) > 5  ? 'red' :
+                                                       parseInt(data.量能) > 10 && parseInt(data._quote) > 2  ? 'orange' :
+                                                       parseInt(data._quote) > 2  ? 'blue' :
+                                                       parseInt(data._quote) < -3  ? 'green' :
+                                                'gray'  }">
+                                                    漲跌:{{data._quote}}
+                                                </span>
+                                                <BR />
+                                                <span v-on="on" :style="{
+                                                color:
+                                               parseInt(data['VPC_MA_%']) > 40  ? 'red' :
+                                               parseInt(data['VPC_MA_%']) > 30    ? 'orange' :
+                                               parseInt(data['VPC_MA_%'])  >20      ? 'blue' :
+                                                'gray'  }">
+                                                    量能:{{data.量能 }}(均: {{data.量能均 }})
+                                                    <br />
+                                                    <span> VPC_MA_%:{{parseFloat(data['VPC_MA_%']).toFixed(3) }}</span>
+                                                </span>
+                                            </div>
+                                        </template>
+                                        <!-- TOOL TIP-->
+                                        <div>
+                                            <span style="color: #285376b8;">
+                                                【價】-----------------------------------------------<br />
+                                            </span>
+                                            <div>
+                                                <span
+                                                    :style="{ color: (parseFloat(data['MACD-SL']) > 0  ) ? 'red' :'gray'  }">
+                                                    MACD : {{data['MACD']}}
+                                                    <br />
+                                                    MACD-SL : {{data['MACD-SL']}}
+                                                    <br />
+                                                    MACD_% {{ data['MACD_%']}}
+                                                </span>
+                                                <br />
+                                                <span style="color: #285376b8;">
+                                                    %K {{ data['%K']}}
+                                                    <br />
+                                                    %D {{ data['%D']}}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span style="color: #285376b8;">
+                                                    <br />
+                                                    MA_short {{ data['MA_short']}}
+                                                    <br />
+                                                    MA_long {{ data['MA_long']}}
+                                                    <br />
+                                                    MA_longlong {{ data['MA_longlong']}}
+                                                    <br />
+                                                    MA_longlonglong {{ data['MA_longlonglong']}}
+                                                    <br />
+                                                    MA5_% {{ data['MA5_%']}}
+                                                    <br />
+                                                    均價_% {{ data['均價_%']}}
+                                                    <br />
+                                                    均價long_% {{ data['均價long_%']}}
+                                                </span>
+                                            </div>
+
+                                            <br />
+                                            <span style="color: #285376b8;">
+                                                【量】-----------------------------------------------<br />
+                                                成交股數 {{ parseInt(data.成交股數)}}
+                                            </span>
+                                            <BR />
+                                            <span :style="{ 
+                                            color: (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.5) ? 'red' : 
+                                                   (data.量能差 > 0  && parseInt( data.量能 )> parseInt( data.量能均 )*1.2) ? 'orange' : 
+                                                'gray' }">
+                                                量能: {{data.量能}}
+                                                <BR />
+                                                量能均{{data.量能均}}
+                                                <BR />
+                                                量能差 {{data.量能差}}
+                                            </span>
+                                            <br />
+                                            <span
+                                                :style="{ 
+                                                color: ((parseFloat(data.成交金額/data.成交金額平均)).toFixed(1)>1) ? 'red' : 'gray' }">
+                                                成交金額:{{ parseInt(data.成交金額)}}
+                                                <br />
+                                                總成交金額平均:{{parseInt( data.成交金額平均)}} (本日量比{{
+                                                (parseFloat(data.成交金額/data.成交金額平均)).toFixed(1) }})
+                                                <br />
+                                                <br />
+                                                成交金額5日:{{parseInt( data.Volume_MA_short)}} (本日量比{{
+                                                (parseFloat(data.Volume_MA_short/data.Volume_MA_long)).toFixed(1) }})
+                                                <br />
+                                                成交金額10日:{{parseInt( data.Volume_MA_long)}} (本日量比{{
+                                                (parseFloat(data.Volume_MA_long/data.Volume_MA_long50)).toFixed(1) }})
+                                                <br />
+                                                成交金額50日:{{parseInt( data.Volume_MA_long50)}}
+                                                <br />
+                                                量(成交金額10日/成交金額平均):{{ parseFloat(data.Volume_MA_long /
+                                                data.成交金額平均).toFixed(1) }}
+
+                                                <br />
+                                            </span>
+                                            <br />
+                                            -------------------------------------------------
+                                            <br />
+                                            <span v-html="$formatDesc(data.Full_Summary)" style="color: #285376b8;">
+                                                {{data.Full_Summary}} </span>
+                                        </div>
+                                    </v-tooltip>
+                                    <br />
+                                    <div>價
+                                        <span>
+                                            <v-icon v-if="data['均價long_%'] > 0" aria-hidden="false" color="red">
+                                                mdi-arrow-top-right </v-icon>
+                                            <v-icon v-else aria-hidden="false" color="green"> mdi-arrow-bottom-right
+                                            </v-icon>
+                                        </span>
+                                        <span>
+                                            <v-icon v-if="data['均價_%'] > 0" aria-hidden="false" color="red">
+                                                mdi-arrow-top-right
+                                            </v-icon>
+                                            <v-icon v-else aria-hidden="false" color="green"> mdi-arrow-bottom-right
+                                            </v-icon>
+                                        </span>
+                                        <span>
+                                            <v-icon v-if="data['MA5_%'] > 0" aria-hidden="false" color="red">
+                                                mdi-arrow-top-right </v-icon>
+                                            <v-icon v-else aria-hidden="false" color="green"> mdi-arrow-bottom-right
+                                            </v-icon>
+                                        </span>
+                                    </div>
+                                    <br />
+                                    <div>量
+                                        <span>
+                                            <v-icon
+                                                v-if="(parseFloat(data.Volume_MA_long/data.Volume_MA_long50)).toFixed(1)> 1"
+                                                aria-hidden="false" color="red">
+                                                mdi-arrow-top-right </v-icon>
+                                            <v-icon v-else aria-hidden="false" color="green"> mdi-arrow-bottom-right
+                                            </v-icon>
+                                        </span>
+                                        <span>
+                                            <v-icon
+                                                v-if="(parseFloat(data.Volume_MA_short/data.Volume_MA_long)).toFixed(1)> 1"
+                                                aria-hidden="false" color="red">
+                                                mdi-arrow-top-right </v-icon>
+                                            <v-icon v-else aria-hidden="false" color="green"> mdi-arrow-bottom-right
+                                            </v-icon>
+                                        </span>
+                                        <span>
+                                            <v-icon v-if="(parseFloat(data.成交金額/data.成交金額平均)).toFixed(1) > 1"
+                                                aria-hidden="false" color="red">
+                                                mdi-arrow-up-thick </v-icon>
+                                            <v-icon v-else aria-hidden="false" color="green"> mdi-minus
+                                            </v-icon>
+                                        </span>
+                                    </div>
+                                    <br />
+                                    <!--MACD_% 差 bar -->
+                                    <div style="  height:35px;">
+                                        <div :style="{ backgroundColor:  
+                                    parseInt(data['MACD_%']) > 40  ? '#4dffcf40' : 
+                                    parseInt(data['MACD_%']) > 30  ? '#4dffcf30' : 
+                                    parseInt(data['MACD_%']) > 20  ? '#4dffcf20' : 
+                                    parseInt(data['MACD_%']) > 10  ? '#4dffcf20' :
+                                    parseInt(data['MACD_%']) > 0   ? '#4dffcf10' :
+                                    parseInt(data['MACD_%']) > -10 ? '#f7f7f7' :
+                                    parseInt(data['MACD_%']) > -20 ? '#f7f7f7' :
+                                    parseInt(data['MACD_%']) > -60 ? '#f7f7f7' :
+                                    '#f7f7f7' ,
+                                    height: 
+                                    String(Math.sqrt(parseInt( ( data['MACD_%'] ))))+'px'
+                                     }">
+                                            MACD_%:{{parseInt(data['MACD_%'])}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 右側：小型 K 線圖 -->
+                                <div class="cell-chart">
+                                    <span v-if="jsonData[0].datalist.map(x=>x.日期)[0]== header.value">
+                                        {{data['textdesc']}}
+                                    </span>
+                                    <BR />
+                                    <mini-candle-strip v-if="jsonData[0].datalist.map(x=>x.日期)[0]== header.value"
+                                        :row="item" :date="header.value" :lookback="6" :width="120" :height="60"
+                                        :body="8" :gap="6" :show-line="true" />
+                                </div>
+                            </div>
+                        </template>
+                    </template>
+
+                    <template v-slot:item.量增幅="{ item }">
+                        <span
+                            :style="{ color: item.當日漲跌 > 0 ? 'red' : item.當日漲跌 < 0 ? 'green' : 'rgb(124, 169, 173)' }">
+                            {{ item.量增幅 }}
+                        </span>
+                    </template>
+                    <template v-slot:item.長均交叉日="{ item }">
+                        <span :class="{ 'del-italic': item.delitalic }">
+                            {{ item.MA_last_cross_date }}
+                        </span>
+                    </template>
+                    <template v-slot:item.rt_price="{ item }">
+                        <span style="color: rgb(124, 169, 173);" v-show="sync">
+                            {{item.price}} ({{item.rt_price}})
+                        </span>
+                    </template>
+
+
+                    <template v-slot:item.rt_量="{ item }">
+                        <span style="color: rgb(124, 169, 173);">
+                            {{item.rt_量}}
+                            <br />
+                            目前成交股數{{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}}
+                            <br />
+                            當日成交股數{{parseFloat(item.成交股數).toFixed(0)}}
+                            <br />
+                            最大成交股數{{parseFloat(item.max股數).toFixed(0)}}
+
+                        </span>
+                    </template>
+                    <template v-slot:item.量能差="{ item }">
+                        <tr></tr>
+                        <td>{{ item.量能差 }}</td>
+                        <td style="width: 20px;"></td>
+                        <td>
+                            (max){{ parseFloat(item.量能max).toFixed(0) }}
+                            <br />
+                            <span style="color:gray;"> (now) {{ parseFloat(item.量能).toFixed(0) }}</span>
+                            <span style="color:green;">【{{ (parseFloat(item.量能)
+                                /parseFloat(item.量能avg)).toFixed(0)}}】</span>
+
+                            <br />
+                            (min) {{ parseFloat(item.量能min).toFixed(0)}}
+                        </td>
+                        </tr>
+                    </template>
+
+                    <template v-slot:item.macdpercent="{ item }">
+                        <tr></tr>
+                        <td>{{ item.量能差 }}</td>
+                        <td style="width: 20px;"></td>
+                        <td>
+                            (max){{ parseFloat(item.MACDpercent_max).toFixed(0) }}</span>
+                            <br />
+                            <span style="color:gray;">
+                                (now) {{ parseFloat(item['MACD_%']).toFixed(0) }}</span>
+
+                            <br />
+                            (min) {{ parseFloat(item.MACDpercent_min).toFixed(0)}}
+                        </td>
+                        </tr>
+                    </template>
+                    <template v-slot:item.desctxt="{ item }">
+                        <tr>
+                            <td v-html="$formatDesc(item.madesc)"></td>
+                            <td style="width: 20px;"></td>
+                            <td>
+                                (HL){{ parseFloat(item["MACD"]) }}
+                                <br />
+                                (SL){{parseFloat(item["MACD-SL"])}}
+                                <br />
+                                {{ (parseFloat(item["MACD"])-parseFloat(item["MACD-SL"])).toFixed(2) }}
+                            </td>
+                            <td></td>
+                        </tr>
+                    </template>
+
+                    <template v-slot:item.type="{ item }">
+                        <v-btn text @click="openDialog(item)">
+                            <v-icon v-if=" checklist.filter(x => x == item.stock_number).length > 0  "
+                                aria-hidden="false" color="orange">mdi-star</v-icon>
+                            <span style="    text-align: justify;">
+                                {{ item.stock_number }}<br />
+                                {{ item.Type0 }}<br />
+                                {{item.Typelevel}}
+                            </span>
+                        </v-btn>
+                        <br />
+                        <v-btn text @click="openchart(item)">
+                            chart
+                        </v-btn>
+                        <br />
+                        <v-icon v-if="item['Flag_macd'] " aria-hidden="false" color="red"> mdi mdi-plus </v-icon>
+                        <v-icon v-if="parseFloat(item['Volume_MA_short']) >parseFloat(item['Volume_MA_long50']) 
+                                     " aria-hidden="false" color="orange"> mdi mdi-plus </v-icon>
+                        <v-icon v-if="item.datalist.filter(x=> x._quote>8).length ==0 && item.datalist.filter(x=> x._quote>2).length >2
+                                     " aria-hidden="false" color="orange">mdi-star</v-icon>
+                    </template>
+
+                    <template v-slot:item.desc="{ item }">
+                        <td v-html="$formatDesc(item.desc)"></td>
+                    </template>
+                    <template v-slot:item.text_desc="{ item }">
+                        <td style="max-width: 400px; word-break: break-all;">
+                            <div v-for="x in item.text_desc.split('\r\n') ">
+                                <a :href="computedHref(x.split('｜')[2])" target="_blank"> {{x}}
+                                </a>
+                            </div>
+                        </td>
+                    </template>
+
+                </v-data-table>
+                <v-dialog v-model="dialog" max-width="90vw">
+                    <v-card>
+                        <v-card-title class="headline">{{ selectedItem?.stock_number }}
+                            <v-checkbox v-model="checked"
+                                @click="checkboxUpdated(selectedItem?.stock_number)"></v-checkbox>
+                        </v-card-title>
+                        <v-card-text style="padding: 0; height:90vh;">
+                            <a v-if="selectedItem?.Type2=='上市'"
+                                :href="`https://tw.tradingview.com/chart/?symbol=TWSE%3A${selectedItem?.stock_number}`"
+                                target="_blank"> TradingView </a>
+                            <a v-if="selectedItem?.Type2!='上市'"
+                                :href="`https://tw.tradingview.com/chart/?symbol=TPEX%3A${selectedItem?.stock_number}`"
+                                target="_blank"> TradingView </a>
+                            <a :href="`https://statementdog.com/analysis/${selectedItem?.stock_number}`"
+                                target="_blank"> 本益比河流 </a>
+
+                            <iframe v-if="selectedItem"
+                                :src="`${url}[${selectedItem.stock_number}]${selectedItem.Type.replace('*', '')}.html`"
+                                width="80%" frameborder="0" style="padding: 0; height:70vh;    width: 160vh; ">
+                            </iframe>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialog = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+                <v-dialog v-model="dialogchart" max-width="100vw">
+                    <v-card>
+                        <v-card-title class="headline">{{ selectedItem?.stock_number }}</v-card-title>
+                        <v-card-text style="padding: 0; height:90vh;">
+                            <iframe v-if="selectedItem" :src="`${charturl}?_[${selectedItem.stock_number}]`"
+                                width="100%" frameborder="0" style="padding: 0; height:80vh;">
+                            </iframe>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-spacer></v-spacer>
+                            <v-btn color="primary" text @click="dialogchart = false">Close</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </v-container>
+        </v-app>
+    </div>
+    <script>
+        Vue.component('mini-candle-strip2', {
+            props: {
+                row: { type: Object, required: true },  // 整列，含 datalist
+                date: { type: String, required: true },  // 目標日期（YYYY-MM-DD）
+                lookback: { type: Number, default: 4 },      // 往前 N 天 + 當天 => N+1 根
+                width: { type: Number, default: 120 },
+                height: { type: Number, default: 60 },
+                body: { type: Number, default: 8 },      // 蠟燭本體寬
+                gap: { type: Number, default: 6 },      // 蠟燭間距（可設小一點，重點在 Y 軸線）
+                showLine: { type: Boolean, default: true }   // 顯示收盤價折線
+            },
+            computed: {
+                // 排序後的整列資料
+                list() {
+                    const a = Array.isArray(this.row?.datalist) ? this.row.datalist.slice() : [];
+                    return a.sort((x, y) => String(x.日期) < String(y.日期) ? -1 : 1);
+                },
+                // 取出 [date - lookback, date] 的視窗
+                windowData() {
+                    if (!this.list.length) return [];
+                    const idx = this.list.findIndex(x => String(x.日期) === String(this.date));
+                    if (idx < 0) return [];
+                    const start = Math.max(0, idx - this.lookback);
+                    return this.list.slice(start, idx + 1).map(r => {
+                        const o = parseFloat(r['開盤價']), h = parseFloat(r['最高價']),
+                            l = parseFloat(r['最低價']), c = parseFloat(r['收盤價']);
+                        return { d: String(r.日期), o, h, l, c };
+                    }).filter(r => [r.o, r.h, r.l, r.c].every(Number.isFinite));
+                },
+                // 畫布幾何 & 縮放
+                geom() {
+                    const pad = 2, H = this.height;
+                    const highs = this.windowData.map(r => r.h);
+                    const lows = this.windowData.map(r => r.l);
+                    if (!highs.length) return null;
+                    let max = Math.max(...highs), min = Math.min(...lows);
+                    if (max <= min) { max = min + 1; }
+                    const y = v => pad + (1 - (v - min) / (max - min)) * (H - 2 * pad);
+
+                    const stride = this.body + this.gap;
+                    const Wneed = this.windowData.length ? (this.windowData.length * stride - this.gap) : 0;
+                    const left = Math.max(0, (this.width - Wneed) / 2);  // 置中
+                    return { y, stride, left };
+                },
+                // 收盤價折線 points
+                closePoints() {
+                    if (!this.geom) return '';
+                    return this.windowData.map((r, i) => {
+                        const x = this.geom.left + i * this.geom.stride + this.body / 2;
+                        const y = this.geom.y(r.c);
+                        return `${x},${y}`;
+                    }).join(' ');
+                }
+            },
+            template: `
+  <div class="mini-candle-box" :style="{width: width+'px', height: height+'px'}">
+    <svg v-if="geom && windowData.length" :width="width" :height="height">
+      <g v-for="(r,i) in windowData" :key="r.d"
+         :transform="'translate('+(geom.left + i*geom.stride)+',0)'">
+        <!-- 影線 -->
+        <line :x1="body/2" :x2="body/2"
+              :y1="geom.y(r.h)" :y2="geom.y(r.l)"
+              class="candle-wick" :class="r.c>=r.o ? 'candle-wick-up':'candle-wick-down'"/>
+        <!-- 本體（紅漲綠跌） -->
+        <rect :x="0"
+              :y="Math.min(geom.y(r.o), geom.y(r.c))"
+              :width="body"
+              :height="Math.max(2, Math.abs(geom.y(r.o)-geom.y(r.c)))"
+              class="candle-body" :class="r.c>=r.o ? 'candle-up':'candle-down'"/>
+      </g>
+
+      <!-- 收盤折線：串起 Y 軸趨勢 -->
+      <polyline v-if="showLine" :points="closePoints"
+                fill="none" stroke="#ffa000" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+    <div v-else style="width:100%;height:100%;background:#eee;border-radius:3px;"></div>
+  </div>`
+        });
+    </script>
+
+
+
+
+
+    <script>
+        Vue.component('mini-candle-strip', {
+            props: {
+                row: { type: Object, required: true },  // 整列，含 datalist
+                date: { type: String, required: true },  // 目標日期（YYYY-MM-DD）
+                lookback: { type: Number, default: 4 },      // 往前 N 天 + 當天 => N+1 根
+                width: { type: Number, default: 120 },
+                height: { type: Number, default: 60 },
+                body: { type: Number, default: 8 },      // 蠟燭本體寬
+                gap: { type: Number, default: 6 },       // 蠟燭間距（可設小一點，重點在 Y 軸線）
+                showLine: { type: Boolean, default: true }   // 顯示收盤價折線
+            },
+            computed: {
+                // 排序後的整列資料
+                list() {
+                    const a = Array.isArray(this.row?.datalist) ? this.row.datalist.slice() : [];
+                    return a.sort((x, y) => String(x.日期) < String(y.日期) ? -1 : 1);
+                },
+                // 取出 [date - lookback, date] 的視窗，且「沒量」的 K 線直接排除
+                windowData() {
+                    if (!this.list.length) return [];
+                    const idx = this.list.findIndex(x => String(x.日期) === String(this.date));
+                    if (idx < 0) return [];
+                    const start = Math.max(0, idx - this.lookback);
+
+                    const raw = this.list.slice(start, idx + 1).map(r => {
+                        const o = parseFloat(r['開盤價']);
+                        const h = parseFloat(r['最高價']);
+                        const l = parseFloat(r['最低價']);
+                        const c = parseFloat(r['收盤價']);
+
+                        // 嘗試抓成交量欄位：先用「成交量」，沒有就用「成交股數」
+                        const volRaw = r['成交量'] != null ? r['成交量'] : r['成交股數'];
+                        const v = parseFloat(volRaw);
+
+                        return { d: String(r.日期), o, h, l, c, v };
+                    });
+
+                    // 價格要是數字，且「成交量要有且 > 0」，才視為有效 K
+                    return raw.filter(r =>
+                        [r.o, r.h, r.l, r.c].every(Number.isFinite) &&
+                        Number.isFinite(r.v) && r.v > 0
+                    );
+                },
+                // 是否有足夠的 K 數量（避免只剩一根怪怪的線）
+                hasEnoughBars() {
+                    return this.windowData.length >= 2;
+                },
+                // 畫布幾何 & 縮放
+                geom() {
+                    const pad = 2, H = this.height;
+                    const highs = this.windowData.map(r => r.h);
+                    const lows = this.windowData.map(r => r.l);
+                    if (!highs.length) return null;
+
+                    let max = Math.max(...highs), min = Math.min(...lows);
+                    if (max <= min) { max = min + 1; }
+
+                    const y = v => pad + (1 - (v - min) / (max - min)) * (H - 2 * pad);
+
+                    const stride = this.body + this.gap;
+                    const Wneed = this.windowData.length ? (this.windowData.length * stride - this.gap) : 0;
+                    const left = Math.max(0, (this.width - Wneed) / 2);  // 置中
+                    return { y, stride, left };
+                },
+                // 收盤價折線 points
+                closePoints() {
+                    if (!this.geom) return '';
+                    return this.windowData.map((r, i) => {
+                        const x = this.geom.left + i * this.geom.stride + this.body / 2;
+                        const y = this.geom.y(r.c);
+                        return `${x},${y}`;
+                    }).join(' ');
+                }
+            },
+            template: `
+  <div class="mini-candle-box" :style="{width: width + 'px', height: height + 'px'}">
+    <!-- 有幾根有效 K 線才畫圖，否則顯示 No Vol -->
+    <svg v-if="geom && windowData.length && hasEnoughBars"
+         :width="width" :height="height">
+      <g v-for="(r,i) in windowData" :key="r.d"
+         :transform="'translate(' + (geom.left + i * geom.stride) + ',0)'">
+        <!-- 影線 -->
+        <line :x1="body / 2" :x2="body / 2"
+              :y1="geom.y(r.h)" :y2="geom.y(r.l)"
+              class="candle-wick"
+              :class="r.c >= r.o ? 'candle-wick-up' : 'candle-wick-down'"/>
+        <!-- 本體（紅漲綠跌） -->
+        <rect :x="0"
+              :y="Math.min(geom.y(r.o), geom.y(r.c))"
+              :width="body"
+              :height="Math.max(2, Math.abs(geom.y(r.o) - geom.y(r.c)))"
+              class="candle-body"
+              :class="r.c >= r.o ? 'candle-up' : 'candle-down'"/>
+      </g>
+
+      <!-- 收盤折線：串起 Y 軸趨勢 -->
+      <polyline v-if="showLine"
+                :points="closePoints"
+                fill="none"
+                stroke="#ffa000"
+                stroke-width="2"
+                stroke-linejoin="round"
+                stroke-linecap="round"/>
+    </svg>
+
+    <!-- 沒有量 或 有效 K 太少時的佔位畫面 -->
+    <div v-else
+         style="width:100%;height:100%;background:#eee;border-radius:3px;
+                display:flex;align-items:center;justify-content:center;
+                font-size:10px;color:#999;">
+      No Vol
+    </div>
+  </div>`
+        });
+    </script>
+
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    stockno:'',
+                    checked: false,
+                    checklist: [],
+                    collapse: false,
+                    sync: false,
+                    d: '',
+                    url: '',
+                    date_: '',
+                    charturl: '',
+                    jsonData: [],
+                    jsonData_: [],
+                    dummydata: [],
+                    headers: [],
+                    filters: {},
+                    arrcount: 0,
+                    uniqueValues: {},
+                    //////////////
+                    //sortBy: ['長均交叉日'], highlight_date
+                    //sortBy: ['uptrend_b', 'uptrend_有量'],
+                    //sortBy: ['highlight_date', '量'],
+                    // sortBy:['frist_uptrend','量'],
+                    //sortBy:['LevelArea','量'],
+                    sortBy: ['frist_uptrend', 'uptrend_b1'],
+
+                    sortDesc: [true, true],
+                    //////////////
+                    dialog: false,
+                    dialogchart: false,
+                    selectedItem: null,
+                    realtimedata: [],
+                    /////////////////////////////
+                    //【參數】 增縮BYN天 / 漲跌BYN天
+                    n: 5,
+                    //【參數】  利用過去Data確認計算這些邏輯是否有用 
+                    set_date: -1,//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
+                    para_date: '',
+
+                    cW: 26,          // svg 寬度
+                    cH: 42,          // svg 高度（要小於 .mini-candle-box 高度一點點）
+                    candleW: 8,      // 蠟燭本體寬度
+                    _colRangeCache: {} // 每個日期欄位的(高/低)範圍快取
+                };
+            },
+            created() {
+                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/';
+                if (window.location.host.indexOf("it-chang") !== -1) {
+
+                };
+                let urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('sync')) {
+                    this.sync = urlParams.get('sync') == 'Y';
+                }
+                if (urlParams.has('stockno')) {
+                    this.stockno = urlParams.get('stockno') ;
+                }
+
+                this.url = this.url.replace('itchang0615', 'it-chang')
+                this.url = this.url.replace('auohqeshtt02', 'it-chang')
+                this.url = this.url.replace('PJ_stock/Html', 'PJ_Stock2')
+
+                this.init();
+                this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
+                window.scrollTo({ left: document.body.scrollWidth, behavior: 'smooth' });
+            },
+            computed: {
+                filteredData() {
+                    return this.jsonData.filter(item => {
+                        return Object.keys(this.filters).every(key => {
+                            const filterValues = this.filters[key];
+
+                            if (!filterValues || filterValues.length === 0) return true;
+                            const value = item[key] ? item[key].toString() : '';
+                            const a = this.isNumberField(key);
+
+                            if (Array.isArray(filterValues) && a) {
+                                const [min, max] = filterValues;
+                                const numericValue = parseFloat(value);
+                                return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
+                            } else {
+                                return filterValues.includes(value);
+                            }
+                        });
+                    });
+                },
+            },
+            methods: {
+                // 類別名稱淨化
+                sanitizedTypelevel(x) {
+                    return (x || '').replace(/[\\/:*?"<>|]/g, "_");
+                    /*
+                        return (x.Typelevel || '')
+                            .replace('右上', '')
+                            .replace('平', '')
+                            .replace('右下', '')
+                            .replace('上市', '')
+                            .replace('上櫃', '');
+                    */
+                },
+
+
+                computedHref(x) {
+                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/');
+
+                    return `${baseUrl}/index2.html?d=type2&type=${this.sanitizedTypelevel(x)}`;
+                    //return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                },
+
+
+                async init() {
+                    await this.loadExcelData();
+                    if (this.sync) {
+                        await this.sync_realtime();
+                    }
+                    this.loadExcelData();
+                },
+                async sync_realtime() {
+                    var vm = this
+                    try {
+                        console.log('Starting the process...');
+                        const result = await main(this.jsonData)
+                            .then(result => {
+                                console.log('Promise result:', result);   // 處理結果
+                                vm.realtimedata = result
+                            })
+                    } catch (error) {
+                        console.error('Error in init:', error);  // 捕獲初始化過程中的錯誤
+                    }
+                    console.log('done');  // 確保這個訊息在主流程完成後顯示
+                },
+                openDialog(item) {
+                    this.selectedItem = item;
+                    this.checked = this.checklist.filter(x => x == item.stock_number).length > 0
+                    this.dialog = true;
+                },
+                checkboxUpdated(newValue) {
+                    this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
+                    if (newValue) {
+                        if (this.checked) {
+                            this.checklist.push(newValue)
+                        } else {
+                            this.checklist = this.checklist.filter(x => x != newValue)
+                        }
+                        console.log(this.checklist)
+                    }
+                    localStorage.setItem('checklist', JSON.stringify(this.checklist));
+                },
+                openchart(item) {
+
+                    this.selectedItem = item;
+                    var stock = item.stock_number
+                    //localStorage.setItem('ddata', JSON.stringify(app.jsonData.find(x => x.stock_number == stock).datalist.slice(0, 10).map(data => ({ name: data['日期'], x: data['均價long_%'], y: data['MACD_%'], q: data['_quote'] }))));
+                    localStorage.setItem('ddata', JSON.stringify(app.jsonData.find(x => x.stock_number == stock).datalist.slice(0, 10).map(data => ({ name: data['日期'], y: data['均價long_%'], x: data['MACD_%'], s: data['量能'], q: data['_quote'] }))));
+                    localStorage.setItem('ddata', JSON.stringify(app.jsonData.find(x => x.stock_number == stock).datalist.slice(0, 10).map(data => ({ name: data['日期'], y: data['均價long_%'], x: data['Volume_MA_long'], s: data['量能'], q: data['_quote'] }))));
+
+
+                    var targetPath = "/SZCMMM/che.html";
+
+                    // 如果有多環境差異、可加判斷（例如 DEV專案路徑不一樣）
+                    if (window.location.host.indexOf("615") !== -1) {
+                        targetPath = "/PJ_stock/che.html";
+                    };
+                    if (window.location.host.indexOf("host") !== -1) {
+                        targetPath = "/IT/che.html";
+                    };
+                    this.charturl = window.location.origin + targetPath
+                    this.charturl = this.charturl.replace('itchang0615', 'it-chang')
+                    this.charturl = this.charturl.replace('auohqeshtt02', 'it-chang')
+                    this.dialogchart = true;
+                    //window.open(window.location.origin + targetPath, "_blank");
+                },
+                isNumberField(field) {
+                    return field !== 'stock_number' && this.jsonData.some(item => {
+                        const value = item[field];
+                        return value != null && !isNaN(parseFloat(value)) && isFinite(value);
+                    });
+                },
+             
+                sync_data() {
+                    this.jsonData.forEach(item => {
+                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
+                        item.price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z
+                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
+                        item.rt_量 = (vol / parseFloat(item.max股數)).toFixed(1);
+                    })
+                },
+                async loadExcelData() {
+                    let urlParams = new URLSearchParams(window.location.search);
+                    let file = ''; // 預設檔案
+                    const d = urlParams.get('d');
+                    this.d = d
+                    const type = urlParams.get('type');
+                    const setdate = urlParams.get('setdate');
+
+                    if (d) {
+                        const allowedTypes = ['ss', 's', 'a', 'sbk', 'aabk', 'aa', 'b1', 'b2', 'c', 'd1', 'd2', 'e', 'f', 'h', 'v', 'x', 'y']; // 可擴充
+                        if (allowedTypes.includes(d)) {
+                            file = `./Result/checksun_${d}/${urlParams.get('date')}.xlsx`;
+                            this.date_ = urlParams.get('date');
+
+                        }
+                        if (d === 'sunmy') {
+                            file = `./Result/checksunmy.xlsx`;
+                        }
+                        if (d === 'sunGreat') {
+                            file = `./Result/checksunGreat.xlsx`;
+                        }
+
+                        if (d === 'type') {
+                            file = `./Result/checksun/${type}.xlsx`;
+                        }
+                        if (d === 'type2') {
+                            file = `./Result/checksun_type/${type}.xlsx`;
+                        }
+                    }
+                    if (setdate) {
+                        this.set_date = setdate
+                    }
+                    console.log(file)
+                    await fetch(file)
+                        .then(response => response.arrayBuffer())
+                        .then(data => {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[sheetName];
+                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                            if (json.length > 0) {
+                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                                this.$renameHeaders(this.headers);
+                                //Excel data to json 
+                                this.jsonData = json.slice(1).map(row => {
+                                    const rowData = {};
+                                    this.headers.forEach((header, i) => {
+                                        rowData[header.value] = row[i];
+                                    });
+                                    return rowData;
+                                });
+
+                                var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
+
+                                const baseFields = ['desc', '營業毛利率', '營業利益率', '淨值倍率', '殖利率',
+                                    //'營業收入-上月比較增減(%)', '營業收入-去年同月增減(%)', '累計營業收入-前期比較增減(%)', 
+                                    '總市值', '成交量', 'Type1'];// 'stock_number'
+                                //(價)
+                                const trendFields = ['MACD_%', '均價long_%', '均價_%', 'MA5_%', 'highlight_date',];//'價_起始日期',
+                                const dateFields = ['量價差天',];
+                                const miscFields = ['當日漲跌', '總價差', '漲跌BYN天', '增縮BYN天', 'type']; //, 'count','總量增縮', 
+                                //(量)
+                                const volumeFields = ['量能均', '量能差', '量能', 'Volume_Oscillator']; //  ,'遠交易量' , '成交股數' ,'量','max量能', 'count量能',  
+                                const configFlag = ['確認漲跌']
+
+                                var arr = [...baseFields, ...trendFields, ...dateFields, ...miscFields, ...volumeFields, , 'Flag',];
+
+                                arr = [...baseFields,
+                                    //'flag_stat','cond_entry', 
+
+                                    'text_desc',
+                                    'MACD-SL', 'MACD', '成交股數', '成交金額平均', '成交金額',
+                                    // '開盤價', '最高價', '最低價', 
+                                    '收盤價',
+                                    //'textdesc',
+                                    //'%D', '%K',
+                                    //'當日漲跌', 'now_price',
+                                    //'Volume_Oscillator', 'Volume_MA_short', 'Volume_MA_long', 'Volume_MA_long50','VPC_MA_%',
+
+                                    'highlight_enddate_2', 'highlight_stardate_2', 'highlight_enddate收盤價_2', 'highlight_stardate收盤價_2',
+                                    'highlight_enddate_1', 'highlight_stardate_1', 'highlight_enddate收盤價_1', 'highlight_stardate收盤價_1',
+                                    'macdpercent',
+
+                                    'MACD_minus',
+
+                                    'highlight_%_2',
+                                    'highlight_%_1', 'highlight_%', 'highlight_收盤價',
+
+                                    'MACD_last_cross_date',
+                                    'MA_last_cross_%',
+                                    '長均交叉日',//'MA_last_cross_date',
+                                    'highlight_date',
+                                    'desctxt',
+
+                                    '量能差', '量能max', '量',
+                                    
+                                    '分類標籤', 'LevelArea',
+                                    '均價longlong_%', '均價long_%', '均價_%', 'MA5_%', '當日漲跌',
+                                    '量能avg', '短量', '長量', '量增幅',
+
+                                    'uptrend_有量', 'frist_uptrendcheck', 'frist_uptrend',
+                                    
+                                    '總價差','type',
+                                ]
+                                //
+                                //【參數】  利用過去Data確認計算這些邏輯是否有用 
+                                var set_date = this.set_date //-3//4 //-1 :max date     targer date =計算後的目標日 顯示在左上方
+                                this.para_date = dates.slice(set_date)[0]
+                                if (set_date != -1)
+                                    arr.push(...configFlag)
+
+
+                                //'uptrend_d','uptrend_c','uptrend_b',
+                                arr.push('uptrend_' + this.d)
+
+                                //if (this.sync) {
+                                if (true) {
+                                    arr.push('rt_量')
+                                    arr.push('rt_price')
+                                }
+
+                                this.arrcount = dates.length
+                                arr.reverse().forEach(element => {
+                                    dates.push(element) //dates.unshift(element) 
+                                });
+
+                                this.headers = dates.map(header => ({ text: header, value: header }));
+                                const transformedData = this.jsonData
+
+                                var dummydata = Array.from(
+                                    new Map(transformedData.map(item => [item.stock_number, item])).values()
+                                );
+
+                                if (this.stockno!=''){
+
+                                this.jsonData = this.jsonData.filter(q => q.stock_number == this.stockno)
+                                dummydata = dummydata.filter(q => q.stock_number == this.stockno)
+                                }
+                                
+
+                                dummydata.map((item, index) => {
+                                    const dummydataItem = item
+                                    if (!!!item.datalist) {
+                                        const datalist = this.jsonData.filter(q => q.stock_number == item.stock_number)
+                                        dummydataItem.datalist = datalist
+                                        const maxdate = datalist.map(x => x.日期).reduce((a, b) => a > b ? a : b);
+                                        const mindate = datalist.map(x => x.日期).reduce((a, b) => a < b ? a : b);
+                                        const maxdateitem = this.jsonData.filter(q => q.stock_number == item.stock_number && q.日期 == this.para_date)[0]
+
+                                        if (!!!maxdateitem)
+                                            return null
+                                        //## 處理Header資料
+                                        dummydataItem.desc = dummydataItem.desc?.replace('**', '<br/>') + '<br/><br/>' + dummydataItem.營收比重
+                                        dummydataItem.箱型力量 = maxdateitem.箱型力量
+                                        dummydataItem.箱型力量_5均 = maxdateitem.箱型力量_5均
+                                        dummydataItem.highlight_date = maxdateitem.highlight_date
+                                        dummydataItem.遠交易量 = maxdateitem.遠交易量
+                                        dummydataItem.Volume_Oscillator = maxdateitem.Volume_Oscillator
+                                        dummydataItem.量能 = maxdateitem.量能
+                                        dummydataItem['均價_%'] = maxdateitem['均價_%']
+                                        dummydataItem['MA5_%'] = maxdateitem['MA5_%']
+                                        dummydataItem.macdpercent = maxdateitem['MACD_%']
+
+                                        // 總價差 (依據highlight_date 來計算，如果沒有使用mindate)
+                                        //const targerdate = datalist.find(x => x.日期 === datalist[0].highlight_date)?.日期 ?? mindate;
+                                        const targerdate = mindate
+                                        dummydataItem.總價差 = parseFloat(((datalist.filter(q => q.日期 == this.para_date)[0].now_price / datalist.filter(q => q.日期 == targerdate)[0].now_price) - 1) * 100).toFixed(2);
+
+                                        dummydataItem.MACDpercent_max = datalist.map(x => parseInt(x['MACD_%'])).sort((a, b) => a - b).reverse()[0]
+                                        dummydataItem.MACDpercent_min = datalist.map(x => parseInt(x['MACD_%'])).sort((a, b) => a - b)[0]
+
+                                        dummydataItem.volume_threshold_mean = datalist.map(x => parseInt(x['volume_threshold'])).reduce((sum, val) => sum + val, 0) / datalist.map(x => parseInt(x['volume_threshold'])).length;
+
+
+                                        //## 處理明細資料
+                                        dummydataItem.datalist.forEach((item, index) => {
+                                            //【普通計算邏輯(一次)】      
+                                            let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
+                                            let dl_1 = dummydataItem.datalist.filter(q => q.日期 < item.日期);
+                                            //【參數】
+                                            var n = this.n
+
+                                            item.量能均 = dl.map(x => parseInt(x.量能)).slice().reverse().slice(-n).reduce((acc, current) => acc + current, 0)
+                                            item.量能均 = parseInt(item.量能均 / n)
+
+                                            item.量能min = dl.map(x => parseInt(x.量能)).sort((a, b) => a - b)[0]
+                                            item.量能max = dl.map(x => parseInt(x.量能)).sort((a, b) => a - b).reverse()[0]
+
+                                            // 新產判斷邏輯
+                                            // ###【Flag】 新產判斷邏輯
+                                            //item.Flag = dl.filter(x => x["均價_%"] > 0 && x["MA5_%"] < 0).length   // 在表現好的狀況下去尋找有點被回拉的
+                                            item.量能avg = parseInt(datalist.map(x => parseInt(x.量能)).reduce((accumulator, currentValue) => accumulator + currentValue, 0) / datalist.map(x => parseInt(x.量能)).length)
+
+                                            item.volume_threshold_mean = datalist.map(x => parseInt(x['volume_threshold'])).reduce((sum, val) => sum + val, 0) / datalist.map(x => parseInt(x['volume_threshold'])).length;
+                                            item['volume_threshold_%'] = parseFloat(((item['volume_threshold'] - item['volume_threshold_mean']) / Math.abs(item['volume_threshold_mean'])).toFixed(2))
+
+                                            item.分類標籤 = item?.分類標籤.split("【")[1]?.split("】")[0];
+                                            item.分類標籤_ = dl_1.map(x => x.分類標籤)[0]?.split("【")[1]?.split("】")[0] + " ** " + item.分類標籤
+                                            item.MACD_diff = parseInt((item['MACD_%']) - parseFloat(dl_1.map(x => x['MACD_%'])[0]))
+                                            //
+                                            item.MACD_minus = ((parseFloat(item['MACD']) - parseFloat(item['MACD-SL']))).toFixed(2)
+
+                                            item.量增幅 = ((parseFloat(item['Volume_Price_Change']) / parseFloat(item['Volume_MA_long']))).toFixed(2) || 0
+                                            item.量增幅 = isFinite(item.量增幅) ? item.量增幅 : 0
+                                            item.量增幅 = Number(item.量增幅) ? item.量增幅 : 0
+
+                                            item.短量 = (parseFloat(item.Volume_MA_short / item.Volume_MA_long)).toFixed(1)
+                                            item.長量 = (parseFloat(item.Volume_MA_long / item.Volume_MA_long50)).toFixed(1)
+                                            item.有量 = ((item.短量) > 1 && (item.長量) > 1)
+
+                                        });
+
+
+                                        //二次處理明細  要先經過一次計算
+                                        dummydataItem.datalist.forEach((item, index) => {
+                                            //【普通計算邏輯(二次)】      
+                                            item.量能差 = parseInt(item.量能 - item.量能均);
+
+                                            //【特殊客製邏輯】
+
+                                            let dl = dummydataItem.datalist.filter(q => q.日期 <= item.日期);
+
+                                            // <!-- 均價long_%  均價_% MA5_%'  標記條件
+                                            // 1. 前兩天  均價long_% : 負 、 均價_%: 負 、 MA5_%: 正 ， 
+                                            // 2. 前一天 均價long_% : 負 、 均價_%: 正 、 MA5_%: 正 ， 
+                                            // 3. 今天 均價long_% : 正 、 均價_%: 正 、 MA5_%: 正 ， 
+                                            // -->
+                                            // 三階段判斷條件
+                                            item.Flag_三階段 = false;
+                                            item.Flag_負向 = false;
+                                            item.Flag_macd = false;
+
+                                            let currentIndex = dl.length - 1;
+                                            if (currentIndex >= 2) {
+                                                let day_0 = dl[0];  // 今天
+                                                let day_1 = dl[1];  // 昨天
+                                                let day_2 = dl[2];  // 前天
+
+                                                function checkConditions(...conds) { return conds.every(c => c); }
+
+                                                // 準備條件
+
+                                                let cond15 = day_0.now_price > day_0["MA_longlong"] && day_1["MA_longlong"] > day_1.now_price
+
+                                                let cond16 = day_0.量能 > 2 && (day_0.量能 > day_0.量能均 * 1.75) && (!day_0.Full_Summary.includes('負')) && day_0["MACD_%"] > 0
+
+                                                let cond17 = day_1["MACD-SL"] < day_0["MACD-SL"] && day_1["MACD-SL"] <= 0 && day_0["MACD-SL"] >= 0
+
+                                                let cond18 = (day_0["分類標籤"] != 'e') && (day_0["分類標籤"] != day_1["分類標籤"])
+                                                let cond19 = (parseFloat(day_0.量能) / parseFloat(day_0.量能avg)).toFixed(0) > (parseFloat(day_1.量能) / parseFloat(day_1.量能avg)).toFixed(0)
+
+                                                let cond20 = day_2["MACD_minus"] <= day_1["MACD_minus"]
+                                                    && day_1["MACD_minus"] <= day_0["MACD_minus"] && day_1["MACD_minus"] >= 0
+
+
+                                                //'成交金額平均','成交金額',
+                                                let cond21 = parseInt(day_0["成交金額平均"]) < parseInt(day_0["成交金額"])
+
+                                                let cond22 = day_0["均價longlong_%"] > 0 && day_1["均價longlong_%"] < 0
+                                                let cond23 = day_0["MA5_%"] > 0 && day_1["MA5_%"] < 0 && parseFloat(day_0.Volume_MA_long / day_0.成交金額平均).toFixed(1) > 0.7
+
+                                                // 將多組邏輯條件包進陣列，每組是一種邏輯成立條件
+                                                let conditionGroups = [
+                                                    //[cond15, cond14],   // 站上 MA_longlong
+                                                    //[cond16],  //有量 轉強
+                                                    /*
+                                                        [cond13],　　// MACD_% 　負轉正
+                                                        [cond17],     //　MACD-SL 　負轉正
+                                                        [cond18, cond19], // 分類標籤改變 & 有量能
+                                                    */
+                                                    //[cond20],
+                                                    //[cond21],
+                                                    //[cond22],
+                                                    [cond23]
+                                                ];
+
+                                                //【MACD 柱體狀況變佳】
+                                                let cond_20 = parseFloat(day_1["MACD_minus"]) < parseFloat(day_0["MACD_minus"])
+                                                //&& parseFloat(day_1["MACD_minus"]) >= 0
+                                                let condition2Groups = [[cond_20]]
+
+                                                // 判斷是否有任一組邏輯成立
+                                                item.Flag_三階段 = conditionGroups.some(group => checkConditions(...group));
+
+                                                item.Flag_macd = condition2Groups.some(group => checkConditions(...group));
+
+                                                // 【負向】
+                                                let n_cond1 = (
+                                                    day_1["均價long_%"] > 0
+                                                    && day_1["均價_%"] > 0
+                                                    && day_1["MA5_%"] > 0)
+                                                    && (day_0["均價long_%"] > 0
+                                                        && day_0["均價_%"] > 0
+                                                        && day_0["MA5_%"] < 0
+                                                        && day_0.量能 > day_0.量能均
+                                                    );  // + + + ，+ + -  (有量)
+                                                let conditionGroups_nev = [[n_cond1],];
+                                                item.Flag_負向 = conditionGroups_nev.some(group => checkConditions(...group));
+
+                                            }
+
+                                        });
+                                        //## 二次處理Header資料 (放這裡是因為要經過明細計算才會得到處理)                 
+                                        var datalist_last_date = datalist.find(x => x.日期 === this.para_date)
+
+                                        dummydataItem['MACD'] = datalist_last_date['MACD']
+                                        dummydataItem['MACD-SL'] = datalist_last_date['MACD-SL']
+                                        dummydataItem['MACD_%'] = datalist_last_date['MACD_%']
+                                        dummydataItem['VPC_MA_%'] = datalist_last_date['VPC_MA_%']
+                                        dummydataItem['MA5_%'] = datalist_last_date['MA5_%']
+
+                                        dummydataItem['均價_%'] = datalist_last_date['均價_%']
+                                        dummydataItem['均價long_%'] = datalist_last_date['均價long_%']
+                                        dummydataItem['均價longlong_%'] = datalist_last_date['均價longlong_%']
+
+                                        dummydataItem['highlight_%'] = datalist_last_date['highlight_%']
+                                        dummydataItem['MACD_last_cross_date'] = datalist_last_date['MACD_last_cross_date']
+                                        dummydataItem['長均交叉日'] = datalist_last_date['MA_last_cross_date']
+                                        dummydataItem['MA_last_cross_%'] = datalist_last_date['MA_last_cross_%']
+                                        dummydataItem['highlight_收盤價'] = datalist_last_date['highlight_收盤價']
+                                        dummydataItem.收盤價 = datalist_last_date?.收盤價;
+                                        dummydataItem.text_desc = datalist_last_date?.text_desc;
+
+                                        dummydataItem.Volume_MA_short = datalist_last_date?.Volume_MA_short;
+                                        dummydataItem.Volume_MA_long = datalist_last_date?.Volume_MA_long;
+                                        dummydataItem.Volume_MA_long50 = datalist_last_date?.Volume_MA_long50;
+
+                                        dummydataItem.成交股數 = datalist_last_date?.成交股數;
+                                        dummydataItem.當日漲跌 = datalist_last_date?._quote;
+                                        dummydataItem.增縮BYN天 = datalist_last_date?.增縮BYN天;
+                                        dummydataItem.增縮BYN天Diff = datalist_last_date?.增縮BYN天Diff;
+                                        dummydataItem.漲跌BYN天 = datalist_last_date?.漲跌BYN天;
+                                        dummydataItem.漲跌BYN天Diff = datalist_last_date?.漲跌BYN天Diff;
+                                        dummydataItem.量能差 = datalist_last_date?.量能差;
+                                        dummydataItem.量能均 = datalist_last_date?.量能均;
+                                        dummydataItem.量能max = datalist_last_date?.量能max;
+                                        dummydataItem.量能avg = datalist_last_date?.量能avg;
+                                        dummydataItem.長量 = datalist_last_date?.長量;
+                                        dummydataItem.短量 = datalist_last_date?.短量;
+                                        dummydataItem.有量 = datalist_last_date?.有量;
+
+                                        dummydataItem.分類標籤 = datalist_last_date?.分類標籤_
+                                        dummydataItem.MACD_diff = datalist_last_date?.MACD_diff
+                                        dummydataItem.MACD_minus = datalist_last_date?.MACD_minus;
+
+                                        dummydataItem.highlight_date = datalist_last_date?.highlight_date;
+                                        dummydataItem.cond_entry = datalist_last_date?.cond_entry;
+                                        dummydataItem.LevelArea = datalist_last_date?.LevelArea;
+
+                                        dummydataItem.textdesc = datalist_last_date?.textdesc;
+                                        dummydataItem.madesc = datalist_last_date?.madesc;
+                                        dummydataItem.VPC_break = datalist_last_date?.VPC_break;
+                                        dummydataItem.Flag_macd = datalist_last_date?.Flag_macd;
+                                        dummydataItem.frist_uptrend = datalist_last_date?.frist_uptrend;
+
+
+                                        dummydataItem.now_price = datalist_last_date?.now_price;
+                                        dummydataItem.MA_short = datalist_last_date?.MA_short;
+                                        dummydataItem.MA_long = datalist_last_date?.MA_long;
+                                        dummydataItem.MA_longlong = datalist_last_date?.MA_longlong;
+                                        dummydataItem.MA_longlonglong = datalist_last_date?.MA_longlonglong;
+                                        dummydataItem.volume_threshold = parseFloat(datalist_last_date?.volume_threshold).toFixed(1)
+                                        dummydataItem['營業收入-上月比較增減(%)'] = parseFloat(datalist_last_date['營業收入-上月比較增減(%)']).toFixed(1)
+                                        dummydataItem['營業收入-去年同月增減(%)'] = parseFloat(datalist_last_date['營業收入-去年同月增減(%)']).toFixed(1)
+                                        dummydataItem['累計營業收入-前期比較增減(%)'] = parseFloat(datalist_last_date['累計營業收入-前期比較增減(%)']).toFixed(1)
+                                        dummydataItem['累計營業收入-前期比較增減(%)'] = parseFloat(datalist_last_date['累計營業收入-前期比較增減(%)']).toFixed(1)
+                                        dummydataItem.營業毛利率 = datalist_last_date?.營業毛利率.replace('%', '');
+                                        dummydataItem.營業利益率 = datalist_last_date?.營業利益率.replace('%', '');
+
+                                        dummydataItem.量增幅 = datalist_last_date?.量增幅;
+                                        dummydataItem.Volume_Price_Change = datalist_last_date?.Volume_Price_Change;
+
+
+                                        dummydataItem.量 = parseFloat(dummydataItem.Volume_MA_long / dummydataItem.成交金額平均).toFixed(1)
+
+                                        /////////////////////////////////////////////////////////////////
+
+                                        const toNum = v => {
+                                            if (v == null || v === '') return Number.NEGATIVE_INFINITY; // 空值排最後
+                                            return Number(String(v).replace(/,/g, '').trim());
+                                        };
+
+                                        // 取數值
+                                        const vNow = toNum(dummydataItem.now_price);
+                                        const v5 = toNum(dummydataItem.MA_short);
+                                        const v20 = toNum(dummydataItem.MA_long);
+                                        const v50 = toNum(dummydataItem.MA_longlong);
+                                        const v80 = toNum(dummydataItem.MA_longlonglong);
+
+                                        // 現價顏色（紅：高於所有均線；綠：低於所有均線；灰：其餘）
+                                        const maOnly = [v5, v20, v50].filter(Number.isFinite);
+                                        const maxMA = maOnly.length ? Math.max(...maOnly) : Number.POSITIVE_INFINITY;
+                                        const minMA = maOnly.length ? Math.min(...maOnly) : Number.NEGATIVE_INFINITY;
+
+                                        let nowColor = '#888'; // 介於其間
+                                        if (Number.isFinite(vNow)) {
+                                            if (vNow > maxMA) nowColor = '#d4380d';     // 紅
+                                            else if (vNow < minMA) nowColor = '#389e0d';// 綠
+                                        }
+
+                                        // 建立資料列
+                                        const arr = [
+                                            { name: '現價', period: 0, value: vNow, color: nowColor },
+                                            { name: '(5)', period: 5, value: v5 },
+                                            { name: '(20)', period: 20, value: v20 },
+                                            { name: '(50)', period: 50, value: v50 },
+                                            { name: '(80)', period: 80, value: v80 }
+                                        ];
+
+                                        // 降序；同值時 period 越短越前
+                                        arr.sort((a, b) => (b.value - a.value) || (a.period - b.period));
+                                        dummydataItem.madesc = arr.map(item => { return `${item.name}`; })
+                                        dummydataItem.madesc += '<br>'
+                                        // 組輸出（現價加色與粗體）
+                                        dummydataItem.madesc += arr.map(item => {
+                                            const txt = Number.isFinite(item.value) ? item.value.toFixed(2) : '—';
+                                            if (item.name === '現價') {
+                                                return `<span style="font-weight:700;color:${item.color}">${item.name}${txt}</span>`;
+                                            }
+                                            return `${item.name}${txt}`;
+                                        }).join('<br>');
+                                        //////////////////////////////////////////////////////////////////////////
+
+                                        //////////////////////////////////////////////////////////////////////////
+                                        //確認漲跌
+                                        var checkpoint_maxdateData = datalist.find(x => x.日期 === maxdate)
+
+                                        let cc = dummydataItem.datalist.filter(q => q.日期 > this.para_date);
+                                        let arrlist_cc = cc.map(x => parseInt(x._quote)).slice().reverse()
+                                        let differences_cc = arrlist_cc.slice(0, -1).map((item, index) => arrlist_cc[index + 1] - item)
+                                        item.確認漲跌 = arrlist_cc.reduce((acc, current) => acc + current, 0);
+                                        //計算最大成交股數
+                                        item.max股數 = parseInt(Math.max(...datalist.map(x => x.成交股數)));
+                                        //////////////////////////////////////////////////////////////////////////
+                                        function getFirstStartOfLatestTrueBlock(datalist) {
+                                            // datalist 是日期由新→舊排序
+                                            if (!datalist.length) return null;
+
+                                            // 如果第一筆不是 true，表示沒有最新上升段
+                                            if (!datalist[0].有量) return null;
+
+                                            // 第一段 true 的起始 = 第一筆
+                                            let startDate = datalist[0].日期;
+
+                                            // 掃描，直到遇到第一個 false 表示第一段結束
+                                            for (let i = 1; i < datalist.length; i++) {
+                                                if (!datalist[i].有量) break;
+                                                // 如果第二筆、第三筆…仍然是 true，就更新起始為更新的日期
+                                                startDate = datalist[i].日期;
+                                            }
+
+                                            return startDate;
+                                        }
+
+                                        // 使用
+                                        if (item.有量) {
+                                            dummydataItem.uptrend_有量 = getFirstStartOfLatestTrueBlock(datalist);
+                                        }
+
+                                        dummydataItem.uptrend_b1 = datalist.filter(x => x.分類標籤 == 'b1').map(x => x.日期).sort()[0]
+                                        dummydataItem.uptrend_c = datalist.filter(x => x.分類標籤 == 'c').map(x => x.日期).sort()[0]
+                                        dummydataItem.uptrend_d1 = datalist.filter(x => x.分類標籤 == 'd1').map(x => x.日期).sort()[0]
+
+                                        //
+                                        //dummydataItem.frist_uptrend = datalist.filter(x => x.Flag_三階段).map(x => x.日期).sort()[0]
+                                        dummydataItem.frist_uptrend = datalist.filter(item => true
+                                            //&&  parseFloat( item['Volume_MA_short'])> parseFloat(item['Volume_MA_long50']*1.05) 
+                                            && parseFloat(item['Volume_MA_short']) > parseFloat(item['Volume_MA_long']) * 0.8
+                                            && parseFloat(item['Volume_MA_long50']) > parseFloat(item['成交金額平均'])
+                                            && parseFloat(item['MACD']) > parseFloat(item['MACD-SL'])
+                                            && parseFloat(item['now_price']) > parseFloat(item['MA_longlong'] * 1.05)
+                                            && parseFloat(item['成交股數']) > 1000
+                                        ).map(x => x.日期).sort()[0]
+                                        dummydataItem.frist_uptrendcheck = datalist.filter(x => x.日期 > dummydataItem.frist_uptrend).map(x => parseInt(x._quote)).slice().reduce((acc, current) => acc + current, 0);
+                                    }
+                                    return dummydataItem;
+                                });
+
+                                var para_x = 4//7 // 不要前兩個日期的圖表資訊 (因有計算前三日均值，落差值會不正常)
+                                this.arrcount = this.arrcount - para_x
+                                this.headers = this.headers.slice(para_x, this.headers.length)
+                                //************
+                                /*
+                                dummydata.filter(x => x.highlight_date == '0').map(x => x.MA_last_cross_date = 0)
+                                dummydata.filter(x => x.highlight_date == '0').map(x => x['MA_last_cross_%'] = 0)
+                                dummydata.filter(x => x['MA_last_cross_%'] < 0).map(x => x.MA_last_cross_date = 0)
+                                dummydata.filter(x => x['MA_last_cross_%'] < 0).map(x => x['MA_last_cross_%'] = 0)
+                                */
+                                dummydata.filter(x => x.highlight_date == '0').map(x => x.delitalic = true)
+                                dummydata.filter(x => x['MA_last_cross_%'] < 0).map(x => x.delitalic = true)
+                                //************
+
+                                this.jsonData = dummydata
+                                this.jsonData_ = dummydata
+
+                            }
+                            if (this.realtimedata.length > 0) {
+                                this.sync_data();
+                            };
+                        })
+                        .catch(error => console.error('Error loading Excel file:', error));
+                },
+                reset() {
+                    var vm = this
+                    vm.jsonData = vm.jsonData_
+                    //vm.sortBy = ['highlight_date']
+                },
+                jsonDataChange(x) {
+                    var vm = this
+                    vm.jsonData = vm.jsonData.filter(y => y["Typelevel"] == x)
+                    vm.sortBy = ['Typelevel', 'highlight_%']
+                    vm.sortDesc = [true, true]
+                },
+                reverse(x) {
+                    var vm = this
+                    vm.jsonData = vm.jsonData_.filter(i => !vm.jsonData.map(x => x.stock_number).includes(i.stock_number))
+                },
+                // 取得某列某日期的 OHLC；若該日沒有資料就回 null
+                getOHLC(row, dateStr) {
+                    const rec = (row?.datalist || []).find(x => x.日期 === dateStr);
+                    if (!rec) return null;
+
+                    // 你 Excel 若直接有「開盤價/最高價/最低價/收盤價」就取用；
+                    // 若鍵名不同請在此對應。
+                    const o = parseFloat(rec['開盤價']);
+                    const h = parseFloat(rec['最高價']);
+                    const l = parseFloat(rec['最低價']);
+                    const c = parseFloat(rec['收盤價']);
+
+                    if ([o, h, l, c].some(v => Number.isNaN(v))) return null;
+                    return { o, h, l, c };
+                },
+
+                // 取得某「日期欄」在目前 filteredData 中的「全欄位高低」做一致縮放
+                getColRange(dateStr) {
+                    const key = String(dateStr);
+                    if (this._colRangeCache[key]) return this._colRangeCache[key];
+
+                    let hi = -Infinity, lo = Infinity;
+                    this.filteredData.forEach(row => {
+                        const ohlc = this.getOHLC(row, dateStr);
+                        if (!ohlc) return;
+                        hi = Math.max(hi, ohlc.h);
+                        lo = Math.min(lo, ohlc.l);
+                    });
+                    if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi === lo) {
+                        // 退化處理：避免除以 0
+                        hi = lo + 1;
+                    }
+                    const range = { min: lo, max: hi };
+                    this._colRangeCache[key] = range;
+                    return range;
+                },
+
+                // y 座標轉換（SVG：上方是 0）
+                scaleY(v, dateStr, H) {
+                    const pad = 2; // 內邊距
+                    const { min, max } = this.getColRange(dateStr);
+                    const t = (v - min) / (max - min);
+                    return pad + (1 - t) * (H - 2 * pad);
+                },
+
+                // 判斷上/下漲 class
+                kClass(ohlc) {
+                    return (ohlc.c >= ohlc.o) ? { body: 'candle-up', wick: 'candle-wick-up' }
+                        : { body: 'candle-down', wick: 'candle-wick-down' };
+                },
+
+                classifiedData(item) {
+
+                    if (this.d === 'b'
+                        && parseFloat(item['rt_price']) > -100
+                        && parseFloat(item['營業利益率'].replace('%', '')) > 0
+                        && parseFloat(item['now_price']) > parseFloat(item['MA_longlonglong'])
+                        && parseFloat(item['MA_short']) > parseFloat(item['MA_long'])
+                        && item['量'] > 0.5
+                        && parseFloat(item['MA5_%']) < 5
+                        && item['總價差'] > 1.5
+                        && item['量能max'] < 80
+                        && item['量能min'] > 20
+                    ) return 'row-up';
+
+                    if (this.d === 'c'
+                        && item['均價longlong_%'] > 0
+                        && item['量'] > 0.5
+                        && item['Flag_macd']
+                    ) return 'row-up';
+
+
+                    return 'row-down';
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>

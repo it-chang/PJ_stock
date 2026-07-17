@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>產業走勢看板</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      background: #0a0e1a;
+      color: #e0e6f0;
+      font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+      margin: 0;
+    }
+
+    /* ── 頂部標題列 ── */
+    #topbar {
+      background: #0d1324;
+      border-bottom: 2px solid #1e3a5f;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    #topbar h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #7ecfff;
+      letter-spacing: 2px;
+      margin: 0;
+    }
+    #topbar .badge {
+      background: #1a3a5c;
+      border: 1px solid #2a5a8c;
+      color: #7ecfff;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 4px;
+    }
+
+    /* ── 主表格容器 ── */
+    #table-wrap {
+      overflow-x: auto;
+      overflow-y: auto;
+      height: calc(100vh - 54px);
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    /* 表頭 */
+    thead th {
+      background: #0d1b2e;
+      color: #7ecfff;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      white-space: nowrap;
+      border-bottom: 2px solid #1e3a5f;
+      border-right: 1px solid #1a2d45;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      text-align: right;
+      cursor: pointer;
+      user-select: none;
+    }
+    thead th:first-child {
+      text-align: left;
+      position: sticky;
+      left: 0;
+      z-index: 20;
+      background: #0d1b2e;
+    }
+    thead th:hover { background: #152540; }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.5; font-size: 10px; }
+    thead th.sorted .sort-icon { opacity: 1; color: #ffdd57; }
+
+    /* 列 */
+    tbody tr {
+      border-bottom: 1px solid #111d2e;
+      transition: background 0.15s;
+    }
+    tbody tr:hover { background: #0f1e35 !important; }
+    tbody tr:nth-child(even) { background: #080d18; }
+    tbody tr:nth-child(odd)  { background: #0a0e1a; }
+
+    /* 固定左欄 sector */
+    tbody td.col-sector {
+      position: sticky;
+      left: 0;
+      background: inherit;
+      z-index: 5;
+      border-right: 2px solid #1e3a5f;
+    }
+    tbody tr:hover td.col-sector { background: #0f1e35; }
+    tbody tr:nth-child(even) td.col-sector { background: #080d18; }
+    tbody tr:nth-child(odd)  td.col-sector { background: #0a0e1a; }
+
+    td {
+      padding: 9px 14px;
+      white-space: nowrap;
+      border-right: 1px solid #111d2e;
+      text-align: right;
+    }
+    td:first-child { text-align: left; }
+
+    /* 產業名稱 */
+    .sector-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #c8e6ff;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+    }
+    .sector-name:hover { color: #7ecfff; text-decoration: underline; }
+
+    /* 數值 */
+    .val-num {
+      font-size: 14px;
+      font-weight: 500;
+      color: #d4dff0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 成長率標籤 */
+    .rate-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: 4px;
+      font-variant-numeric: tabular-nums;
+      min-width: 52px;
+      text-align: right;
+    }
+    .rate-up   { color: #ff6b6b; background: rgba(255,80,80,0.12); }
+    .rate-down { color: #4fc3f7; background: rgba(30,150,220,0.12); }
+
+    /* 連漲旗標 */
+    .flag-yes {
+      background: #0d3320;
+      color: #4ade80;
+      border: 1px solid #16a34a;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+    }
+    .flag-no {
+      background: #1a1a2e;
+      color: #4a5568;
+      border: 1px solid #2d3748;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 3px;
+    }
+
+    /* 成長率2/1 欄（最後兩欄，突出顯示） */
+    .rate-col {
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* footer 合計列 */
+    tfoot td {
+      background: #0d1b2e !important;
+      color: #7ecfff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 9px 14px;
+      border-top: 2px solid #1e3a5f;
+      text-align: right;
+      white-space: nowrap;
+    }
+    tfoot td:first-child { text-align: left; }
+
+    /* desc 連結 */
+    .desc-links a {
+      color: #7ecfff;
+      font-size: 12px;
+      margin: 0 3px;
+    }
+    .desc-links a:hover { color: #fff; }
+    .desc-links span { color: #4a6080; font-size: 11px; }
+
+    /* ── Dialog ── */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .dialog-overlay.show { display: flex; }
+    .dialog-box {
+      background: #0d1324;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      width: 680px;
+      max-width: 95vw;
+      padding: 20px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+    }
+    .dialog-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #7ecfff;
+      margin-bottom: 4px;
+    }
+    .dialog-subtitle {
+      font-size: 12px;
+      color: #4a7090;
+      margin-bottom: 16px;
+    }
+    .dialog-chart-wrap { height: 280px; }
+    .dialog-close {
+      margin-top: 14px;
+      text-align: right;
+    }
+    .dialog-close button {
+      background: #1a3a5c;
+      color: #7ecfff;
+      border: 1px solid #2a5a8c;
+      padding: 6px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .dialog-close button:hover { background: #1e4a72; }
+
+    /* 載入中 */
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #loading .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #1e3a5f;
+      border-top-color: #7ecfff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: #4a7090; font-size: 14px; }
+  </style>
+</head>
+
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>載入資料中…</p>
+</div>
+
+<div id="app" style="display:none;">
+  <!-- 頂部標題 -->
+  <div id="topbar">
+    <h1>📊 產業走勢看板</h1>
+    <span class="badge" id="date-badge">—</span>
+    <span class="badge" id="row-badge">—</span>
+  </div>
+
+  <!-- 主表格 -->
+  <div id="table-wrap">
+    <table id="main-table">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+      <tfoot id="tfoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Dialog -->
+<div class="dialog-overlay" id="dialog">
+  <div class="dialog-box">
+    <div class="dialog-title" id="dialog-title">走勢圖</div>
+    <div class="dialog-subtitle" id="dialog-subtitle"></div>
+    <div class="dialog-chart-wrap">
+      <canvas id="dialogChart"></canvas>
+    </div>
+    <div class="dialog-close"><button onclick="closeDialog()">關閉</button></div>
+  </div>
+</div>
+
+<script>
+(async () => {
+  // ── 讀取 URL 參數 ──
+  const urlParams = new URLSearchParams(window.location.search);
+  const d = urlParams.get('d') || '4';
+
+  // ── 讀取 Excel ──
+  const file = `./Result/analyze_${d}.xlsx`;
+  let json;
+  try {
+    const resp = await fetch(file);
+    const buf = await resp.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<p style="color:#f87171">❌ 無法載入 ${file}</p>`;
+    return;
+  }
+
+  // ── 解析欄位 ──
+  const rawHeaders = json[0]; // e.g. ['sector','0','2026-06-04',...]
+  const isDateCol = (h) => /^\d{4}-\d{2}-\d{2}$/.test(String(h));
+
+  // 日期欄（數值欄）
+  const dateCols = rawHeaders.filter(h => isDateCol(h));
+  // 非日期、非0 的文字欄
+  const textCols = rawHeaders.filter(h => !isDateCol(h) && h !== '0');
+
+  // ── 解析資料列 ──
+  let rows = json.slice(1).map(row => {
+    const obj = {};
+    rawHeaders.forEach((h, i) => { obj[h] = row[i]; });
+    return obj;
+  }).filter(r => r.sector);
+
+  // ── 計算成長率 ──
+  rows.forEach(row => {
+    dateCols.forEach((col, i) => {
+      if (i === 0) { row['_rate_' + col] = null; return; }
+      const cur = parseFloat(row[col]);
+      const prv = parseFloat(row[dateCols[i-1]]);
+      row['_rate_' + col] = (isFinite(cur) && isFinite(prv) && prv !== 0)
+        ? ((cur - prv) / Math.abs(prv)) * 100 : null;
+    });
+    // 連3日旗標（最後2+1期）
+    const last3 = dateCols.slice(-3);
+    const g2 = row['_rate_' + last3[1]];
+    const g3 = row['_rate_' + last3[2]];
+    const v2 = parseFloat(row[last3[1]]);
+    const v3 = parseFloat(row[last3[2]]);
+    row['_flag'] = [g2,g3].every(g => g!=null && g>0) && [v2,v3].every(v => isFinite(v) && v>0);
+    row['_rate2'] = g2;
+    row['_rate1'] = g3;
+  });
+
+  // ── 排序狀態 ──
+  let sortKey = '_flag';
+  let sortDir = -1; // -1 desc, 1 asc
+  function sortRows() {
+    rows.sort((a, b) => {
+      let va = a[sortKey], vb = b[sortKey];
+      if (va == null) va = -Infinity;
+      if (vb == null) vb = -Infinity;
+      if (va < vb) return sortDir;
+      if (va > vb) return -sortDir;
+      return 0;
+    });
+  }
+  sortRows();
+
+  // ── 頂部 badge ──
+  const lastDate = dateCols[dateCols.length - 1];
+  document.getElementById('date-badge').textContent = '最新 ' + lastDate;
+  document.getElementById('row-badge').textContent = rows.length + ' 個產業';
+
+  // ── 格式化工具 ──
+  function fmtNum(v) {
+    const n = parseFloat(v);
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString('zh-TW', {minimumFractionDigits:1, maximumFractionDigits:1});
+  }
+  function rateBadge(r) {
+    if (r == null || !isFinite(r)) return '';
+    const cls = r >= 0 ? 'rate-up' : 'rate-down';
+    const arrow = r >= 0 ? '▲' : '▼';
+    return `<span class="rate-badge ${cls}">${arrow}${Math.abs(r).toFixed(1)}%</span>`;
+  }
+  function rateColor(r) {
+    if (r == null || !isFinite(r)) return '#d4dff0';
+    return r >= 0 ? '#ff6b6b' : '#4fc3f7';
+  }
+
+  // ── URL 工具 ──
+  function baseUrl() { return window.location.href.split('/').slice(0,4).join('/'); }
+  function sanitized(row) {
+    if (d == 4) return (row.sector||'').replace(/[\\/:*?"<>|]/g,'_');
+    return (row.Typelevel||'').replace('右上','').replace('平','').replace('右下','').replace('上市','').replace('上櫃','');
+  }
+
+  // ── 建表頭 ──
+  function buildHead() {
+    const thead = document.getElementById('thead');
+    let th = `<th onclick="setSort('sector')" style="text-align:left">產業 <span class="sort-icon">⇅</span></th>`;
+    th += `<th onclick="setSort('_flag')" class="${sortKey==='_flag'?'sorted':''}">連漲 <span class="sort-icon">${sortKey==='_flag'?(sortDir<0?'↓':'↑'):'⇅'}</span></th>`;
+    th += `<th onclick="setSort('_rate1')" class="${sortKey==='_rate1'?'sorted':''}">最新成長率 <span class="sort-icon">${sortKey==='_rate1'?(sortDir<0?'↓':'↑'):'⇅'}</span></th>`;
+    th += `<th onclick="setSort('_rate2')" class="${sortKey==='_rate2'?'sorted':''}">前期成長率 <span class="sort-icon">${sortKey==='_rate2'?(sortDir<0?'↓':'↑'):'⇅'}</span></th>`;
+    // 顯示最後 N 個日期欄（避免太多，最多顯示最後8個）
+    const showDates = dateCols.slice(-8);
+    showDates.forEach(col => {
+      const label = col.replace(/^\d{4}-/,''); // 去年份，只顯示 MM-DD
+      th += `<th onclick="setSort('${col}')" class="${sortKey===col?'sorted':''}">${label} <span class="sort-icon">${sortKey===col?(sortDir<0?'↓':'↑'):'⇅'}</span></th>`;
+    });
+    th += `<th>連結</th>`;
+    thead.innerHTML = `<tr>${th}</tr>`;
+  }
+
+  // ── 建表身 ──
+  function buildBody() {
+    const tbody = document.getElementById('tbody');
+    const showDates = dateCols.slice(-8);
+    let html = '';
+    rows.forEach((row, ri) => {
+      html += `<tr>`;
+      html += `<td class="col-sector"><span class="sector-name" onclick="openChart(${ri})" title="查看走勢圖">${row.sector||''}</span></td>`;
+      // 連漲旗標
+      html += `<td>${row._flag ? '<span class="flag-yes">▶ 連漲</span>' : '<span class="flag-no">—</span>'}</td>`;
+      // 最新成長率
+      html += `<td class="rate-col" style="color:${rateColor(row._rate1)}">${isFinite(row._rate1) ? (row._rate1>=0?'▲':'▼')+Math.abs(row._rate1).toFixed(1)+'%' : '—'}</td>`;
+      // 前期成長率
+      html += `<td class="rate-col" style="color:${rateColor(row._rate2)}">${isFinite(row._rate2) ? (row._rate2>=0?'▲':'▼')+Math.abs(row._rate2).toFixed(1)+'%' : '—'}</td>`;
+      // 各日期數值
+      showDates.forEach(col => {
+        const rate = row['_rate_' + col];
+        html += `<td><span class="val-num">${fmtNum(row[col])}</span>${rateBadge(rate)}</td>`;
+      });
+      // desc 連結
+      const sn = sanitized(row);
+      const href1 = d==4 ? `${baseUrl()}/index2.html?d=type2&type=${sn}` : `${baseUrl()}/index2.html?d=type&type=${sn}`;
+      const tl = d==4 ? row.sector : row.Typelevel;
+      const href2 = `${baseUrl()}/index3.html?d=A&date=${dateCols.slice(-2)[0]}&type=${tl}`;
+      const href3 = `${baseUrl()}/index.html?d=A&date=${dateCols.slice(-2)[0]}&type=${tl}`;
+      html += `<td class="desc-links"><span>太陽</span><a href="${href1}" target="_blank">${sn}</a><span>分類</span><a href="${href2}" target="_blank">${sn}</a><a href="${href3}" target="_blank">${sn}</a></td>`;
+      html += `</tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ── 建 footer 合計 ──
+  function buildFoot() {
+    const tfoot = document.getElementById('tfoot');
+    const showDates = dateCols.slice(-8);
+    let td = `<td>合計</td><td></td><td></td><td></td>`;
+    showDates.forEach(col => {
+      const sum = rows.reduce((acc, r) => acc + (parseFloat(r[col]) || 0), 0);
+      td += `<td>${fmtNum(sum)}</td>`;
+    });
+    td += `<td></td>`;
+    tfoot.innerHTML = `<tr>${td}</tr>`;
+  }
+
+  // ── 排序切換 ──
+  window.setSort = function(key) {
+    if (sortKey === key) sortDir *= -1;
+    else { sortKey = key; sortDir = -1; }
+    sortRows();
+    buildHead();
+    buildBody();
+  };
+
+  // ── 初始渲染 ──
+  buildHead();
+  buildBody();
+  buildFoot();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // ── Dialog 走勢圖 ──
+  let dialogChart = null;
+  window.openChart = function(ri) {
+    const row = rows[ri];
+    document.getElementById('dialog-title').textContent = row.sector || '走勢圖';
+    document.getElementById('dialog-subtitle').textContent = row.Typelevel || '';
+    document.getElementById('dialog').classList.add('show');
+    setTimeout(() => {
+      const ctx = document.getElementById('dialogChart').getContext('2d');
+      if (dialogChart) dialogChart.destroy();
+      const labels = dateCols.map(c => c.replace(/^\d{4}-/,''));
+      const data = dateCols.map(c => parseFloat(row[c]) || 0);
+      dialogChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: row.sector,
+            data,
+            borderColor: '#7ecfff',
+            backgroundColor: 'rgba(126,207,255,0.08)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#7ecfff',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0d1b2e',
+              borderColor: '#1e3a5f',
+              borderWidth: 1,
+              titleColor: '#7ecfff',
+              bodyColor: '#c8e6ff',
+              callbacks: {
+                label: (ctx) => ' ' + ctx.parsed.y.toLocaleString('zh-TW',{minimumFractionDigits:1,maximumFractionDigits:1})
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#111d2e' },
+              ticks: { color: '#4a7090', font: { size: 11 } }
+            },
+            y: {
+              grid: { color: '#111d2e' },
+              ticks: { color: '#4a7090', font: { size: 11 },
+                callback: v => v.toLocaleString('zh-TW',{maximumFractionDigits:0})
+              }
+            }
+          }
+        }
+      });
+    }, 50);
+  };
+
+  window.closeDialog = function() {
+    document.getElementById('dialog').classList.remove('show');
+  };
+  document.getElementById('dialog').addEventListener('click', function(e) {
+    if (e.target === this) closeDialog();
+  });
+
+})();
+</script>
+</body>
+</html>

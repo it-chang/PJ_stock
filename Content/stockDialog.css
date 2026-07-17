@@ -1,0 +1,12 @@
+.v-card ,.v-window-item,.v-slide-group__wrapper,
+.v-tab,.v-tabs {
+  background: linear-gradient(180deg, #0b1220 0%, #050814 100%);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 30px rgba(0,255,255,0.15);
+  /*color: #1976d2 !important;*/
+  color: #ddd286 !important;
+}
+.v-tab--active {
+  background: rgba(0, 229, 255, 0.08);
+  border-radius: 6px 6px 0 0;
+}
