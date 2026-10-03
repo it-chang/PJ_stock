@@ -127,14 +127,14 @@ Vue.component('stock-dialog', {
       <v-tab-item>
       
         <v-row no-gutters>
-          <v-col cols="4">
+          <v-col cols="6">
             <iframe
             :src="'http://localhost/IT/fundamental.html?stock=' + item.stock_number + '&date='+ item.日期"
             style="height:80vh;width:100%;border:0;"
             ></iframe>
           </v-col>
       
-          <v-col cols="8">
+          <v-col cols="6">
             <v-row no-gutters>
               <!-- 左側資訊 -->
               <v-col cols="6">

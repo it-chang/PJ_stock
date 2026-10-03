@@ -409,7 +409,7 @@ var app = new Vue({
                 { label: '本益比', value: isNaN(pe)?'-':pe.toFixed(1), sub: `同業 ${isNaN(ipe)?'-':ipe.toFixed(1)}`, colorClass: peColor },
                 { label: '淨值倍率', value: isNaN(pb)?'-':pb.toFixed(2), sub: '<1.5 偏低', colorClass: pbColor },
                 { label: '殖利率', value: isNaN(dy)?'-':dy.toFixed(2)+'%', sub: '>5% 高息', colorClass: dyColor },
-                { label: '每股營收', value: this.fmtN(d['每股營收(元)'],1), sub: '元', colorClass: '' },
+                { label: '每股營收(生意規模)', value: this.fmtN(d['每股營收(元)'],1), sub: '元', colorClass: '' },
             ]
         },
         // ── 月營收顏色 ──────────────────────────────────────
@@ -469,7 +469,7 @@ var app = new Vue({
                 const d = this.dayRow
                 const eps = parseFloat(d['EPS(元)'])
                 const gm  = parseFloat(d['毛利率'])
-                if (!isNaN(eps)) details.push(`最新EPS ${eps > 0 ? '+' : ''}${eps.toFixed(2)}`)
+                if (!isNaN(eps)) details.push(`最新EPS(賺錢能力) ${eps > 0 ? '+' : ''}${eps.toFixed(2)}`)
                 if (!isNaN(gm))  details.push(`毛利率 ${gm.toFixed(1)}%`)
             }
             return `通過 ${pass}/${total} 項財報指標　${details.join('　')}`

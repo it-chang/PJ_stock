@@ -38,7 +38,9 @@ async function main(data) {
         // 模擬一些異步操作
 
         //let cors= ''// 'https://cors-anywhere.herokuapp.com/'
-        let cors = 'https://corsproxy.io/?'
+        //let cors = 'https://corsproxy.io/?' 
+        let cors = 'https://corsproxy.io/?url=' 
+      
         let postsdata=[]
         var _baseInfo = data.map(header => ({ stock_number: header.stock_number, Type: header.Type2 }));
         var urllist = generateStockApiUrls(_baseInfo, 60);
