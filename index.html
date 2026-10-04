@@ -23,11 +23,14 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <v-row no-gutters>
-                    <v-col col="3">
+                    <v-col col="2">
+                        <!-- 要付費了 哭哭-->
+                        <!--
                         <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
                         <v-btn color="primary" @click="app.sync_realtime()
                                                        app.sync=true ">SYNC</v-btn>
                         <v-btn color="primary" @click="app.sync_data() ">sync_data</v-btn>
+                        -->
                         <v-btn color="primary" @click="openNextPage(-1)" v-show="paraDate">last</v-btn>
                         <span>data count {{filteredData.map(x=>x.stock_number).length}}</span>
                         <v-btn color="primary" @click="openNextPage(1)" v-show="paraDate">Next</v-btn>
@@ -60,7 +63,7 @@
                             app.sortDesc = [false, false]
                             app.sortBy = ['text_desc']
                             app.sortDesc = [false]
-                        ">LV排序</v-btn>
+                        ">LV(科技)排序</v-btn>
                         <v-btn color="primary" @click="
                             app.jsonData = app.jsonData_.filter(x => true
                                 //&& (['0','NA'].includes(x.text_desc)) 
@@ -79,10 +82,19 @@
                         app.sortBy = ['Type1','總市值x營業利益率']
                         app.sortDesc = [ true,true]
                         ">Others</v-btn>
+                        <v-btn color="primary" @click="  
+                        app.jsonData = app.jsonData.filter( x =>true 
+                                //LV
+                                && (!(['0','NA｜'].includes(x.text_desc)) 
+                                && !x.text_desc.includes('NA｜'))
+
+                                && parseFloat(x['score']) > 50
+                                && parseFloat(x['EPS_前8季全為正']) ==1
+                            )
+                        ">收益佳</v-btn>
 
                     </v-col>
-                    <v-col col="8">
-
+                    <v-col col="1">
                         <v-btn color="primary" @click="
                             const output = app.checklist
                             localStorage.setItem('checklist', JSON.stringify(output));
@@ -102,8 +114,13 @@
                             ">選中的
                         </v-btn>
 
+
+                    </v-col>
+                    <v-col col="8">
+
+
                         <!--------------------------------------------------------------------------------------------------------------------->
-                   
+
                         <v-btn color="primary" @click="  
                             app.jsonData = app.jsonData.filter(item => true
                                 && parseFloat(item['Volume_MA_5']) > parseFloat(item['Volume_MA_10']) * 0.9
@@ -117,16 +134,7 @@
                             app.jsonData = app.jsonData.filter(item => (parseFloat(item['長交易量']) > 0.7))                
                             app.calculate('沖')
                         ">預測(當沖)</v-btn>
-                        <v-btn color="primary" @click="  
-                        app.jsonData = app.jsonData.filter( x =>true 
-                                //LV
-                                && (!(['0','NA｜'].includes(x.text_desc)) 
-                                && !x.text_desc.includes('NA｜'))
 
-                                && parseFloat(x['score']) > 50
-                                && parseFloat(x['EPS_前8季全為正']) ==1
-                            )
-                        ">收益佳</v-btn>
                         <v-btn color="primary" @click="  
                              app.jsonData = app.jsonData.filter( x =>true 
                                 && parseFloat(x['成交金額']) > parseFloat(x['Volume_MA_5']) * 1.3 
@@ -138,7 +146,7 @@
                             app.sortDesc = [ true,false]
 
                         ">單日突發爆量</v-btn>
-                         <v-btn color="primary" @click="  
+                        <v-btn color="primary" @click="  
                            app.jsonData = app.jsonData_.filter( x =>true 
                                     //【有價】
                                     //&& parseFloat(x['MA_UP_3d'])>=1	
@@ -170,31 +178,86 @@
 
                         <v-btn color="primary" @click="  
                             app.jsonData = app.jsonData_.filter( x =>true 
-                                //LV
+                                //LV 科技股
                                 && !(['0','NA｜'].includes(x.text_desc)) 
                                 && !x.text_desc.includes('NA｜')
+
                                 // 收益佳
                                 && parseFloat(x['score']) > 70
                                 && parseFloat(x['EPS_前8季全為正']) ==1
 
                                 && parseFloat(x['ma_up_flag']) >0
-                                &&  x.bbw_cross =='True'
+                                && x.bbw_cross =='True'
                             )
                             app.sortBy = ['ma_up_flag','綜合','MA_20_斜率']
                             app.sortDesc = [ false,true]
 
-                        ">有價墊高，等量</v-btn>
-                        
+                        ">價墊高.收益佳. 等量</v-btn>
+
+
+
                         <v-btn color="primary" @click="  
-                            app.jsonData = app.jsonData_.filter( x =>true 
-                                    &&  parseFloat(x['MA_20_斜率'])	< 0
+                                app.jsonData = app.jsonData_.filter( x =>true 
+                                        //LV 排除非科技股
+                                        && !(['0','NA｜'].includes(x.text_desc)) 
+                                        && !x.text_desc.includes('NA｜')
+
+                                        &&  parseFloat(x['now_pricex三大法人_累計買賣超'])	> 0
+                                        && parseFloat( x['LevelArea']) >-50
+                                        //
+                                        && parseFloat(x['ma_up_flag'])<3
+                                        &&  parseFloat(x['_quote'])	>4
+                                    )
+                                    
+                                app.sortBy = ['text_desc','量5d50d比']
+                                app.sortDesc = [ false,true]
+
+                        ">找低基期 科技股族群動向</v-btn>
+
+
+                        <v-btn color="primary" @click="  
+                       app.jsonData = app.jsonData_.filter( x =>true 
+
+                           &&  parseFloat(x['_quote'])	>1.5
+                            && x['MarketState']=='強勢'
+                            && x['MarketState_prev']=='盤整'
+
+                            //&&  parseFloat(x['now_pricex三大法人_累計買賣超'])	> 0
+                            && parseFloat(x['score']) > 50
+                            && parseFloat(x['EPS_前8季全為正']) ==1
+                            
+                        )
+                        app.sortBy = ['text_desc','MA_20_斜率']
+                        app.sortDesc = [ true,true]
+
+                        ">突發價. 找機會</v-btn>
+                       
+                        <v-btn color="primary" @click="  
+                                app.jsonData = app.jsonData_.filter( x =>true 
+                                    && parseFloat(x['up_up_10d'])>0
+                                    
+                                    
+                                    //&& parseFloat(x['score']) > 40
+                                    //&& parseFloat(x['EPS_前8季全為正']) ==1
+
+
+                                    //LV 科技股
+                                    //&& !(['0','NA｜'].includes(x.text_desc)) 
+                                    //&& !x.text_desc.includes('NA｜')
+
+                                    //&& x.bbw_cross =='True'
+
+                                    && parseFloat(x['Volume_MA_5']) > parseFloat(x['Volume_MA_10'])
+                                    && parseFloat(x['Volume_MA_10']) > parseFloat(x['Volume_MA_30'])
+                                    && parseFloat(x['現量10d比']) >1
+
+                                    && parseFloat(x['Volume_MA_5']) >10000
                                 )
-                            app.sortBy = ['diff_quote','MA_20_斜率']
-                            app.sortDesc = [ true,true]
+                                app.sortBy = ['現量10d比','now_pricex三大法人_累計買賣超']
+                                app.sortDesc = [ false,true]
 
-                        ">(用昨日)MA20未轉正，找機會</v-btn>
+                        ">測試抓</v-btn>
 
-                        
                         <!--v-btn color="primary" @click="   
                                 stockSet = new Set(['2330', '2383', '2454', '2327', '2345', '6223', '2308', '3017', '6669', '3037', '3665', '2368', '3711', '2303', '8046', '3653', '5274', '6274', '6515', '6510', '8210', '6805', '3533', '2317', '2404', '6187', '6147', '8996', '5439', '3443', '8150', '4966', '2449', '6278', '4958', '1590', '8358', '6191', '3376', '6271', '2002', '2313', '1319', '1815', '2439', '2382', '3661', '3264', '2481', '3008', '5347']);   
                                 app.jsonData = app.jsonData_.filter(x =>stockSet.has(x.stock_number));
@@ -231,16 +294,11 @@
                     :items="filteredData" v-show="!appmode" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
                     <template v-slot:item.stock_number="{ item }">
-                        <div
-                            :class="{ 'highlight-red':
+                        <div :class="{ 'highlight-red':
                                             Number(item['MA_20_斜率']) > 0 &&
                                             Number(item['量短5長30比']) > 0
-                                        }"
-                            >  
-                            <v-icon
-                                v-if="checklist.filter(x => x == item.stock_number).length > 0"
-                                color="orange"
-                            >
+                                        }">
+                            <v-icon v-if="checklist.filter(x => x == item.stock_number).length > 0" color="orange">
                                 mdi-star
                             </v-icon>
 
@@ -251,95 +309,106 @@
                             </v-btn>
                         </div>
                     </template>
-                    
+
                     <template v-slot:item.綜合="{ item }">
-                        <div
-                            :class="{ 'highlight-red':
+                        <div :class="{ 'highlight-red':
                                             Number(item['綜合Flag'])> Number(item['綜合Flag_1d']) 
-                                        }">  
+                                        }">
                             {{item.綜合}}
                         </div>
                     </template>
                     <template v-slot:item.有價="{ item }">
                         <div :class="{ 'highlight-red':
                                             item['有價']!=''
-                                        }">  
+                                        }">
                             {{item.有價}}
                         </div>
                     </template>
-                    <!--'現量10d比', '量5d10d比', '量短5長30比','量5d50d比', -->
+                    <template v-slot:item.up_up_3d="{ item }">
+                        <div :class="{ 'highlight-red':
+                                            Number(item['up_up_3d'])> 1
+                                        }">
+                            {{item.up_up_3d}}
+                        </div>
+                    </template>
+                    
+                    <!-------------------------------------------------------------------------------------->
+                    <!--
+                    '現量10d比', '量5d10d比', '量短5長30比','量5d50d比',
+                    '成交金額','Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
+                     -->
 
                     <template v-slot:item.現量10d比="{ item }">
-                        <div :class="{ 'highlight-red':
-                                            Number(item['現量10d比'])> 1.3
-                                        }">  
+                        <div :class="{ 'highlight-red':     Number(item['現量10d比'])> 1.3
+                                     }">
                             {{item.現量10d比}}
                         </div>
                     </template>
                     <template v-slot:item.量5d10d比="{ item }">
-                        <div :class="{ 'highlight-red':
-                                            Number(item['量5d10d比'])> 1
-                                        }">  
+                        <div :class="{ 'highlight-red':     Number(item['成交金額'])     >   Number(item['Volume_MA_5']) 
+                                                         && Number(item['Volume_MA_5']) >   Number(item['Volume_MA_10']) 
+                                    }">
                             {{item.量5d10d比}}
                         </div>
                     </template>
 
                     <template v-slot:item.量短5長30比="{ item }">
-                        <div :class="{ 'highlight-red':
-                                            Number(item['Volume_MA_30'])> Number(item['Volume_MA_50']) 
-                                        }">  
+                        <div :class="{ 'highlight-red':  Number(item['量短5長30比']) > 0
+                                    }">
                             {{item.量短5長30比}}
                         </div>
                     </template>
 
                     <template v-slot:item.量5d50d比="{ item }">
-                        <div :class="{ 'highlight-red':
-                                            Number(item['量5d50d比'])>1
-                                        }">  
+                        <div :class="{ 'highlight-red':   Number(item['Volume_MA_30']) > Number(item['Volume_MA_50']) 
+                                    }">
                             {{item.量5d50d比}}
                         </div>
                     </template>
-                    
+
+                    <!-------------------------------------------------------------------------------------->
+
+
                     <template v-slot:item.價="{ item }">
-                            <!-- 🔴 最強：MA5、MA10、MA20 三線同步向上 -->
-                            <template v-if="Number(item['MA_5_斜率']) > 0.001 
+                        <!-- 🔴 最強：MA5、MA10、MA20 三線同步向上 -->
+                        <template v-if="Number(item['MA_5_斜率']) > 0.001 
                                             && Number(item['MA_10_斜率']) > 0.001 
                                             && Number(item['MA_20_斜率']) > 0.001">
-                                <v-icon color="red">mdi-arrow-up-bold-circle</v-icon>
-                                <span style="color:red; font-size:12px;">三線同揚</span>
-                            </template>
+                            <v-icon color="red">mdi-arrow-up-bold-circle</v-icon>
+                            <span style="color:red; font-size:12px;">三線同揚</span>
+                        </template>
 
-                            <!-- 🟠 中等：MA5、MA10 向上（MA20未確認） -->
-                            <template v-else-if="Number(item['MA_5_斜率']) > 0.001 
+                        <!-- 🟠 中等：MA5、MA10 向上（MA20未確認） -->
+                        <template v-else-if="Number(item['MA_5_斜率']) > 0.001 
                                                 && Number(item['MA_10_斜率']) > 0.001">
-                                <v-icon color="orange">mdi-arrow-up-bold-circle</v-icon>
-                                <span style="color:orange; font-size:12px;">短中線向上</span>
-                            </template>
+                            <v-icon color="orange">mdi-arrow-up-bold-circle</v-icon>
+                            <span style="color:orange; font-size:12px;">短中線向上</span>
+                        </template>
 
-                            <!-- 🟣 中弱：MACD柱放大 且 KD黃金交叉（%K>%D）且 %K>30 -->
-                            <template v-else-if="Number(item['MACD_hist_diff']) > 0 
+                        <!-- 🟣 中弱：MACD柱放大 且 KD黃金交叉（%K>%D）且 %K>30 -->
+                        <template v-else-if="Number(item['MACD_hist_diff']) > 0 
                                                 && Number(item['%K']) > 30 
                                                 && Number(item['%K']) > Number(item['%D'])">
-                                <v-icon color="#523bffb3">mdi-arrow-up-bold-circle</v-icon>
-                                <span style="color:#523bffb3; font-size:12px;">KD交叉向上</span>
-                            </template>
+                            <v-icon color="#523bffb3">mdi-arrow-up-bold-circle</v-icon>
+                            <span style="color:#523bffb3; font-size:12px;">KD交叉向上</span>
+                        </template>
 
-                            <!-- 🔵 弱（A）：MACD 上穿訊號線 -->
-                            <template v-else-if="Number(item['MACD']) > Number(item['MACD-SL'])">
-                                <v-icon color="#1565C0">mdi-arrow-up-bold</v-icon>
-                                <span style="color:#1565C0; font-size:12px;">MACD穿訊號線</span>
-                            </template>
+                        <!-- 🔵 弱（A）：MACD 上穿訊號線 -->
+                        <template v-else-if="Number(item['MACD']) > Number(item['MACD-SL'])">
+                            <v-icon color="#1565C0">mdi-arrow-up-bold</v-icon>
+                            <span style="color:#1565C0; font-size:12px;">MACD穿訊號線</span>
+                        </template>
 
-                            <!-- 💠 最弱（B）：MACD柱放大 且 %K>30（無KD交叉） -->
-                            <template v-else-if="Number(item['MACD_hist_diff']) > 0 
+                        <!-- 💠 最弱（B）：MACD柱放大 且 %K>30（無KD交叉） -->
+                        <template v-else-if="Number(item['MACD_hist_diff']) > 0 
                                                 && Number(item['%K']) > 30">
-                                <v-icon color="#90CAF9">mdi-arrow-up-bold</v-icon>
-                                <span style="color:#90CAF9; font-size:12px;">MACD動能增強</span>
-                            </template>
-                            
+                            <v-icon color="#90CAF9">mdi-arrow-up-bold</v-icon>
+                            <span style="color:#90CAF9; font-size:12px;">MACD動能增強</span>
+                        </template>
+
                     </template>
                     <template v-slot:item.量="{ item }">
-                          
+
                         <!-- 🔴 最強：MA5>MA10*1.1 且 量短5長30比 超過歷史平均水準 -->
                         <template v-if="Number(item['Volume_MA_5']) > Number(item['Volume_MA_10']) * 1.1
                                         && Number(item['量短5長30比']) >= 1
@@ -359,9 +428,9 @@
                             <v-icon color="blue">mdi-arrow-up-bold-circle</v-icon>
                             <span style="color:blue; font-size:12px;">單日突發爆量</span>
                         </template>
-                     
+
                     </template>
-                    
+
                     <template v-slot:item.stock_name="{ item }">
                         <v-btn text @click="openDialog(item)">
                             {{ item.stock_number }} {{ item.Type0 }} {{item['Volume_%']}}
@@ -406,8 +475,8 @@
                         </v-btn>
                     </template>
                 </v-data-table>
-                <stock-dialog :value="dialog" :item="selectedItem" :checklist="checklist" :url="url" @input="dialog = $event"
-                    @update-check="handleCheckUpdate" />
+                <stock-dialog :value="dialog" :item="selectedItem" :checklist="checklist" :url="url"
+                    @input="dialog = $event" @update-check="handleCheckUpdate" />
             </v-container>
         </v-app>
     </div>
@@ -473,7 +542,7 @@
             },
             methods: {
                 handleCheckUpdate({ stock, checked }) {
-       
+
                     if (checked) {
                         if (!this.checklist.includes(stock)) {
                             this.checklist.push(stock)
@@ -484,7 +553,7 @@
                     console.log(this.checklist)
                     localStorage.setItem('checklist', JSON.stringify(this.checklist))
                 },
-               
+
                 // 類別名稱淨化
                 sanitizedTypelevel(x) {
                     return (x || '').replace(/[\\/:*?"<>|]/g, "_");
@@ -495,7 +564,7 @@
                     //return `${baseUrl}/index.html?d=A&date=${para_data}&type=${this.sanitizedTypelevel(x)}`;
                     return `${baseUrl}/index.html?d=A&date=${para_data}&type=${x}`;
                 },
-              
+
                 paraDate_str() {
                     const d = new Date(this.paraDate);
                     return `${d.getFullYear()}/` +
@@ -545,7 +614,7 @@
                     this.checked = this.checklist.filter(x => x == item.stock_number).length > 0
                     this.dialog = true;
                 },
-              
+
                 openNextPage(i) {
                     let urlParams = new URLSearchParams(window.location.search);
                     const date = this.paraDate;
@@ -638,64 +707,60 @@
                                 // http://localhost/IT/index.html?d=A&date=2026-06-02&type=IC%E8%A8%AD%E8%A8%88
                                 //　可用'EPS(元)','毛利率',　 排序一下同類型的哪個比較賺　
 
-                                arr = [ 
-                                        '_quote','diff_quote',
+                                arr = [
+                                    '_quote', 'diff_quote',
 
-                                        'score','MarketState','MarketState_prev',
+                                    'score', 'MarketState', 'MarketState_prev',
 
-                                        //'my_signal_3d','my_signal_5d','my_signal_10d','my_signal',
-                                        //'up_up', 'up_up_3d', 'up_up_5d', 'up_up_10d', 
-                                        //'MA_UP', 
 
-                                        //####【技術】
-                                        'MA_5_斜率','MA_20_斜率', 'BB_last_cross_date','highlight_date','MACD_last_cross_date',
-                                        
-                                        //####【價】
-                                        '價','有價',
-                                        'MA_UP_3d', 'MA_UP_5d','MA_UP_10d','ma_up_flag',
-                                        'bbw_cross',
+                                    //####【技術】
+                                    'MA_5_斜率', 'MA_20_斜率', 'BB_last_cross_date', 'highlight_date', 'MACD_last_cross_date',
 
-                                        //####【量】
-                                        '量','現量10d比', '量5d10d比', '量短5長30比',
-                                        '量5d50d比',
+                                    //####【價】
+                                    '價', '有價',
+                                    'up_up', 'up_up_3d', 'up_up_5d',
+                                    'MA_UP_3d', 'MA_UP_5d', 'MA_UP_10d', 'ma_up_flag', 'ma_up_text',
+                                    'bbw_cross',
 
-                                        //'短交易量', '長交易量',//'Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
-                                        
-                                        'stock_number',
+                                    //####【量】
+                                    '量','Volume_MA_5', '現量10d比', '量5d10d比', '量短5長30比','量5d50d比',
 
-                                        'MACD交叉天數', 'LevelArea',
+                                    //'短交易量', '長交易量',//'Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
 
-                                        '綜合','綜合Flag','text_desc',
-                                        
-                                        //'綜合Flag_1d', '綜合Flag_2d', '綜合Flag_3d',
+                                    'stock_number',
 
-                                        '外資_累計買賣超', '投信_累計買賣超', '自營商_累計買賣超', '三大法人_累計買賣超',  '外資連續天數',
-                                        '投信連續天數', 
-                                        'now_pricex三大法人_累計買賣超',
-      
-                                        '分類標籤',  
-                                        'Type2', 'Type1', 'stock_number',  
-                                        
-                                        'rt_量', 'now_price', 'rt_price',
+                                    'MACD交叉天數', 'LevelArea',
 
-                                        //'現價年線比',
-                                        '總市值x營業利益率',
+                                    '綜合', '綜合Flag', 'text_desc',
+
+                                    //'綜合Flag_1d', '綜合Flag_2d', '綜合Flag_3d',
+
+                                    'now_pricex三大法人_累計買賣超', 'Type2', 'Type1',
+                                    
+                                    //'外資_累計買賣超', '投信_累計買賣超', '自營商_累計買賣超', '三大法人_累計買賣超', '外資連續天數', '投信連續天數',
+
+                                    '分類標籤',
+                                    'stock_number',
+                                    
+                                    //'now_price', 
+
 
                                     /*
+                                        'rt_量', 'rt_price',
+                                        '現價年線比',
+                                        '本益比', '同業平均本益比',
 
-                                     '本益比', '同業平均本益比',
+                                        'EPS(元)','毛利率','EPS增', 'GM增', 
+                                        '去年同季比較','總市值x營業利益率',
+                                        '底部與現價比',
+                                        '殖利率', '貝他值',
+                                        'EPS_前8季全為正',
 
-                                     'EPS(元)','毛利率','EPS增', 'GM增', 
-                                     '去年同季比較','總市值x營業利益率',
-                                     '底部與現價比',
-                                     '殖利率', '貝他值',
-                                     'EPS_前8季全為正',
-                                    
-                                    'EPS(元)','EPS_MA_8', 'EPS增', 'EPS_QoQ', 'EPS_QoQ_%',  'EPS_YoY','EPS_YoY_%',
-                                    '毛利率','GM_MA_8', 'GM增', 'GM_QoQ', 'GM_QoQ_%', 'GM_YoY', 'GM_YoY_%', 
-                                    '季別', '營業收入', '營業成本', '營業毛利',  '營業利益', '營益率','業外收支', '稅前淨利', '稅後淨利', 
-                                    'EPS_維持','毛利率_維持', 'EPS_創新高', '毛利率_創新高', '財報健康', '財報強勢',
-                                    'EPS_成長', 'EPS_YoY成長', '毛利率成長','毛利率YoY成長', '財報動能強',
+                                        'EPS(元)','EPS_MA_8', 'EPS增', 'EPS_QoQ', 'EPS_QoQ_%',  'EPS_YoY','EPS_YoY_%',
+                                        '毛利率','GM_MA_8', 'GM增', 'GM_QoQ', 'GM_QoQ_%', 'GM_YoY', 'GM_YoY_%', 
+                                        '季別', '營業收入', '營業成本', '營業毛利',  '營業利益', '營益率','業外收支', '稅前淨利', '稅後淨利', 
+                                        'EPS_維持','毛利率_維持', 'EPS_創新高', '毛利率_創新高', '財報健康', '財報強勢',
+                                        'EPS_成長', 'EPS_YoY成長', '毛利率成長','毛利率YoY成長', '財報動能強',
                                     */
                                 ]
 
@@ -731,7 +796,7 @@
                                 this.jsonData.map(x => x.短交易量 = '-')
                                 this.jsonData.map(x => x.tempdesc = '')
                                 this.jsonData.map(x => x.現價年線比 = '')
-                                
+
                                 this.jsonData.map(x => x.底部與現價比 = '-')
                                 this.jsonData.map(x => x['15d高低比'] = '')
                                 this.jsonData.map(x => x['現量10d比'] = '')
@@ -739,51 +804,100 @@
                                 this.jsonData.map(x => x['量5d50d比'] = '')
                                 this.jsonData.map(x => x.總市值x營業利益率 = '')
                                 this.jsonData.map(x => x.now_pricex三大法人_累計買賣超 = '')
-                                
+
                                 this.jsonData.map(x => x.EPS增 = '-')
                                 this.jsonData.map(x => x.GM增 = '-')
                                 this.jsonData.map(x => x.MACD交叉天數 = '-')
 
-                                this.jsonData.map(x => x.綜合= 0)
-                                this.jsonData.map(x => x.有價= '')
-                                this.jsonData.map(x => x.ma_up_flag= '')
+                                this.jsonData.map(x => x.綜合 = 0)
+                                this.jsonData.map(x => x.有價 = '')
+                                this.jsonData.map(x => x.ma_up_flag = '')
+                                this.jsonData.map(x => x.ma_up_text = '')
+
 
                                 //this.jsonData.map(item => item.tempdesc = (parseFloat(item['now_price']) / parseFloat(item['MA_240'])).toFixed(2))
                                 this.jsonData.map(item => item.現價年線比 = (parseFloat(item['now_price']) / parseFloat(item['MA_240'])).toFixed(2))
                                 this.jsonData.map(item => item.底部與現價比 = (parseFloat(item['now_price']) / parseFloat(item['最小收盤價'])).toFixed(2))
-                             
-                                this.jsonData.map(item => item['15d高低比']  = (parseFloat(item['High_15d']) / parseFloat(item['Low_15d'])).toFixed(2))
-                                this.jsonData.map(item => item['現量10d比']  =(parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2)) 
+
+                                this.jsonData.map(item => item['15d高低比'] = (parseFloat(item['High_15d']) / parseFloat(item['Low_15d'])).toFixed(2))
+                                this.jsonData.map(item => item['現量10d比'] = (parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))
                                 //  Volume_MA_1050     
-                       
-                                this.jsonData.map(item => item['量5d10d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['Volume_MA_10'])).toFixed(2)) 
-                                this.jsonData.map(item => item['量5d50d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['成交金額平均'])).toFixed(2))                                
+
+                                this.jsonData.map(item => item['量5d10d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['Volume_MA_10'])).toFixed(2))
+                                this.jsonData.map(item => item['量5d50d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['成交金額平均'])).toFixed(2))
                                 this.jsonData.map(item => item.總市值x營業利益率 = (parseFloat(item['總市值']) * parseFloat(item['營業利益率']) / 100).toFixed(2))
                                 this.jsonData.map(item => item.now_pricex三大法人_累計買賣超 = (parseFloat(item['now_price']) * parseFloat(item['三大法人_累計買賣超']) / 100).toFixed(2))
 
                                 this.jsonData.map(item => item.EPS增 = (parseFloat(item['EPS(元)']) / parseFloat(item['EPS_MA_8'])).toFixed(2))
                                 this.jsonData.map(item => item.GM增 = (parseFloat(item['毛利率']) / parseFloat(item['GM_MA_8'])).toFixed(2))
 
-                                this.jsonData.map(item => item.綜合 = ( parseFloat(item['綜合Flag']) - parseFloat(item['綜合Flag_1d']) ))
+                                this.jsonData.map(item => item.綜合 = (parseFloat(item['綜合Flag']) - parseFloat(item['綜合Flag_1d'])))
 
                                 this.jsonData.map(item => item.有價 = parseFloat(item['MA_UP_3d']) >= 1
-                                                                    ? '有價' : item.有價 
-                                                                )
-                                this.jsonData.map(item => item.ma_up_flag  = 
-                                                                parseFloat(item['MA_UP_3d']) == parseFloat(item['MA_UP_10d'])  ?  parseFloat(item['MA_UP_10d'])  : 
-                                                                parseFloat(item['MA_UP_3d']) == 3 && parseFloat(item['MA_UP_5d']) == 5  ?  parseFloat(item['MA_UP_10d'])  :
-                                                                parseFloat(item['MA_UP_3d']) == 3  ?  parseFloat(item['MA_UP_5d'])  : 
-                                                                0
-                                                                )                              
-                                                                
-
-                                this.jsonData.map(item => item.有價 = (parseFloat(item['成交金額']) > parseFloat(item['Volume_MA_5']) * 1.5 &&(parseFloat(item['_quote'])>-0))
-                                                                    ?item.有價+',爆量' : item.有價 
-                                                                )
-                                                                
+                                    ? '有價' : item.有價
+                                )
+                                this.jsonData.map(item => item.ma_up_flag =
+                                    parseFloat(item['MA_UP_3d']) == parseFloat(item['MA_UP_10d']) ? parseFloat(item['MA_UP_10d']) :
+                                        parseFloat(item['MA_UP_3d']) == 3 && parseFloat(item['MA_UP_5d']) == 5 ? parseFloat(item['MA_UP_10d']) :
+                                            parseFloat(item['MA_UP_3d']) == 3 ? parseFloat(item['MA_UP_5d']) :
+                                                0
+                                )
+                                //-----------------------------------------------------------------------------
+                                const WINDOWS = [3, 5, 10, 20, 30, 40];
+                                const num = v => Number(v) || 0;
 
                                 this.jsonData.forEach(item => {
-                                    const sl   = parseFloat(item['MACD-SL'])
+                                    const d = {};
+                                    WINDOWS.forEach(n => d[n] = num(item[`MA_UP_${n}d`]));
+                                    const r = n => d[n] / n;
+
+                                    // 連續天數區間（全滿視窗）
+                                    const level = WINDOWS.reduce((lv, n) => d[n] === n ? n : lv, 0);
+                                    const next = WINDOWS.find(n => n > level);
+                                    const max = next ? next - 1 : null;
+
+                                    const tag =
+                                        level >= 40 ? '長線多頭(40+)' :
+                                            level >= 20 ? '長線多頭(20+)' :
+                                                level >= 10 ? '持續強勢(10+)' :
+                                                    level >= 5 ? '轉強確認(5~9)' :
+                                                        level >= 3 ? '剛轉強(3~4)' :
+                                                            d[3] > 0 && r(20) >= 0.7 ? '強勢拉回' :
+                                                                d[3] === 0 && r(20) >= 0.7 ? '強勢但已中斷' :
+                                                                    r(40) >= 0.6 ? '不連續偏多' : '無';
+
+                                    item.ma_up_info = {
+                                        tag,                                   // 型態標籤
+                                        level,                                 // 連續 >= level 天
+                                        max,                                   // 連續 <= max 天（null = 無上限）
+                                        streak: max === null ? `${level}+` : (level === 0 ? `0~2` : `${level}~${max}`),
+                                        days: { ...d },                       // 各視窗成立天數 {3,5,10,20,30,40}
+                                        ratio: Object.fromEntries(WINDOWS.map(n => [n, +r(n).toFixed(2)])),
+                                        seg: {                                 // 分段成立天數
+                                            '1-3': d[3],
+                                            '4-5': d[5] - d[3],
+                                            '6-10': d[10] - d[5],
+                                            '11-20': d[20] - d[10],
+                                            '21-30': d[30] - d[20],
+                                            '31-40': d[40] - d[30],
+                                        },
+                                    };
+
+                                    // 字串版：直接顯示、也可用來搜尋
+                                    item.ma_up_text =
+                                        `${tag}｜連續${item.ma_up_info.streak}天｜` +
+                                        WINDOWS.map(n => `${n}d:${d[n]}`).join(' ');
+                                });
+                                //-----------------------------------------------------------------------------
+
+
+                                this.jsonData.map(item => item.有價 = (parseFloat(item['成交金額']) > parseFloat(item['Volume_MA_5']) * 1.5 && (parseFloat(item['_quote']) > -0))
+                                    ? item.有價 + ',爆量' : item.有價
+                                )
+
+
+                                this.jsonData.forEach(item => {
+                                    const sl = parseFloat(item['MACD-SL'])
                                     const macd = parseFloat(item['MACD'])
                                     const diff = parseFloat(item['MACD_hist_diff'])
 
@@ -792,7 +906,7 @@
                                         return
                                     }
 
-                                    const isCrossed  = macd > sl       // 已交叉
+                                    const isCrossed = macd > sl       // 已交叉
                                     const isConverge = diff > 0        // 收斂中（往交叉方向走）
 
                                     if (diff === 0) {
@@ -832,7 +946,7 @@
                                 this.jsonData.map(item => item['EPS_QoQ_%'] = (parseFloat(item['EPS_QoQ_%'])).toFixed(2))
                                 this.jsonData.map(item => item['EPS_YoY_%'] = (parseFloat(item['EPS_YoY_%'])).toFixed(2))
                                 this.jsonData.map(item => item['量短5長30比'] = (parseFloat(item['量短5長30比'])).toFixed(2))
-                                
+
                                 this.jsonData.map(item => item['MA_5_斜率'] = (parseFloat(item['MA_5_斜率'])).toFixed(4))
                                 this.jsonData.map(item => item['MA_20_斜率'] = (parseFloat(item['MA_20_斜率'])).toFixed(4))
 
@@ -841,7 +955,7 @@
                                 if (!!this.paraDate) {
                                     this.jsonData.filter(item => item['MACD_last_cross_date'] > this.paraDate_str()).map(x => x.MACD_last_cross_date = '')
                                     this.jsonData.filter(item => item['MA_last_cross_date'] > this.paraDate_str()).map(x => x.MA_last_cross_date = '')
-                                    
+
                                 }
                                 //# -- 
                                 this.jsonData.map(x => x.營業毛利率 = x.營業毛利率.replace('%', ''))
@@ -857,15 +971,15 @@
                                 if (this.type) {
                                     //this.jsonData = this.jsonData_.filter(x => x.Typelevel.includes(this.type) || x.desc.includes(this.type) | x.text_desc.includes(this.type));
                                     this.type.split('_')
-                                    t1=this.type.split('_')[0]
-                                    t2=this.type.split('_')[1]
-                                    if(!!t1){
-                                        this.jsonData = this.jsonData_.filter(x =>x.text_desc.includes(t1) );
+                                    t1 = this.type.split('_')[0]
+                                    t2 = this.type.split('_')[1]
+                                    if (!!t1) {
+                                        this.jsonData = this.jsonData_.filter(x => x.text_desc.includes(t1));
                                     }
-                                    if(!!t2){
-                                        this.jsonData = this.jsonData.filter(x =>x.text_desc.includes(t2) );
+                                    if (!!t2) {
+                                        this.jsonData = this.jsonData.filter(x => x.text_desc.includes(t2));
                                     }
-                                    
+
                                 }
 
                                 Object.keys(this.uniqueValues).forEach(key => {
@@ -874,7 +988,7 @@
                                 });
                             }
 
-                            app.sortBy = ['MACD_last_cross_date','GM_QoQ_%']
+                            app.sortBy = ['MACD_last_cross_date', 'GM_QoQ_%']
                             app.sortDesc = [true, true]
                         })
                         .catch(error => console.error('Error loading Excel file:', error));
