@@ -249,11 +249,11 @@
 
                                     && parseFloat(x['Volume_MA_5']) > parseFloat(x['Volume_MA_10'])
                                     && parseFloat(x['Volume_MA_10']) > parseFloat(x['Volume_MA_30'])
-                                    && parseFloat(x['現量10d比']) >1
+                                    && parseFloat(x['現量5d比']) >1   //(parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))
 
                                     && parseFloat(x['Volume_MA_5']) >10000
                                 )
-                                app.sortBy = ['現量10d比','now_pricex三大法人_累計買賣超']
+                                app.sortBy = ['現量5d比','now_pricex三大法人_累計買賣超']
                                 app.sortDesc = [ false,true]
 
                         ">測試抓</v-btn>
@@ -334,14 +334,14 @@
                     
                     <!-------------------------------------------------------------------------------------->
                     <!--
-                    '現量10d比', '量5d10d比', '量短5長30比','量5d50d比',
+                    '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
                     '成交金額','Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
                      -->
 
-                    <template v-slot:item.現量10d比="{ item }">
-                        <div :class="{ 'highlight-red':     Number(item['現量10d比'])> 1.3
+                    <template v-slot:item.現量5d比="{ item }">
+                        <div :class="{ 'highlight-red':     Number(item['現量5d比'])> 1.3
                                      }">
-                            {{item.現量10d比}}
+                            {{item.現量5d比}}
                         </div>
                     </template>
                     <template v-slot:item.量5d10d比="{ item }">
@@ -671,6 +671,12 @@
                             // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
                         }
                         /**********************/
+                        if (urlParams.get('d') == 'V') {
+                            file = './Result/check_v/' + urlParams.get('date') + '.xlsx'
+                            this.paraDate = new Date(urlParams.get('date'))
+                            // https://itchang0615.github.io/PJ_stock/index.html?d=C&date=2025-01-21
+                        }
+                        /**********************/
                         if (urlParams.get('d') == 'O') {
                             file = './Result/checksun_others/' + urlParams.get('date') + '.xlsx'
                             this.paraDate = new Date(urlParams.get('date'))
@@ -723,7 +729,7 @@
                                     'bbw_cross',
 
                                     //####【量】
-                                    '量','Volume_MA_5', '現量10d比', '量5d10d比', '量短5長30比','量5d50d比',
+                                    '量','Volume_MA_5', '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
 
                                     //'短交易量', '長交易量',//'Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
 
@@ -799,7 +805,7 @@
 
                                 this.jsonData.map(x => x.底部與現價比 = '-')
                                 this.jsonData.map(x => x['15d高低比'] = '')
-                                this.jsonData.map(x => x['現量10d比'] = '')
+                                this.jsonData.map(x => x['現量5d比'] = '')
                                 this.jsonData.map(x => x['量5d10d比'] = '')
                                 this.jsonData.map(x => x['量5d50d比'] = '')
                                 this.jsonData.map(x => x.總市值x營業利益率 = '')
@@ -820,7 +826,7 @@
                                 this.jsonData.map(item => item.底部與現價比 = (parseFloat(item['now_price']) / parseFloat(item['最小收盤價'])).toFixed(2))
 
                                 this.jsonData.map(item => item['15d高低比'] = (parseFloat(item['High_15d']) / parseFloat(item['Low_15d'])).toFixed(2))
-                                this.jsonData.map(item => item['現量10d比'] = (parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))
+                                this.jsonData.map(item => item['現量5d比'] = (parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))
                                 //  Volume_MA_1050     
 
                                 this.jsonData.map(item => item['量5d10d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['Volume_MA_10'])).toFixed(2))
