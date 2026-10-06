@@ -8,10 +8,12 @@
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
     <link href="./Content/base.css" rel="stylesheet">
+    <link href="./Content/stockDialog.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
     <script src="./Content/common.js"></script>
+        <script src="./Content/stockDialog.js"></script>
     <script src="./Content/getRealTime.js"></script>
 </head>
 
@@ -424,7 +426,8 @@
                     </template>
 
                 </v-data-table>
-                <v-dialog v-model="dialog" max-width="90vw">
+
+                <!-- v-dialog v-model="dialog" max-width="90vw">
                     <v-card>
                         <v-card-title class="headline">{{ selectedItem?.stock_number }}
                             <v-checkbox v-model="checked"
@@ -464,7 +467,9 @@
                             <v-btn color="primary" text @click="dialogchart = false">Close</v-btn>
                         </v-card-actions>
                     </v-card>
-                </v-dialog>
+                </v-dialog-->
+                 <stock-dialog :value="dialog" :item="selectedItem" :checklist="checklist" :url="url"
+                    @input="dialog = $event" @update-check="handleCheckUpdate" />
             </v-container>
         </v-app>
     </div>
@@ -763,6 +768,18 @@
                 },
             },
             methods: {
+                  handleCheckUpdate({ stock, checked }) {
+
+                    if (checked) {
+                        if (!this.checklist.includes(stock)) {
+                            this.checklist.push(stock)
+                        }
+                    } else {
+                        this.checklist = this.checklist.filter(x => x !== stock)
+                    }
+                    console.log(this.checklist)
+                    localStorage.setItem('checklist', JSON.stringify(this.checklist))
+                },
                 // 類別名稱淨化
                 sanitizedTypelevel(x) {
                     return (x || '').replace(/[\\/:*?"<>|]/g, "_");
@@ -942,18 +959,17 @@
                                     //'當日漲跌', 'now_price',
                                     //'Volume_Oscillator', 'Volume_MA_short', 'Volume_MA_long', 'Volume_MA_long50','VPC_MA_%',
 
-                                    'highlight_enddate_2', 'highlight_stardate_2', 'highlight_enddate收盤價_2', 'highlight_stardate收盤價_2',
-                                    'highlight_enddate_1', 'highlight_stardate_1', 'highlight_enddate收盤價_1', 'highlight_stardate收盤價_1',
+                                   // 'highlight_enddate_2', 'highlight_stardate_2', 'highlight_enddate收盤價_2', 'highlight_stardate收盤價_2',
+                                   // 'highlight_enddate_1', 'highlight_stardate_1', 'highlight_enddate收盤價_1', 'highlight_stardate收盤價_1',
                                     'macdpercent',
 
                                     'MACD_minus',
 
-                                    'highlight_%_2',
-                                    'highlight_%_1', 'highlight_%', 'highlight_收盤價',
+                                  //  'highlight_%_2', 'highlight_%_1', 'highlight_%', 'highlight_收盤價',
 
                                     'MACD_last_cross_date',
                                     'MA_last_cross_%',
-                                    '長均交叉日',//'MA_last_cross_date',
+                                    '長均交叉日',
                                     'highlight_date',
                                     'desctxt',
 
@@ -961,11 +977,12 @@
                                     
                                     '分類標籤', 'LevelArea',
                                     '均價longlong_%', '均價long_%', '均價_%', 'MA5_%', '當日漲跌',
-                                    '量能avg', '短量', '長量', '量增幅',
-
-                                    'uptrend_有量', 'frist_uptrendcheck', 'frist_uptrend',
+                                    '量能avg', 
+                                   // '短量', '長量', '量增幅',
+                                    //'uptrend_有量', 'frist_uptrendcheck', 'frist_uptrend',
                                     
-                                    '總價差','type',
+                                    '總價差',
+                                    'type',
                                 ]
                                 //
                                 //【參數】  利用過去Data確認計算這些邏輯是否有用 
@@ -978,12 +995,12 @@
                                 //'uptrend_d','uptrend_c','uptrend_b',
                                 arr.push('uptrend_' + this.d)
 
-                                //if (this.sync) {
+                              /*
                                 if (true) {
                                     arr.push('rt_量')
                                     arr.push('rt_price')
                                 }
-
+*/
                                 this.arrcount = dates.length
                                 arr.reverse().forEach(element => {
                                     dates.push(element) //dates.unshift(element) 
