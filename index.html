@@ -714,52 +714,56 @@
                                 //　可用'EPS(元)','毛利率',　 排序一下同類型的哪個比較賺　
 
                                 arr = [
-                                    '_quote', 'diff_quote',   'score',
+                                    '_quote', 'diff_quote',  'score',
 
                                     //####【技術】
-                                    'MA_5_斜率', 'MA_20_斜率', 'BB_last_cross_date', 'highlight_date', 'MACD_last_cross_date',
+                                    'MA_5_斜率', 'MA_20_斜率',
 
                                     //####【價】
                                     '價', '有價',
                                     'up_up', 'up_up_3d', 'up_up_5d',
-                                    'MA_UP_3d', 'MA_UP_5d', 'MA_UP_10d', 'ma_up_flag', 'ma_up_text',
+                                    'MA_UP_3d', 'MA_UP_5d',// 'MA_UP_10d',
+                                    'ma_up_flag',   'ma_up_text',
                                     'bbw_cross',
-                                    'MarketState', 'MarketState_prev',
+                                    
+
                                     'stock_number',
 
                                     //####【量】
-                                    '量',  'now_pricex三大法人_累計買賣超','Volume_MA_5', '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
+                                    '量',  'now_pricex三大法人_累計買賣超',
+                                    'Volume_MA_5', '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
                                     //'短交易量', '長交易量',//'Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
 
                                     'MACD交叉天數', 'LevelArea',
 
-                                    '綜合', '綜合Flag', 'text_desc',
-
-                                   'Type2', 'Type1',
-
+                                    'text_desc',
+                                    'BB_last_cross_date', 'highlight_date', 'MACD_last_cross_date',
+                                                                'MarketState', 'MarketState_prev',
+                                    '綜合', '綜合Flag', 
+                                    'Type2', 'Type1',
                                     '分類標籤',
-                                    'stock_number',
+
+
+
                                     //'綜合Flag_1d', '綜合Flag_2d', '綜合Flag_3d',
                                     //'外資_累計買賣超', '投信_累計買賣超', '自營商_累計買賣超', '三大法人_累計買賣超', '外資連續天數', '投信連續天數',
                                     //'now_price', 
-
-
                                     /*
-                                        'rt_量', 'rt_price',
-                                        '現價年線比',
-                                        '本益比', '同業平均本益比',
+                                    'rt_量', 'rt_price',
+                                    '現價年線比',
+                                    '本益比', '同業平均本益比',
 
-                                        'EPS(元)','毛利率','EPS增', 'GM增', 
-                                        '去年同季比較','總市值x營業利益率',
-                                        '底部與現價比',
-                                        '殖利率', '貝他值',
-                                        'EPS_前8季全為正',
+                                    'EPS(元)','毛利率','EPS增', 'GM增', 
+                                    '去年同季比較','總市值x營業利益率',
+                                    '底部與現價比',
+                                    '殖利率', '貝他值',
+                                    'EPS_前8季全為正',
 
-                                        'EPS(元)','EPS_MA_8', 'EPS增', 'EPS_QoQ', 'EPS_QoQ_%',  'EPS_YoY','EPS_YoY_%',
-                                        '毛利率','GM_MA_8', 'GM增', 'GM_QoQ', 'GM_QoQ_%', 'GM_YoY', 'GM_YoY_%', 
-                                        '季別', '營業收入', '營業成本', '營業毛利',  '營業利益', '營益率','業外收支', '稅前淨利', '稅後淨利', 
-                                        'EPS_維持','毛利率_維持', 'EPS_創新高', '毛利率_創新高', '財報健康', '財報強勢',
-                                        'EPS_成長', 'EPS_YoY成長', '毛利率成長','毛利率YoY成長', '財報動能強',
+                                    'EPS(元)','EPS_MA_8', 'EPS增', 'EPS_QoQ', 'EPS_QoQ_%',  'EPS_YoY','EPS_YoY_%',
+                                    '毛利率','GM_MA_8', 'GM增', 'GM_QoQ', 'GM_QoQ_%', 'GM_YoY', 'GM_YoY_%', 
+                                    '季別', '營業收入', '營業成本', '營業毛利',  '營業利益', '營益率','業外收支', '稅前淨利', '稅後淨利', 
+                                    'EPS_維持','毛利率_維持', 'EPS_創新高', '毛利率_創新高', '財報健康', '財報強勢',
+                                    'EPS_成長', 'EPS_YoY成長', '毛利率成長','毛利率YoY成長', '財報動能強',
                                     */
                                 ]
 
