@@ -91,6 +91,11 @@
                                 && parseFloat(x['score']) > 50
                                 && parseFloat(x['EPS_前8季全為正']) ==1
                             )
+                            app.sortBy = ['up_up_3d','voc_cross_d']
+                            app.sortDesc = [ true,true]
+                                app.sortBy = ['voc_cross_d','MACD_last_cross_date']
+                                app.sortDesc = [ true,true]
+
                         ">收益佳</v-btn>
 
                     </v-col>
@@ -113,14 +118,9 @@
                             app.jsonData = app.jsonData_.filter(x => JSON.parse(localStorage.getItem('checklist') || '[]').includes(x.stock_number))
                             ">選中的
                         </v-btn>
-
-
                     </v-col>
                     <v-col col="8">
-
-
                         <!--------------------------------------------------------------------------------------------------------------------->
-
                         <v-btn color="primary" @click="  
                             app.jsonData = app.jsonData.filter(item => true
                                 && parseFloat(item['Volume_MA_5']) > parseFloat(item['Volume_MA_10']) * 0.9
@@ -172,8 +172,6 @@
                             )
                             app.sortBy = ['ma_up_flag','綜合']
                             app.sortDesc = [ false,true]	
-
-
                         ">有量</v-btn>
 
                         <v-btn color="primary" @click="  
@@ -194,8 +192,6 @@
 
                         ">價墊高.收益佳. 等量</v-btn>
 
-
-
                         <v-btn color="primary" @click="  
                                 app.jsonData = app.jsonData_.filter( x =>true 
                                         //LV 排除非科技股
@@ -211,40 +207,39 @@
                                     
                                 app.sortBy = ['text_desc','量5d50d比']
                                 app.sortDesc = [ false,true]
-
                         ">找低基期 科技股族群動向</v-btn>
 
-
                         <v-btn color="primary" @click="  
-                       app.jsonData = app.jsonData_.filter( x =>true 
+                                app.jsonData = app.jsonData_.filter( x =>true 
 
-                           &&  parseFloat(x['_quote'])	>1.5
-                            && x['MarketState']=='強勢'
-                            && x['MarketState_prev']=='盤整'
+                                            &&  parseFloat(x['_quote'])	>1.5
+                                            && x['MarketState']=='強勢'
+                                            && x['MarketState_prev']=='盤整'
 
-                            //&&  parseFloat(x['now_pricex三大法人_累計買賣超'])	> 0
-                            && parseFloat(x['score']) > 50
-                            && parseFloat(x['EPS_前8季全為正']) ==1
-                            
-                        )
-                        app.sortBy = ['text_desc','MA_20_斜率']
-                        app.sortDesc = [ true,true]
+                                            //&&  parseFloat(x['now_pricex三大法人_累計買賣超'])	> 0
+                                            && parseFloat(x['score']) > 50
+                                            && parseFloat(x['EPS_前8季全為正']) ==1
+                                    )
+                                app.sortBy = ['text_desc','MA_20_斜率']
+                                app.sortDesc = [ true,true]
 
                         ">突發價. 找機會</v-btn>
                        
                         <v-btn color="primary" @click="  
                                 app.jsonData = app.jsonData_.filter( x =>true 
                                     && parseFloat(x['up_up_10d'])>0
-                                    
-                                    
+                                    //【基本面】
                                     //&& parseFloat(x['score']) > 40
                                     //&& parseFloat(x['EPS_前8季全為正']) ==1
-
+                                    && parseFloat(x['now_pricex三大法人_累計買賣超'])	> 0
 
                                     //LV 科技股
-                                    //&& !(['0','NA｜'].includes(x.text_desc)) 
-                                    //&& !x.text_desc.includes('NA｜')
-
+                                    && !(['0','NA｜'].includes(x.text_desc)) 
+                                    && !x.text_desc.includes('NA｜')
+                                    
+                                    
+                                    && parseFloat(x['TrendScore']) > 0
+                                    
                                     //&& x.bbw_cross =='True'
 
                                     && parseFloat(x['Volume_MA_5']) > parseFloat(x['Volume_MA_10'])
@@ -255,6 +250,8 @@
                                 )
                                 app.sortBy = ['現量5d比','now_pricex三大法人_累計買賣超']
                                 app.sortDesc = [ false,true]
+                                app.sortBy = ['voc_cross_d','now_pricex三大法人_累計買賣超']
+                                app.sortDesc = [ true,true]
 
                         ">測試抓</v-btn>
 
@@ -270,6 +267,7 @@
                 <v-data-table disable-pagination fixed-header height="90vh" hide-default-footer :headers="appheaderData"
                     v-show="appmode" :items="appfilteredData" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" :mobile-breakpoint="0" style="white-space: nowrap;">
+                   
                     <template v-slot:item.stock_number="{ item }">
                         <v-btn text @click="openDialog(item)">
                             {{ item.stock_number }} {{ item.Type0 }}
@@ -289,12 +287,13 @@
                         </span>
                     </template>
                 </v-data-table>
-
                 <v-data-table disable-pagination fixed-header height="95vh" hide-default-footer :headers="headers"
                     :items="filteredData" v-show="!appmode" :items-per-page="-1" item-key="id" :sort-by.sync="sortBy"
                     :sort-desc.sync="sortDesc" style="white-space: nowrap;">
+
                     <template v-slot:item.stock_number="{ item }">
                         <div :class="{ 'highlight-red':
+                                            Number(item['now_pricex三大法人_累計買賣超']) > 0 &&
                                             Number(item['MA_20_斜率']) > 0 &&
                                             Number(item['量短5長30比']) > 0
                                         }">
@@ -309,6 +308,7 @@
                             </v-btn>
                         </div>
                     </template>
+                                       
 
                     <template v-slot:item.綜合="{ item }">
                         <div :class="{ 'highlight-red':
@@ -317,6 +317,7 @@
                             {{item.綜合}}
                         </div>
                     </template>
+                    
                     <template v-slot:item.有價="{ item }">
                         <div :class="{ 'highlight-red':
                                             item['有價']!=''
@@ -337,13 +338,14 @@
                     '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
                     '成交金額','Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
                      -->
-
+<!--
                     <template v-slot:item.現量5d比="{ item }">
                         <div :class="{ 'highlight-red':     Number(item['現量5d比'])> 1.3
                                      }">
                             {{item.現量5d比}}
                         </div>
                     </template>
+
                     <template v-slot:item.量5d10d比="{ item }">
                         <div :class="{ 'highlight-red':     Number(item['成交金額'])     >   Number(item['Volume_MA_5']) 
                                                          && Number(item['Volume_MA_5']) >   Number(item['Volume_MA_10']) 
@@ -365,9 +367,15 @@
                             {{item.量5d50d比}}
                         </div>
                     </template>
-
+-->
                     <!-------------------------------------------------------------------------------------->
-
+                    <template v-slot:item.score="{ item }">
+                        <div :class="{ 'highlight-red':   Number(item['score']) > 50
+                                    }">
+                            {{item.score}}
+                        </div>
+                    </template>
+-->
 
                     <template v-slot:item.價="{ item }">
                         <!-- 🔴 最強：MA5、MA10、MA20 三線同步向上 -->
@@ -431,12 +439,8 @@
 
                     </template>
 
-                    <template v-slot:item.stock_name="{ item }">
-                        <v-btn text @click="openDialog(item)">
-                            {{ item.stock_number }} {{ item.Type0 }} {{item['Volume_%']}}
-                        </v-btn>
-                    </template>
 
+<!--
                     <template v-slot:item.now_price="{ item }">
                         <v-btn text @click="openDialog(item)">
                             <span style="color: rgb(124, 169, 173);"
@@ -452,6 +456,7 @@
                             </span>
                         </v-btn>
                     </template>
+                    
 
                     <template v-slot:item.rt_price="{ item }">
                         <span style="color: rgb(124, 169, 173);"
@@ -466,14 +471,9 @@
                             {{(realtimedata.filter(x=>x.c==item.stock_number)[0]?.v/parseFloat(item.成交股數)).toFixed(1)}}
                         </span>
                     </template>
+-->
 
-                    <template v-slot:item.成交股數="{ item }">
-                        <v-btn text @click="openDialog(item)">
-                            {{ item.成交股數 }} <span style="color: rgb(124, 169, 173);"
-                                v-show="realtimedata.filter(x=>x.c==item.stock_number)[0]?.g">
-                                ({{realtimedata.filter(x=>x.c==item.stock_number)[0]?.v}})</span>
-                        </v-btn>
-                    </template>
+
                 </v-data-table>
                 <stock-dialog :value="dialog" :item="selectedItem" :checklist="checklist" :url="url"
                     @input="dialog = $event" @update-check="handleCheckUpdate" />
@@ -714,54 +714,51 @@
                                 //　可用'EPS(元)','毛利率',　 排序一下同類型的哪個比較賺　
 
                                 arr = [
-                               
-
-                               
-
-                             
+                                    //
                                     //####【量】
-                                    '量',  'now_pricex三大法人_累計買賣超', '三大法人_累計買賣超',
-                                    'Volume_MA_5', '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
+                                    '量',  'now_pricex三大法人_累計買賣超', 
+                                    //'三大法人_累計買賣超', 'Volume_MA_5', '現量5d比', '量5d10d比', '量短5長30比','量5d50d比',
+                                    //'量起點_前15日次數'  , 'voc_cross', 
+                                    'voc_cross_d',
                                     //'短交易量', '長交易量',//'Volume_MA_5','Volume_MA_10', 'Volume_MA_30', 'Volume_MA_50',
-
        
-                                     '_quote', 'diff_quote',  'score',
-                                    'stock_number',
+                                    '_quote', 'diff_quote',  'score','stock_number',
 
-                                         //####【技術】
-                                    'MA_5_斜率', 'MA_20_斜率',
+                                    'TrendScore',
 
+                                    //
+                                    //####【技術】
+                                    //'MA_5_斜率', 'MA_20_斜率',
+
+                                    //
                                     //####【價】
                                     '價', '有價',
+                                    'MACD_last_cross_date',
                                     'up_up', 'up_up_3d', 'up_up_5d',
-                                    'MA_UP_3d', 'MA_UP_5d','MA_UP_40d', // 'MA_UP_10d',
+                                    //'MA_UP_3d', 'MA_UP_5d','MA_UP_40d', // 'MA_UP_10d',
                                     'ma_up_flag',   'ma_up_text',
                                     'bbw_cross',
                                     
-
-
                                     'MACD交叉天數', 'LevelArea',
 
                                     'text_desc',
-                                    'BB_last_cross_date', 'highlight_date', 'MACD_last_cross_date',
+                                    'BB_last_cross_date', 'highlight_date', 
                                                                 'MarketState', 'MarketState_prev',
                                     '綜合', '綜合Flag', 
                                     'Type2', 'Type1',
                                     '分類標籤',
-
-
 
                                     //'綜合Flag_1d', '綜合Flag_2d', '綜合Flag_3d',
                                     //'外資_累計買賣超', '投信_累計買賣超', '自營商_累計買賣超', '三大法人_累計買賣超', '外資連續天數', '投信連續天數',
                                     //'now_price', 
                                     /*
                                     'rt_量', 'rt_price',
-                                    '現價年線比',
+                                    
                                     '本益比', '同業平均本益比',
 
                                     'EPS(元)','毛利率','EPS增', 'GM增', 
                                     '去年同季比較','總市值x營業利益率',
-                                    '底部與現價比',
+                                   
                                     '殖利率', '貝他值',
                                     'EPS_前8季全為正',
 
@@ -804,10 +801,7 @@
                                 this.jsonData.map(x => x.長交易量 = '-')
                                 this.jsonData.map(x => x.短交易量 = '-')
                                 this.jsonData.map(x => x.tempdesc = '')
-                                this.jsonData.map(x => x.現價年線比 = '')
-
-                                this.jsonData.map(x => x.底部與現價比 = '-')
-                                this.jsonData.map(x => x['15d高低比'] = '')
+                         
                                 this.jsonData.map(x => x['現量5d比'] = '')
                                 this.jsonData.map(x => x['量5d10d比'] = '')
                                 this.jsonData.map(x => x['量5d50d比'] = '')
@@ -823,28 +817,20 @@
                                 this.jsonData.map(x => x.ma_up_flag = '')
                                 this.jsonData.map(x => x.ma_up_text = '')
 
-
                                 //this.jsonData.map(item => item.tempdesc = (parseFloat(item['now_price']) / parseFloat(item['MA_240'])).toFixed(2))
-                                this.jsonData.map(item => item.現價年線比 = (parseFloat(item['now_price']) / parseFloat(item['MA_240'])).toFixed(2))
-                                this.jsonData.map(item => item.底部與現價比 = (parseFloat(item['now_price']) / parseFloat(item['最小收盤價'])).toFixed(2))
-
-                                this.jsonData.map(item => item['15d高低比'] = (parseFloat(item['High_15d']) / parseFloat(item['Low_15d'])).toFixed(2))
-                                this.jsonData.map(item => item['現量5d比'] = (parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))
-                                //  Volume_MA_1050     
-
+                                this.jsonData.map(item => item['現量5d比'] = (parseFloat(item['成交金額']) / parseFloat(item['Volume_MA_5'])).toFixed(2))  
                                 this.jsonData.map(item => item['量5d10d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['Volume_MA_10'])).toFixed(2))
                                 this.jsonData.map(item => item['量5d50d比'] = (parseFloat(item['Volume_MA_5']) / parseFloat(item['成交金額平均'])).toFixed(2))
                                 this.jsonData.map(item => item.總市值x營業利益率 = (parseFloat(item['總市值']) * parseFloat(item['營業利益率']) / 100).toFixed(2))
                                 this.jsonData.map(item => item.now_pricex三大法人_累計買賣超 = (parseFloat(item['now_price']) * parseFloat(item['三大法人_累計買賣超']) / 100).toFixed(2))
-
                                 this.jsonData.map(item => item.EPS增 = (parseFloat(item['EPS(元)']) / parseFloat(item['EPS_MA_8'])).toFixed(2))
                                 this.jsonData.map(item => item.GM增 = (parseFloat(item['毛利率']) / parseFloat(item['GM_MA_8'])).toFixed(2))
-
                                 this.jsonData.map(item => item.綜合 = (parseFloat(item['綜合Flag']) - parseFloat(item['綜合Flag_1d'])))
 
                                 this.jsonData.map(item => item.有價 = parseFloat(item['MA_UP_3d']) >= 1
                                     ? '有價' : item.有價
                                 )
+
                                 this.jsonData.map(item => item.ma_up_flag =
                                     parseFloat(item['MA_UP_3d']) == parseFloat(item['MA_UP_10d']) ? parseFloat(item['MA_UP_10d']) :
                                         parseFloat(item['MA_UP_3d']) == 3 && parseFloat(item['MA_UP_5d']) == 5 ? parseFloat(item['MA_UP_10d']) :
@@ -1076,41 +1062,7 @@
                     app.jsonData = app.jsonData_.filter(x => b.filter(item => !a.includes(item)).includes(x.stock_number))
 
                 },
-                filter_test() {
-                    var vm = this;
-                    var alist =
-
-                        app.jsonData_.map(x => ({
-                            stock_number: x.stock_number,
-                            stock_name: x.Type,
-                            Ongoing: x.highlight_date != '0',
-                            Check: (x.highlight_date != 0 ? parseFloat(x.now_price) : parseFloat(x.highlight_stardate收盤價_1)) > parseFloat(x.highlight_enddate收盤價_2),
-                            Period: 1,
-                            "date Start": x.highlight_stardate_1,
-                            date_End: x.highlight_enddate_1,
-                            "price Start": x.highlight_stardate收盤價_1,
-                            price_End: x.highlight_date != 0 ? x.now_price : x.highlight_enddate收盤價_1,
-                            u_gain: (parseFloat(((x.highlight_date != 0 ? x.now_price : x.highlight_enddate收盤價_1) - x.highlight_stardate收盤價_1) / x.highlight_stardate收盤價_1) * 100).toFixed(1),
-                            u_gaind: ((Math.abs(new Date(x.highlight_enddate_1) - new Date(x.highlight_stardate_1))) / (1000 * 60 * 60 * 24))
-                        })
-                        ).concat(
-                            app.jsonData_.map(x => ({
-                                stock_number: x.stock_number,
-                                stock_name: x.Type,
-                                Ongoing: x.highlight_date != '0',
-                                Period: 2,
-                                "date Start": x.highlight_stardate_2,
-                                date_End: x.highlight_enddate_2,
-                                "price Start": x.highlight_stardate收盤價_2,
-                                price_End: x.highlight_enddate收盤價_2,
-                                u_gain: ((parseFloat(x.highlight_enddate收盤價_2 - x.highlight_stardate收盤價_2) / x.highlight_stardate收盤價_2) * 100).toFixed(1),
-                                u_gaind: ((Math.abs(new Date(x.highlight_enddate_2) - new Date(x.highlight_stardate_2))) / (1000 * 60 * 60 * 24))
-                            }))
-                        )
-                            .filter(x => x.Check && x.Ongoing && x.u_gain > 1 && x.u_gaind > 10)
-                            .map(x => x.stock_number)
-
-                },
+        
                 calculate(desc) {
                     const total = app.jsonData.length
                     const col = 'diff_quote' // '_quote'
