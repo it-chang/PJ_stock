@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>【Menu】</title>
     <!-- 引入 Vuetify 和 Vue.js -->
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet">
     <link href="./Content/base.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="./Content/common.js"></script>
 </head>
 
@@ -56,6 +56,8 @@
                         { title: 'MyFIN', url: '_MyFIN.html?', file: '-', desc: '' },
                         { title: 'ETF 持股比較系統', url: 'Project_ETF/ETF_Portfolio_Compare.html', file: '-', desc: '' },
                         { title: '📊 族群動向', url: 'index5_dashboard.html?d=4', file: '-', desc: '' },
+                        { title: '🧩 族群維護', url: 'UI_supply_chain.html', file: 'BaseInfo/supply_chain.json', desc: 'Chrome/Edge + localhost' },
+                        { title: '📈 推薦紀錄', url: 'recommend.html', file: '-', desc: '' },
 
                         { title: '資金分類流向-All', url: 'index3.html?d=A&date=', file: 'checkall.xlsx', desc: '' },
                         { title: '太陽圖-觀察組_SS', url: 'index2.html?d=ss&date=', file: 'checksun_ss.xlsx', desc: 'MACD-SL 剛過０' },
@@ -75,10 +77,8 @@
                         { title: '太陽圖-觀察組_v', url: 'index2.html?d=v&date=', file: 'checksun_v/.xlsx', desc: '測試' },      
                         { title: '太陽圖-持有', url: 'index2.html?d=sunmy', file: 'checksunmy.xlsx', desc: '' }, 
                         
-                        { title: '--------', url: '-----------------', file: '----------------', desc: '------------' },
-                        //{ title: 'Analyze_1', url: 'index4.html?d=0', file: 'analyze_1.xlsx', desc: '>6 總數' },
-                        { title: 'Analyze_2', url: 'index4.html?d=2', file: 'analyze_2.xlsx', desc: '量' },
-                        { title: 'Analyze_4', url: 'index4.html?d=4', file: 'analyze_4.xlsx', desc: '量' },
+                    
+                        
                         { title: '--------', url: '-----------------', file: '----------------', desc: '------------' },
                         { title: 'RowData 指定日-All', url: 'index.html?d=C&date=', file: '/Result/checkall/', desc: '123' },
                         { title: 'RowData 自訂-持有', url: 'index.html?d=M', file: 'checkmy.xlsx', desc: '' },

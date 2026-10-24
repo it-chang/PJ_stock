@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>基本面分析</title>
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         :root {
@@ -71,6 +71,7 @@
         .score-green  { color: var(--green);  border-color: var(--green);  background: rgba(63,185,80,.1); }
         .score-yellow { color: var(--yellow); border-color: var(--yellow); background: rgba(210,153,34,.1); }
         .score-red    { color: var(--red);    border-color: var(--red);    background: rgba(248,81,73,.1); }
+        .score-na     { color: var(--text2);  border-color: var(--border); background: var(--bg3); }
         .score-label { font-size: 20px; font-weight: 700; }
         .score-desc  { font-size: 13px; color: var(--text2); margin-top: 4px; line-height: 1.5; }
 
@@ -188,6 +189,106 @@
             padding: 0;
         }
         .collapse-btn:hover { color: var(--text); }
+
+        /* 型態標籤 */
+        .type-tags { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .type-tag {
+            font-size: 13px; font-weight: 600;
+            border: 1px solid; border-radius: 14px;
+            padding: 3px 12px; cursor: help;
+        }
+        .tag-blue   { color: var(--blue);   border-color: var(--blue);   background: rgba(88,166,255,.1); }
+        .tag-purple { color: var(--purple); border-color: var(--purple); background: rgba(188,140,255,.1); }
+        .tag-red    { color: var(--red);    border-color: var(--red);    background: rgba(248,81,73,.1); }
+        .tag-green  { color: var(--green);  border-color: var(--green);  background: rgba(63,185,80,.1); }
+        .tag-yellow { color: var(--yellow); border-color: var(--yellow); background: rgba(210,153,34,.1); }
+        .type-none  { font-size: 13px; color: var(--text2); }
+        .type-warn {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+            margin-top: 12px; padding: 8px 12px;
+            background: rgba(255,166,87,.08); border: 1px solid rgba(255,166,87,.4); border-radius: 8px;
+            font-size: 13px; color: var(--orange);
+        }
+        .cycle-wrap { margin-top: 14px; }
+        .cycle-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+        .cycle-bar {
+            position: relative; height: 10px; border-radius: 5px;
+            background: linear-gradient(90deg, rgba(63,185,80,.55) 0%, rgba(63,185,80,.25) 30%,
+                        var(--bg3) 30%, var(--bg3) 80%, rgba(248,81,73,.25) 80%, rgba(248,81,73,.55) 100%);
+        }
+        .cycle-mark {
+            position: absolute; top: -4px; width: 4px; height: 18px; margin-left: -2px;
+            border-radius: 2px; background: var(--text);
+        }
+        .cycle-scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--text2); margin-top: 4px; }
+        .type-stats {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px; margin-top: 14px;
+        }
+        .type-stat { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+        .type-stat-v { font-size: 16px; font-weight: 700; }
+
+        /* 評分細項：分組小標籤 */
+        .check-groups { margin-top: 14px; width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .check-group-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+        .check-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .check-chip { font-size: 12px; border-radius: 12px; padding: 2px 10px; border: 1px solid var(--border); }
+        .chip-pass { color: var(--text); background: rgba(63,185,80,.15); border-color: rgba(63,185,80,.5); }
+        .chip-fail { color: var(--text2); background: transparent; text-decoration: line-through; text-decoration-color: rgba(139,148,158,.5); }
+
+        /* 圖表：固定高度，手機不會被壓扁 */
+        .chart-box { position: relative; height: 260px; }
+        .chart-box-lg { height: 320px; }
+        @media (max-width: 600px) {
+            .chart-box { height: 220px; }
+            .chart-box-lg { height: 260px; }
+            .stock-header { padding: 10px 12px; gap: 10px; }
+            .price-block { margin-left: 0; text-align: left; width: 100%; }
+        }
+        .range-btns { display: inline-flex; gap: 4px; text-transform: none; letter-spacing: 0; margin-left: auto; white-space: nowrap; }
+        .panel-title { flex-wrap: wrap; row-gap: 6px; }
+        .panel-title > .collapse-btn { margin-left: auto; }
+        .range-btn {
+            font-size: 11px; color: var(--text2); background: var(--bg3);
+            border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; cursor: pointer;
+        }
+        .range-btn.active { color: var(--blue); border-color: var(--blue); }
+        .detail-table td:first-child, .detail-table th:first-child { position: sticky; left: 0; background: var(--bg2); }
+
+        /* 一眼結論 */
+        .summary-card {
+            display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center;
+            background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px;
+        }
+        .summary-score { display: flex; align-items: center; gap: 14px; }
+        .summary-types { flex: 1; min-width: 260px; }
+        .summary-types .type-warn { margin-top: 10px; }
+        .class-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 10px; }
+        .class-name { font-size: 16px; font-weight: 700; border: 1px solid var(--border); border-radius: 6px; padding: 3px 12px; }
+        .class-hint { font-size: 13px; color: var(--text2); }
+        .group-counts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text2); margin-top: 4px; }
+        .group-counts b { color: var(--text); }
+        .key-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        @media (max-width: 600px) { .key-stats { grid-template-columns: repeat(2, 1fr); } }
+        .key-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+        .key-stat-v { font-size: 22px; font-weight: 700; }
+
+        /* 收合區 */
+        .fold { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+        .fold-head {
+            width: 100%; display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px; background: none; border: none; cursor: pointer;
+            color: var(--text); font-size: 14px; font-weight: 600; text-align: left;
+        }
+        .fold-head:hover { background: var(--bg3); border-radius: 10px; }
+        .fold-hint { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--text2); }
+        .fold-hint.up { color: var(--red); }
+        .fold-hint.down { color: var(--green); }
+        .fold-body { padding: 4px 16px 16px; }
+        .kv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0 24px; margin-top: 12px; }
+        .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .kv-k { color: var(--text2); }
+        .kv-v { font-weight: 600; }
     </style>
 </head>
 <body>
@@ -229,97 +330,131 @@
 
         <div style="padding: 16px 0 0;">
 
-        <!-- ② 綜合評分 + ③ 估值燈號 in same row -->
-        <v-row class="section-gap" no-gutters>
-            <!-- 綜合評分 -->
-            <v-col cols="12" md="5" style="padding-right:8px; margin-bottom:12px;">
-                <div class="score-wrap" style="height:100%; flex-direction:column; align-items:flex-start;">
-                    <div style="display:flex; align-items:center; gap:14px; width:100%;">
-                        <div class="score-circle" :class="scoreCircleClass">{{ score }}</div>
-                        <div>
-                            <div class="score-label" :class="scoreLabelClass">{{ scoreLabel }}</div>
-                            <div class="score-desc">{{ scoreDesc }}</div>
-                        </div>
-                    </div>
-                    <!-- 細項燈號 -->
-                    <div class="check-grid" style="margin-top:14px; width:100%;">
-                        <div class="check-item" v-for="item in checkItems" :key="item.label">
-                            <div class="check-dot" :class="item.pass ? 'dot-pass' : 'dot-fail'"></div>
-                            <span>{{ item.label }}</span>
-                        </div>
+        <!-- ② 一眼結論：分數 + 型態 + 警訊 -->
+        <div class="summary-card section-gap">
+            <div class="summary-score">
+                <div class="score-circle" :class="scoreCircleClass">{{ score }}</div>
+                <div>
+                    <div class="score-label" :class="scoreLabelClass">{{ scoreLabel }}</div>
+                    <div class="group-counts">
+                        <span v-for="g in checkGroups" :key="g.name">
+                            {{ g.name }} <b :class="g.pass == g.items.length ? 'up' : g.pass == 0 ? 'down' : ''">{{ g.pass }}/{{ g.items.length }}</b>
+                        </span>
                     </div>
                 </div>
-            </v-col>
+            </div>
+            <div class="summary-types" v-if="fsRow">
+                <div v-if="classInfo" class="class-line">
+                    <span class="class-name" :class="classInfo.cls">{{ classInfo.name }}</span>
+                    <span class="class-hint">{{ classInfo.hint }}</span>
+                </div>
+                <div class="type-tags">
+                    <span v-for="t in typeTags" :key="t.label" class="type-tag" :class="t.cls" :title="t.tip">{{ t.label }}</span>
+                    <span v-if="!typeTags.length && !classInfo" class="type-none">無符合型態</span>
+                </div>
+                <div v-if="warnings.length" class="type-warn">
+                    <v-icon small color="#ffa657">mdi-alert</v-icon>
+                    <span v-for="w in warnings" :key="w">{{ w }}</span>
+                </div>
+            </div>
+        </div>
 
-            <!-- 估值 cards -->
-            <v-col cols="12" md="7" style="padding-left:8px; margin-bottom:12px;">
-                <v-row no-gutters>
-                    <v-col cols="6" sm="3" style="padding:4px;" v-for="vc in valCards" :key="vc.label">
-                        <div class="val-card">
-                            <div class="val-label">{{ vc.label }}</div>
-                            <div class="val-value" :class="vc.colorClass">{{ vc.value }}</div>
-                            <div class="val-sub">{{ vc.sub }}</div>
-                        </div>
-                    </v-col>
-                    <!-- 月營收 -->
-                    <v-col cols="6" style="padding:4px;">
-                        <div class="val-card" style="text-align:left;">
-                            <div class="val-label">月營收 MoM / YoY</div>
-                            <div style="font-size:14px; font-weight:700; margin-top:4px;">
-                                <span :class="momClass">MoM {{ fmtPct(dayRow['營業收入-上月比較增減(%)']) }}</span>
-                                <span style="color:var(--border); margin:0 6px;">|</span>
-                                <span :class="yoyMClass">YoY {{ fmtPct(dayRow['營業收入-去年同月增減(%)']) }}</span>
-                            </div>
-                            <div style="font-size:11px; color:var(--text2); margin-top:4px;">
-                                累計 YoY {{ fmtPct(dayRow['累計營業收入-前期比較增減(%)']) }}
-                            </div>
-                        </div>
-                    </v-col>
-                    <v-col cols="6" style="padding:4px;">
-                        <div class="val-card" style="text-align:left;">
-                            <div class="val-label">最新季 / 去年同季</div>
-                            <div style="font-size:13px; font-weight:700; margin-top:4px; color:var(--text);">
-                                {{ dayRow['季別'] || '-' }}
-                            </div>
-                            <div style="font-size:12px; color:var(--text2); margin-top:4px;">
-                                {{ dayRow['去年同季比較'] || '-' }}
-                            </div>
-                        </div>
-                    </v-col>
-                </v-row>
-            </v-col>
-        </v-row>
+        <!-- ③ 關鍵數字 -->
+        <div class="key-stats section-gap">
+            <div class="key-stat" v-for="k in keyStats" :key="k.label">
+                <div class="val-label">{{ k.label }}</div>
+                <div class="key-stat-v" :class="k.cls">{{ k.value }}</div>
+                <div class="val-sub">{{ k.sub }}</div>
+            </div>
+        </div>
 
         <!-- ④ EPS + 毛利率 雙軸圖 -->
         <div class="chart-panel section-gap">
-            <div class="panel-title">EPS ＆ 毛利率趨勢（近 12 季）</div>
-            <div v-if="histRows.length < 2" class="no-data">財報歷史資料不足</div>
-            <canvas v-else ref="epsChart" height="110"></canvas>
-        </div>
-
-        <!-- ⑤ 營收趨勢 -->
-        <div class="chart-panel section-gap">
-            <div class="panel-title">營業收入趨勢（近 12 季）</div>
-            <div v-if="histRows.length < 2" class="no-data">財報歷史資料不足</div>
-            <canvas v-else ref="revChart" height="90"></canvas>
-        </div>
-
-        <!-- ⑥ 明細表 -->
-        <div class="chart-panel">
-            <div class="panel-title" style="justify-content:space-between;">
-                <span>財報明細（近 8 季）</span>
-                <button class="collapse-btn" @click="showTable=!showTable">
-                    <v-icon small color="#8b949e">{{ showTable ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                    {{ showTable ? '收合' : '展開' }}
-                </button>
+            <div class="panel-title">
+                <span>EPS ＆ 毛利率趨勢（近 {{ rangeLabel }}）</span>
+                <span class="range-btns">
+                    <button v-for="r in RANGES" :key="r.n" class="range-btn" :class="{ active: range == r.n }"
+                        @click="setRange(r.n)">{{ r.label }}</button>
+                </span>
             </div>
-            <div v-show="showTable" style="overflow-x:auto;">
+            <div v-if="histRows.length < 2" class="no-data">財報歷史資料不足</div>
+            <div v-else class="chart-box chart-box-lg"><canvas ref="epsChart"></canvas></div>
+        </div>
+
+        <!-- ⑤ 細節：預設收合，點開才顯示 -->
+        <div class="fold">
+            <button class="fold-head" @click="toggle('checks')">
+                <span>評分細項（16 項）</span>
+                <span class="fold-hint">通過 {{ checkItems.filter(x => x.pass).length }}/{{ checkItems.length }}</span>
+                <v-icon small color="#8b949e">{{ open.checks ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            </button>
+            <div v-if="open.checks" class="fold-body">
+                <div class="check-groups">
+                    <div class="check-group" v-for="g in checkGroups" :key="g.name">
+                        <div class="check-group-head">
+                            <span>{{ g.name }}</span>
+                            <span :class="g.pass == g.items.length ? 'up' : g.pass == 0 ? 'down' : ''">{{ g.pass }}/{{ g.items.length }}</span>
+                        </div>
+                        <div class="check-chips">
+                            <span class="check-chip" v-for="item in g.items" :key="item.label"
+                                :class="item.pass ? 'chip-pass' : 'chip-fail'">{{ item.label }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fold">
+            <button class="fold-head" @click="toggle('detail')">
+                <span>景氣位置・長期指標・其他估值</span>
+                <span class="fold-hint" :class="cycleClass">{{ cyclePct !== null ? cycleText : '' }}</span>
+                <v-icon small color="#8b949e">{{ open.detail ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            </button>
+            <div v-if="open.detail" class="fold-body">
+                <div v-if="cyclePct !== null" class="cycle-wrap" style="margin-top:0;">
+                    <div class="cycle-head">
+                        <span>毛利率在自身歷史的位置{{ isCyclical ? '' : '（非景氣循環股，僅供參考）' }}</span>
+                        <span :class="cycleClass">{{ cycleText }}</span>
+                    </div>
+                    <div class="cycle-bar"><div class="cycle-mark" :style="{ left: cyclePct + '%' }"></div></div>
+                    <div class="cycle-scale"><span>0 谷底</span><span>30</span><span>80</span><span>高峰 100</span></div>
+                </div>
+                <div class="kv-grid">
+                    <div class="kv" v-for="s in [...typeStats, ...extraStats]" :key="s.label">
+                        <span class="kv-k">{{ s.label }}</span>
+                        <span class="kv-v" :class="s.cls">{{ s.value }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fold">
+            <button class="fold-head" @click="toggle('rev')">
+                <span>營業收入 ＆ 營收 YoY</span>
+                <span class="fold-hint">近 {{ rangeLabel }}</span>
+                <v-icon small color="#8b949e">{{ open.rev ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            </button>
+            <div v-if="open.rev" class="fold-body">
+                <div v-if="histRows.length < 2" class="no-data">財報歷史資料不足</div>
+                <div v-else class="chart-box"><canvas ref="revChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="fold">
+            <button class="fold-head" @click="toggle('table')">
+                <span>財報明細（近 8 季）</span>
+                <span class="fold-hint">{{ dayRow['季別'] || '' }}</span>
+                <v-icon small color="#8b949e">{{ open.table ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+            </button>
+            <div v-if="open.table" class="fold-body" style="overflow-x:auto;">
                 <table class="detail-table" v-if="tableRows.length">
                     <thead>
                         <tr>
                             <th>季別</th>
                             <th>營收(千)</th>
+                            <th>營收 YoY</th>
                             <th>毛利率</th>
+                            <th>營益率</th>
                             <th>EPS</th>
                             <th>EPS QoQ</th>
                             <th>EPS YoY</th>
@@ -333,7 +468,9 @@
                         <tr v-for="r in tableRows" :key="r['季別']">
                             <td class="td-label">{{ r['季別'] }}</td>
                             <td>{{ fmt0(r['營業收入']) }}</td>
+                            <td :class="numClass(r._revYoY)">{{ fmtPct(r._revYoY) }}</td>
                             <td :class="numClass(r['毛利率'])">{{ fmtN(r['毛利率'],2) }}%</td>
+                            <td :class="numClass(r['營益率'])">{{ fmtN(r['營益率'],2) }}%</td>
                             <td :class="numClass(r['EPS(元)'])">{{ fmtN(r['EPS(元)'],2) }}</td>
                             <td :class="numClass(r['EPS_QoQ'])">{{ fmtN(r['EPS_QoQ'],2) }}</td>
                             <td :class="numClass(r['EPS_YoY'])">{{ fmtN(r['EPS_YoY'],2) }}</td>
@@ -363,6 +500,28 @@
 </div>
 
 <script>
+// 圖表區間（季數，0 = 全部）
+const RANGES = [{ n: 12, label: '3年' }, { n: 20, label: '5年' }, { n: 40, label: '10年' }, { n: 0, label: '全部' }]
+// 分類（notebook 的 _classify）→ 一句話怎麼用
+const CLASS_HINTS = {
+    A1: ['tag-blue',   '存股且正在加速，最值得長抱'],
+    A2: ['tag-blue',   '穩健存股，等價格合理再進場'],
+    B1: ['tag-purple', '成長中，追趨勢要看本益比'],
+    B2: ['tag-purple', '轉機中，報酬大但失敗率也高'],
+    C1: ['tag-red',    '景氣循環在高峰，想出場不是買點'],
+    C2: ['tag-yellow', '景氣循環在中段，觀望'],
+    C3: ['tag-yellow', '景氣循環在谷底，還在探底'],
+    C4: ['tag-green',  '景氣循環谷底回升，循環股買點'],
+    D1: ['tag-red',    '近期財報強但歷史不夠穩，追蹤是否升級'],
+    D2: ['',           '沒有特別持有理由'],
+    D3: ['',           '基本面偏弱，避開'],
+    E:   ['',          '金融保險股財報格式不同、毛利率沒有意義，本頁評分不適用'],
+    '0': ['',          '沒有財報資料（新上市等），本頁評分不適用'],
+}
+const FOLDS = { checks: false, detail: false, rev: false, table: false }
+const loadOpen = () => { try { return { ...FOLDS, ...JSON.parse(localStorage.getItem('fundamental_open') || '{}') } } catch (e) { return { ...FOLDS } } }
+const loadRange = () => { try { return parseInt(localStorage.getItem('fundamental_range') ?? '12') } catch (e) { return 12 } }
+
 var app = new Vue({
     el: '#app',
     vuetify: new Vuetify({ theme: { dark: true } }),
@@ -373,8 +532,11 @@ var app = new Vue({
             loading: true,
             error: '',
             dayRow: null,
+            fsRow: null,    // from fundamental_score_all.xlsx（型態標籤）
             histRows: [],   // from profitability/{stock}.xlsx, sorted asc
-            showTable: true,
+            open: loadOpen(),   // 收合區塊的開關（記在 localStorage）
+            RANGES,
+            range: loadRange(),
             epsChartInst: null,
             revChartInst: null,
         }
@@ -390,7 +552,7 @@ var app = new Vue({
         valCards() {
             if (!this.dayRow) return []
             const d = this.dayRow
-            const pe  = parseFloat(d['本益比'])
+            const pe  = parseFloat(d['本益比']) > 0 ? parseFloat(d['本益比']) : NaN   // 0 = 近四季虧損，無本益比
             const ipe = parseFloat(d['同業平均本益比'])
             const pb  = parseFloat(d['淨值倍率'])
             const dy  = parseFloat(d['殖利率'])
@@ -405,11 +567,40 @@ var app = new Vue({
                 ? (dy > 5 ? 'val-cheap' : dy < 2 ? 'val-expensive' : 'val-fair')
                 : ''
 
+            // 估值顏色：綠 = 便宜 / 高息，紅 = 貴 / 低息；sub 直接寫出判斷，避免和漲跌紅綠混淆
+            const word = c => c == 'val-cheap' ? '・偏低' : c == 'val-expensive' ? '・偏高' : c == 'val-fair' ? '・合理' : ''
             return [
-                { label: '本益比', value: isNaN(pe)?'-':pe.toFixed(1), sub: `同業 ${isNaN(ipe)?'-':ipe.toFixed(1)}`, colorClass: peColor },
-                { label: '淨值倍率', value: isNaN(pb)?'-':pb.toFixed(2), sub: '<1.5 偏低', colorClass: pbColor },
-                { label: '殖利率', value: isNaN(dy)?'-':dy.toFixed(2)+'%', sub: '>5% 高息', colorClass: dyColor },
+                { label: '本益比', value: isNaN(pe)?'-':pe.toFixed(1), sub: `同業 ${isNaN(ipe)?'-':ipe.toFixed(1)}${word(peColor)}`, colorClass: peColor },
+                { label: '淨值倍率', value: isNaN(pb)?'-':pb.toFixed(2), sub: `<1.5 偏低${word(pbColor)}`, colorClass: pbColor },
+                { label: '殖利率', value: isNaN(dy)?'-':dy.toFixed(2)+'%', sub: `>5% 高息${dy > 5 ? '・高息' : dy < 2 ? '・低息' : isNaN(dy) ? '' : '・普通'}`, colorClass: dyColor },
                 { label: '每股營收(生意規模)', value: this.fmtN(d['每股營收(元)'],1), sub: '元', colorClass: '' },
+            ]
+        },
+        // ── 關鍵數字（首屏只放這 4 個）─────────────────────────
+        keyStats() {
+            if (!this.dayRow) return []
+            const d = this.dayRow
+            const [pe, dy] = this.valCards
+            const mYoy = parseFloat(d['營業收入-去年同月增減(%)'])
+            const eps = parseFloat(d['EPS(元)']), epsYoy = parseFloat(this.histRows[this.histRows.length - 1]?.['EPS_YoY'])
+            return [
+                { label: '本益比', value: pe.value, sub: pe.sub, cls: pe.colorClass },
+                { label: '殖利率', value: this.valCards[2].value, sub: this.valCards[2].sub.replace('>5% 高息', '').replace(/^・/, ''), cls: this.valCards[2].colorClass },
+                { label: '月營收 YoY', value: this.fmtPct(mYoy), sub: `累計 ${this.fmtPct(d['累計營業收入-前期比較增減(%)'])}`, cls: this.yoyMClass },
+                { label: `EPS ${d['季別'] || ''}`, value: isNaN(eps) ? '-' : eps.toFixed(2),
+                  sub: isNaN(epsYoy) ? '' : `年增 ${epsYoy > 0 ? '+' : ''}${epsYoy.toFixed(2)} 元`, cls: isNaN(epsYoy) ? '' : epsYoy > 0 ? 'up' : 'down' },
+            ]
+        },
+        // 收合區裡的其他估值
+        extraStats() {
+            if (!this.dayRow) return []
+            const d = this.dayRow
+            const [, pb, , rps] = this.valCards
+            return [
+                { label: '淨值倍率', value: pb.value, cls: pb.colorClass },
+                { label: '每股營收', value: rps.value + ' 元', cls: '' },
+                { label: '月營收 MoM', value: this.fmtPct(d['營業收入-上月比較增減(%)']), cls: this.momClass },
+                { label: '毛利率（最新季）', value: this.fmtN(d['毛利率'], 1) + '%', cls: '' },
             ]
         },
         // ── 月營收顏色 ──────────────────────────────────────
@@ -427,36 +618,60 @@ var app = new Vue({
             const d = this.dayRow
             const flag = k => parseInt(d[k]) === 1
             return [
-                { label: '財報健康',        pass: flag('財報健康') },
-                { label: '財報強勢',        pass: flag('財報強勢') },
-                { label: '財報動能強',      pass: flag('財報動能強') },
-                { label: 'EPS前8季全正',    pass: flag('EPS_前8季全為正') },
-                { label: 'EPS維持',         pass: flag('EPS_維持') },
-                { label: '毛利率維持',      pass: flag('毛利率_維持') },
-                { label: 'EPS創新高',       pass: flag('EPS_創新高') },
-                { label: '毛利率創新高',    pass: flag('毛利率_創新高') },
-                { label: 'EPS成長',         pass: flag('EPS_成長') },
-                { label: 'EPS_YoY成長',     pass: flag('EPS_YoY成長') },
-                { label: '毛利率成長',      pass: flag('毛利率成長') },
-                { label: '毛利率YoY成長',   pass: flag('毛利率YoY成長') },
+                { group: '穩健',     label: '財報健康',        pass: flag('財報健康') },
+                { group: '穩健',     label: 'EPS前8季全正',    pass: flag('EPS_前8季全為正') },
+                { group: '穩健',     label: 'EPS維持',         pass: flag('EPS_維持') },
+                { group: '穩健',     label: '毛利率維持',      pass: flag('毛利率_維持') },
+                { group: '強勢',     label: '財報強勢',        pass: flag('財報強勢') },
+                { group: '強勢',     label: 'EPS創新高',       pass: flag('EPS_創新高') },
+                { group: '強勢',     label: '毛利率創新高',    pass: flag('毛利率_創新高') },
+                { group: '成長',     label: '財報動能強',      pass: flag('財報動能強') },
+                { group: '成長',     label: 'EPS QoQ',         pass: flag('EPS_成長') },
+                { group: '成長',     label: 'EPS YoY',         pass: flag('EPS_YoY成長') },
+                { group: '成長',     label: '毛利率 QoQ',      pass: flag('毛利率成長') },
+                { group: '成長',     label: '毛利率 YoY',      pass: flag('毛利率YoY成長') },
+                { group: '連續・品質', label: 'EPS YoY連4季',  pass: flag('EPS_YoY連4季') },
+                { group: '連續・品質', label: '營益 YoY連4季', pass: flag('營益_YoY連4季') },
+                { group: '連續・品質', label: 'TTM EPS連4季增', pass: flag('TTM_EPS連4季增') },
+                { group: '連續・品質', label: '業外占比低',    pass: flag('業外占比低') },
             ]
         },
+        checkGroups() {
+            const groups = []
+            this.checkItems.forEach(it => {
+                let g = groups.find(x => x.name == it.group)
+                if (!g) groups.push(g = { name: it.group, items: [], pass: 0 })
+                g.items.push(it)
+                if (it.pass) g.pass++
+            })
+            return groups
+        },
+        // 以 checkall 的 score（= fundamental_score_all，16 項）為準，與 index.html 一致
         score() {
+            const s = parseFloat(this.dayRow?.score)
+            if (!isNaN(s)) return s
             const pass = this.checkItems.filter(x => x.pass).length
-            const total = this.checkItems.length || 12
-            return Math.round(pass / total * 100)
+            const total = this.checkItems.length || 16
+            return Math.round(pass / total * 1000) / 10
+        },
+        // E 金融保險 / 0 無財報資料：評分不適用，不給強弱判斷
+        scoreNA() {
+            return /^(E|0) /.test(String(this.fsRow?.['基本面分類'] || ''))
         },
         scoreCircleClass() {
+            if (this.scoreNA) return 'score-na'
             if (this.score >= 70) return 'score-green'
             if (this.score >= 40) return 'score-yellow'
             return 'score-red'
         },
         scoreLabelClass() {
+            if (this.scoreNA) return 'flat'
             if (this.score >= 70) return 'up'
             if (this.score >= 40) return ''
             return 'down'
         },
         scoreLabel() {
+            if (this.scoreNA) return '評分不適用'
             if (this.score >= 70) return '基本面強勢'
             if (this.score >= 40) return '基本面尚可'
             return '基本面偏弱'
@@ -474,9 +689,67 @@ var app = new Vue({
             }
             return `通過 ${pass}/${total} 項財報指標　${details.join('　')}`
         },
-        // ── 歷史近 12 季 ─────────────────────────────────────
-        last12() {
-            return this.histRows.slice(-12)
+        // ── 型態標籤 ─────────────────────────────────────────
+        typeTags() {
+            const r = this.fsRow
+            if (!r) return []
+            const flag = k => parseInt(r[k]) === 1
+            const tags = []
+            if (flag('Type_存股'))     tags.push({ label: '存股', cls: 'tag-blue', tip: '非景氣循環股、近20季EPS全正、毛利率穩、營益率>10%、本業為主、4年EPS成長' })
+            if (flag('Type_轉機'))     tags.push({ label: '轉機' + (r['轉機說明'] ? `・${r['轉機說明']}` : ''), cls: 'tag-purple', tip: '虧轉盈，或衰退後毛利率回升' })
+            if (flag('Type_加速'))     tags.push({ label: '加速', cls: 'tag-red', tip: 'TTM EPS 年增率連3季走高，最新 ≥ 20%' })
+            if (flag('Type_毛利結構')) tags.push({ label: '毛利結構改變', cls: 'tag-green', tip: '近2季毛利率都突破前20季高點' })
+            return tags
+        },
+        classInfo() {
+            const name = this.fsRow?.['基本面分類']
+            if (!name) return null
+            const [cls, hint] = CLASS_HINTS[String(name).split(' ')[0]] || ['', '']
+            return { name, cls, hint }
+        },
+        isCyclical() {
+            return parseInt(this.fsRow?.['景氣循環股']) === 1
+        },
+        warnings() {
+            const r = this.fsRow
+            if (!r) return []
+            const w = r['警訊說明'] ? String(r['警訊說明']).split(' / ') : []
+            if (r['Type_景氣位置'] === '高峰' && this.score >= 70) w.unshift('高分但景氣在高峰，可能是循環頂點')
+            return w
+        },
+        cyclePct() {
+            const p = parseFloat(this.fsRow?.['毛利率_歷史百分位'])
+            return isNaN(p) ? null : p
+        },
+        cycleText() {
+            const pos = this.fsRow?.['Type_景氣位置']
+            return (this.isCyclical && pos && pos !== '-' ? `${pos}・` : '') + `第 ${this.cyclePct} 百分位`
+        },
+        cycleClass() {
+            if (!this.isCyclical) return ''
+            if (this.cyclePct >= 80) return 'up'
+            if (this.cyclePct <= 30) return 'down'
+            return ''
+        },
+        typeStats() {
+            const r = this.fsRow
+            if (!r) return []
+            const n = k => parseFloat(r[k])
+            const cls = v => isNaN(v) ? '' : v > 0 ? 'up' : v < 0 ? 'down' : ''
+            return [
+                { label: 'TTM EPS YoY',   value: this.fmtPct(r['TTM_EPS_YoY%']),  cls: cls(n('TTM_EPS_YoY%')) },
+                { label: '營收 TTM YoY',  value: this.fmtPct(r['營收_TTM_YoY%']), cls: cls(n('營收_TTM_YoY%')) },
+                { label: 'EPS 4年CAGR',   value: this.fmtPct(r['EPS_5年CAGR%']),  cls: cls(n('EPS_5年CAGR%')) },
+                { label: '毛利率波動(12季)', value: isNaN(n('GM_std_12')) ? '-' : n('GM_std_12').toFixed(1), cls: '' },
+                { label: '平均營益率(12季)', value: isNaN(n('OPM_avg_12')) ? '-' : n('OPM_avg_12').toFixed(1) + '%', cls: '' },
+            ]
+        },
+        // ── 圖表區間 ─────────────────────────────────────────
+        chartRows() {
+            return this.range ? this.histRows.slice(-this.range) : this.histRows
+        },
+        rangeLabel() {
+            return `${this.chartRows.length} 季`
         },
         tableRows() {
             return this.histRows.slice(-8).slice().reverse()
@@ -524,6 +797,14 @@ var app = new Vue({
                 // 2) 個股財報歷史
                 const profData = await this.fetchXlsx(`./Result/profitability/${stock4}.xlsx`)
                 this.histRows = profData.sort((a, b) => parseFloat(a.season_key||0) - parseFloat(b.season_key||0))
+                // 營收 YoY%：只跟剛好 4 季前比（缺季不算）
+                const qidx = r => parseInt(r.year) * 4 + parseInt(r.q)
+                const byQ = new Map(this.histRows.map(r => [qidx(r), r]))
+                this.histRows.forEach(r => {
+                    const prev = byQ.get(qidx(r) - 4)
+                    const cur = parseFloat(r['營業收入']), base = parseFloat(prev?.['營業收入'])
+                    r._revYoY = base > 0 ? (cur / base - 1) * 100 : null
+                })
 
                 // 如果 dayRow 沒有財報欄位，補最新一季
                 if (this.dayRow && this.histRows.length) {
@@ -538,6 +819,23 @@ var app = new Vue({
                             this.dayRow[k] = latest[k]
                     })
                 }
+
+                // 3) 基本面評分（16 項）：checkall 沒有後 4 項旗標，從 fundamental_score_all 補
+                if (this.dayRow) {
+                    try {
+                        const fsData = await this.fetchXlsx('./Result/fundamental_score_all.xlsx')
+                        const fsRow = fsData.find(x => String(x.stock_number).padStart(4,'0') == stock4)
+                        if (fsRow) {
+                            this.fsRow = fsRow;
+                            ['EPS_YoY連4季','營益_YoY連4季','TTM_EPS連4季增','業外占比低','score'].forEach(k => {
+                                if (this.dayRow[k] === undefined || this.dayRow[k] === null || this.dayRow[k] === '')
+                                    this.$set(this.dayRow, k, fsRow[k])
+                            })
+                        }
+                    } catch(e) {
+                        console.warn('fundamental_score_all 載入失敗：', e.message)
+                    }
+                }
             } catch(e) {
                 this.error = '資料載入失敗：' + e.message
             }
@@ -549,8 +847,18 @@ var app = new Vue({
             this.drawEpsChart()
             this.drawRevChart()
         },
+        toggle(key) {
+            this.open[key] = !this.open[key]
+            try { localStorage.setItem('fundamental_open', JSON.stringify(this.open)) } catch (e) { }
+            if (key == 'rev') this.$nextTick(() => this.drawRevChart())
+        },
+        setRange(n) {
+            this.range = n
+            try { localStorage.setItem('fundamental_range', String(n)) } catch (e) { }
+            this.$nextTick(() => this.drawCharts())
+        },
         drawEpsChart() {
-            const rows = this.last12
+            const rows = this.chartRows
             if (rows.length < 2) return
             if (this.epsChartInst) { this.epsChartInst.destroy(); this.epsChartInst = null }
 
@@ -584,7 +892,7 @@ var app = new Vue({
                         {
                             type: 'line', label: '毛利率%',
                             data: gm, borderColor: 'rgba(88,166,255,.9)', borderWidth: 2,
-                            pointRadius: 3, pointBackgroundColor: gmColors, tension: 0.4,
+                            pointRadius: rows.length > 24 ? 0 : 3, pointBackgroundColor: gmColors, tension: 0.4,
                             yAxisID: 'yGm', order: 1,
                         },
                         {
@@ -597,7 +905,7 @@ var app = new Vue({
                     ]
                 },
                 options: {
-                    responsive: true, interaction: { mode: 'index', intersect: false },
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 } },
                         tooltip: {
@@ -622,15 +930,16 @@ var app = new Vue({
             })
         },
         drawRevChart() {
-            const rows = this.last12
-            if (rows.length < 2) return
+            const rows = this.chartRows
             if (this.revChartInst) { this.revChartInst.destroy(); this.revChartInst = null }
+            if (rows.length < 2 || !this.$refs.revChart) return   // 收合時沒有 canvas
 
             const labels = rows.map(r => r['季別'] || r.season_key)
             const rev    = rows.map(r => parseFloat(r['營業收入']) || 0)
-            const yoy    = rows.map(r => parseFloat(r['EPS_YoY_%']))
+            const yoy    = rows.map(r => r._revYoY)
 
-            const revColors = rows.map(r => parseInt(r['EPS_YoY成長']) === 1 ? 'rgba(248,81,73,.7)' : 'rgba(63,185,80,.6)')
+            // 長條顏色依營收 YoY：紅 = 成長、綠 = 衰退、灰 = 無去年同季
+            const revColors = rows.map(r => r._revYoY == null ? 'rgba(139,148,158,.5)' : r._revYoY >= 0 ? 'rgba(248,81,73,.7)' : 'rgba(63,185,80,.6)')
 
             const ctx = this.$refs.revChart.getContext('2d')
             this.revChartInst = new Chart(ctx, {
@@ -643,16 +952,16 @@ var app = new Vue({
                             yAxisID: 'yRev', order: 2,
                         },
                         {
-                            type: 'line', label: 'EPS YoY%',
-                            data: yoy.map(v => isNaN(v) ? null : v),
+                            type: 'line', label: '營收 YoY%',
+                            data: yoy,
                             borderColor: 'rgba(210,153,34,.9)', borderWidth: 2,
-                            pointRadius: 3, tension: 0.4,
+                            pointRadius: rows.length > 24 ? 0 : 3, tension: 0.4,
                             yAxisID: 'yYoy', order: 1,
                         },
                     ]
                 },
                 options: {
-                    responsive: true, interaction: { mode: 'index', intersect: false },
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 } },
                         tooltip: {
@@ -660,7 +969,7 @@ var app = new Vue({
                             titleColor: '#e6edf3', bodyColor: '#8b949e',
                             callbacks: {
                                 label(ctx) {
-                                    if (ctx.dataset.yAxisID === 'yYoy') return ` EPS YoY: ${ctx.parsed.y?.toFixed(1)}%`
+                                    if (ctx.dataset.yAxisID === 'yYoy') return ` 營收 YoY: ${ctx.parsed.y?.toFixed(1)}%`
                                     return ` 營收: ${ctx.parsed.y?.toLocaleString()}`
                                 }
                             }
@@ -676,7 +985,7 @@ var app = new Vue({
                         yYoy: {
                             position: 'right', ticks: { color: '#d29922', font: { size: 10 }, callback: v => v+'%' },
                             grid: { drawOnChartArea: false },
-                            title: { display: true, text: 'EPS YoY%', color: '#d29922', font: { size: 10 } }
+                            title: { display: true, text: '營收 YoY%', color: '#d29922', font: { size: 10 } }
                         },
                     }
                 }

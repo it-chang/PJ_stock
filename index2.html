@@ -5,13 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>太陽圖</title>
-    <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet">
     <link href="./Content/base.css" rel="stylesheet">
     <link href="./Content/stockDialog.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.10/dist/vuetify.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.4/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="./Content/common.js"></script>
         <script src="./Content/stockDialog.js"></script>
     <script src="./Content/getRealTime.js"></script>
@@ -22,7 +22,7 @@
         <v-app>
             <v-container style="max-width: 95%;">
                 <v-row no-gutters>
-                    <v-col col="3">
+                    <v-col>
                         <v-btn color="primary" @click="window.location.href=location.href +'&sync=Y'">SYNC</v-btn>
                         <v-btn color="primary" @click="app.sync_realtime()
                                                        app.sync=true">SYNC2</v-btn>
@@ -35,7 +35,7 @@
                             onclick="window.open(location.href + (location.href.includes('?') ? '&' : '?') + 'setdate=-2', '_blank', 'noopener'); return false;">-2</a>
                         【N:{{n}}】
                     </v-col>
-                    <v-col col="5">
+                    <v-col>
                         <v-btn color="primary" @click="reset">reset</v-btn>
                         <v-btn color="primary" @click="reverse">reverse</v-btn>
 
@@ -66,7 +66,7 @@
 
                     </v-col>
 
-                    <v-col col="1">
+                    <v-col>
                         <v-btn color="primary" @click="collapse=!collapse">Collapse</v-btn>
                         <v-btn color="primary"
                             @click="localStorage.setItem('aalist', JSON.stringify(jsonData.map(x=>x.stock_number)))">set</v-btn>
@@ -75,7 +75,7 @@
                     </v-col>
                 </v-row>
                 <v-row no-gutters v-show="collapse">
-                    <v-col col="1" v-for="(le, index) in [...new Set(jsonData.map(x=>x.Typelevel))].sort()">
+                    <v-col v-for="(le, index) in [...new Set(jsonData.map(x=>x.Typelevel))].sort()">
                         <v-btn color="primary" @click="jsonDataChange(le)">{{le}}</v-btn>
                     </v-col>
                 </v-row>
@@ -680,11 +680,11 @@
         var app = new Vue({
             el: '#app',
             vuetify: new Vuetify(),
+            mixins: [pageMixin],
             data() {
                 return {
                     stockno:'',
                     checked: false,
-                    checklist: [],
                     collapse: false,
                     sync: false,
                     d: '',
@@ -726,10 +726,7 @@
                 };
             },
             created() {
-                this.url = window.location.href.split('/').slice(0, 4).join('/') + '/Html/';
-                if (window.location.host.indexOf("it-chang") !== -1) {
-
-                };
+                this.url = this.$htmlUrl
                 let urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.has('sync')) {
                     this.sync = urlParams.get('sync') == 'Y';
@@ -738,12 +735,7 @@
                     this.stockno = urlParams.get('stockno') ;
                 }
 
-                this.url = this.url.replace('itchang0615', 'it-chang')
-                this.url = this.url.replace('auohqeshtt02', 'it-chang')
-                this.url = this.url.replace('PJ_stock/Html', 'PJ_Stock2')
-
                 this.init();
-                this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
                 window.scrollTo({ left: document.body.scrollWidth, behavior: 'smooth' });
             },
             computed: {
@@ -768,37 +760,8 @@
                 },
             },
             methods: {
-                  handleCheckUpdate({ stock, checked }) {
-
-                    if (checked) {
-                        if (!this.checklist.includes(stock)) {
-                            this.checklist.push(stock)
-                        }
-                    } else {
-                        this.checklist = this.checklist.filter(x => x !== stock)
-                    }
-                    console.log(this.checklist)
-                    localStorage.setItem('checklist', JSON.stringify(this.checklist))
-                },
-                // 類別名稱淨化
-                sanitizedTypelevel(x) {
-                    return (x || '').replace(/[\\/:*?"<>|]/g, "_");
-                    /*
-                        return (x.Typelevel || '')
-                            .replace('右上', '')
-                            .replace('平', '')
-                            .replace('右下', '')
-                            .replace('上市', '')
-                            .replace('上櫃', '');
-                    */
-                },
-
-
                 computedHref(x) {
-                    const baseUrl = window.location.href.split('/').slice(0, 4).join('/');
-
-                    return `${baseUrl}/index2.html?d=type2&type=${this.sanitizedTypelevel(x)}`;
-                    //return `${baseUrl}/index2.html?d=type&type=${this.sanitizedTypelevel(x)}`;
+                    return `${this.$baseUrl}/index2.html?d=type2&type=${this.sanitizedTypelevel(x)}`;
                 },
 
 
@@ -806,8 +769,8 @@
                     await this.loadExcelData();
                     if (this.sync) {
                         await this.sync_realtime();
+                        this.sync_data();
                     }
-                    this.loadExcelData();
                 },
                 async sync_realtime() {
                     var vm = this
@@ -828,18 +791,6 @@
                     this.checked = this.checklist.filter(x => x == item.stock_number).length > 0
                     this.dialog = true;
                 },
-                checkboxUpdated(newValue) {
-                    this.checklist = JSON.parse(localStorage.getItem('checklist') || '[]')
-                    if (newValue) {
-                        if (this.checked) {
-                            this.checklist.push(newValue)
-                        } else {
-                            this.checklist = this.checklist.filter(x => x != newValue)
-                        }
-                        console.log(this.checklist)
-                    }
-                    localStorage.setItem('checklist', JSON.stringify(this.checklist));
-                },
                 openchart(item) {
 
                     this.selectedItem = item;
@@ -849,18 +800,8 @@
                     localStorage.setItem('ddata', JSON.stringify(app.jsonData.find(x => x.stock_number == stock).datalist.slice(0, 10).map(data => ({ name: data['日期'], y: data['均價long_%'], x: data['Volume_MA_long'], s: data['量能'], q: data['_quote'] }))));
 
 
-                    var targetPath = "/SZCMMM/che.html";
-
-                    // 如果有多環境差異、可加判斷（例如 DEV專案路徑不一樣）
-                    if (window.location.host.indexOf("615") !== -1) {
-                        targetPath = "/PJ_stock/che.html";
-                    };
-                    if (window.location.host.indexOf("host") !== -1) {
-                        targetPath = "/IT/che.html";
-                    };
-                    this.charturl = window.location.origin + targetPath
-                    this.charturl = this.charturl.replace('itchang0615', 'it-chang')
-                    this.charturl = this.charturl.replace('auohqeshtt02', 'it-chang')
+                    // che.html 讀同網域的 localStorage('ddata')，所以一定要開同一個站台底下的 che.html
+                    this.charturl = this.$baseUrl + '/che.html'
                     this.dialogchart = true;
                     //window.open(window.location.origin + targetPath, "_blank");
                 },
@@ -871,12 +812,14 @@
                     });
                 },
              
+                // 把即時報價寫進每一列（目前顯示的 jsonData 與 reset 用的 jsonData_ 都要寫）
                 sync_data() {
-                    this.jsonData.forEach(item => {
-                        item.rt_price = ((this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z / parseFloat(this.realtimedata.filter(x => x.c == item.stock_number)[0]?.y) - 1) * 100).toFixed(2);
-                        item.price = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.z
-                        var vol = this.realtimedata.filter(x => x.c == item.stock_number)[0]?.v;
-                        item.rt_量 = (vol / parseFloat(item.max股數)).toFixed(1);
+                    const rt = new Map(this.realtimedata.map(x => [x.c, x]))
+                    new Set([...this.jsonData, ...this.jsonData_]).forEach(item => {
+                        const q = rt.get(String(item.stock_number))
+                        this.$set(item, 'rt_price', ((q?.z / parseFloat(q?.y) - 1) * 100).toFixed(2))
+                        this.$set(item, 'price', q?.z)
+                        this.$set(item, 'rt_量', (q?.v / parseFloat(item.max股數)).toFixed(1))
                     })
                 },
                 async loadExcelData() {
@@ -912,25 +855,13 @@
                         this.set_date = setdate
                     }
                     console.log(file)
-                    await fetch(file)
-                        .then(response => response.arrayBuffer())
-                        .then(data => {
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const sheetName = workbook.SheetNames[0];
-                            const worksheet = workbook.Sheets[sheetName];
-                            const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    try {
+                            const { headers, rows } = await this.$loadSheet(file);
 
-                            if (json.length > 0) {
-                                this.headers = json[0].map(header => ({ text: header, value: header }));
+                            if (headers.length > 0) {
+                                this.headers = headers.map(header => ({ text: header, value: header }));
                                 this.$renameHeaders(this.headers);
-                                //Excel data to json 
-                                this.jsonData = json.slice(1).map(row => {
-                                    const rowData = {};
-                                    this.headers.forEach((header, i) => {
-                                        rowData[header.value] = row[i];
-                                    });
-                                    return rowData;
-                                });
+                                this.jsonData = rows;
 
                                 var dates = [...new Set(this.jsonData.map(x => x.日期))].sort()
 
@@ -1376,11 +1307,9 @@
                                 this.jsonData_ = dummydata
 
                             }
-                            if (this.realtimedata.length > 0) {
-                                this.sync_data();
-                            };
-                        })
-                        .catch(error => console.error('Error loading Excel file:', error));
+                    } catch (error) {
+                        console.error('Error loading Excel file:', error)
+                    }
                 },
                 reset() {
                     var vm = this

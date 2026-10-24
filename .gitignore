@@ -149,3 +149,6 @@ _LineMsg
 HTML/
 # End of https://mrkandreev.name/snippets/gitignore-generator/#PythonResult/checksun_sbk/
 Result/StockProfitability_all.xlsx
+
+# 機密設定
+.env

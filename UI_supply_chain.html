@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>族群維護</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/base.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        .ref-text { font-size: 11px; line-height: 1.35; color: #555; white-space: normal; max-width: 420px; }
+        .chip-memo { font-size: 10px; color: #888; margin-left: 4px; }
+        .v-data-table td { vertical-align: top; padding-top: 4px !important; padding-bottom: 4px !important; }
+        .mono { font-family: Consolas, monospace; }
+        .missing { color: #c62828; }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <!-- ===== 上方工具列 ===== -->
+            <v-app-bar app dense flat color="#16456d" dark>
+                <v-toolbar-title>🧩 族群維護 <span class="text-caption">BaseInfo/supply_chain.json</span></v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-chip v-if="loaded" small class="mr-2" :color="dirty ? 'orange' : 'green'">
+                    {{ dirty ? `未存檔變更 ${dirty} 筆` : '已同步' }}
+                </v-chip>
+                <v-btn small text @click="pickFolder"><v-icon left small>mdi-folder-open</v-icon>選擇專案資料夾</v-btn>
+                <v-btn small text :disabled="!rootHandle" @click="reload"><v-icon left small>mdi-refresh</v-icon>重新載入</v-btn>
+                <v-btn small color="orange darken-2" :disabled="!loaded || !dirty || saving" :loading="saving" @click="save">
+                    <v-icon left small>mdi-content-save</v-icon>備份並存檔
+                </v-btn>
+            </v-app-bar>
+
+            <v-main>
+                <v-container fluid style="max-width: 98%;">
+                    <!-- ===== 尚未載入 ===== -->
+                    <v-alert v-if="!supported" type="error" dense>
+                        這個瀏覽器不支援直接讀寫檔案，請用 Chrome 或 Edge，並以 http://localhost/... 開啟。
+                    </v-alert>
+                    <v-card v-else-if="!loaded" class="pa-6 mt-4" outlined>
+                        <div class="text-h6 mb-2">請先授權專案資料夾</div>
+                        <div class="mb-4">
+                            選擇 <span class="mono">D:\Project\Jupyter\Stock\Main</span>（要能看到 BaseInfo、Result、［BK］）。<br>
+                            之後再打開本頁，只需按「重新授權」。存檔時會先把原檔備份到 <span class="mono">［BK］/supply_chain_YYYYMMDD.json</span> 再覆蓋。
+                        </div>
+                        <v-btn v-if="rootHandle" color="primary" class="mr-2" @click="reload">重新授權並載入（{{ rootHandle.name }}）</v-btn>
+                        <v-btn outlined @click="pickFolder">選擇資料夾</v-btn>
+                        <v-alert v-if="error" type="error" dense class="mt-4">{{ error }}</v-alert>
+                    </v-card>
+
+                    <template v-else>
+                        <v-alert v-if="error" type="error" dense dismissible @input="error=''">{{ error }}</v-alert>
+                        <v-tabs v-model="tab" height="36">
+                            <v-tab>股票（{{ stockRows.length }}）</v-tab>
+                            <v-tab>族群定義（{{ sectors.length }} 個子族群）</v-tab>
+                        </v-tabs>
+
+                        <v-tabs-items v-model="tab">
+                            <!-- ================= 股票 ================= -->
+                            <v-tab-item>
+                                <v-row dense class="mt-2" align="center">
+                                    <v-col cols="12" md="3">
+                                        <v-text-field v-model="search" dense outlined hide-details clearable
+                                            prepend-inner-icon="mdi-magnify" label="代號 / 名稱 / 產業鏈 / 營收比重 / memo"></v-text-field>
+                                    </v-col>
+                                    <v-col cols="6" md="2">
+                                        <v-select v-model="statusFilter" :items="statusItems" dense outlined hide-details label="狀態"></v-select>
+                                    </v-col>
+                                    <v-col cols="6" md="2">
+                                        <v-autocomplete v-model="sectorFilter" :items="sectorNames" dense outlined hide-details clearable label="族群"></v-autocomplete>
+                                    </v-col>
+                                    <v-col cols="6" md="2">
+                                        <v-autocomplete v-model="subFilter" :items="subsOf(sectorFilter)" :disabled="!sectorFilter" dense outlined hide-details clearable label="子族群"></v-autocomplete>
+                                    </v-col>
+                                    <v-col cols="6" md="2">
+                                        <v-autocomplete v-model="type1Filter" :items="type1Names" dense outlined hide-details clearable label="官方產業"></v-autocomplete>
+                                    </v-col>
+                                    <v-col cols="12" md="1" class="text-caption">符合 {{ filteredRows.length }} 檔</v-col>
+                                </v-row>
+
+                                <!-- 批次 -->
+                                <v-sheet v-if="selected.length" class="pa-2 mt-2 d-flex align-center flex-wrap" color="blue lighten-5" rounded>
+                                    <b class="mr-3">已勾選 {{ selected.length }} 檔</b>
+                                    <v-autocomplete v-model="batch.sector" :items="sectorNames" dense outlined hide-details label="族群" style="max-width:180px" class="mr-2"
+                                        @change="batch.subsector=''"></v-autocomplete>
+                                    <v-autocomplete v-model="batch.subsector" :items="subsOf(batch.sector)" dense outlined hide-details label="子族群" style="max-width:220px" class="mr-2"></v-autocomplete>
+                                    <v-btn small color="primary" class="mr-2" :disabled="!batch.subsector" @click="batchAdd">加入</v-btn>
+                                    <v-btn small outlined color="red" class="mr-2" :disabled="!batch.subsector" @click="batchRemove">從此子族群移除</v-btn>
+                                    <v-btn small text @click="selected=[]">取消勾選</v-btn>
+                                </v-sheet>
+
+                                <v-data-table class="mt-2" dense show-select item-key="number" v-model="selected"
+                                    :headers="stockHeaders" :items="filteredRows" :items-per-page="50"
+                                    :footer-props="{ 'items-per-page-options': [50, 100, 300, -1] }"
+                                    sort-by="number">
+                                    <template v-slot:item.number="{ item }">
+                                        <a class="mono" @click="openEdit(item)">{{ item.number }}</a>
+                                    </template>
+                                    <template v-slot:item.name="{ item }">
+                                        <span :class="{ missing: !item.inBase }">{{ item.name }}</span>
+                                        <div v-if="!item.inBase" class="text-caption missing">不在基本資料</div>
+                                    </template>
+                                    <template v-slot:item.groups="{ item }">
+                                        <div v-for="m in membersOf(item.number)" :key="keyOf(m)">
+                                            <v-chip x-small label :color="colorOf(m.sector)" text-color="white" class="my-1"
+                                                @click="openEdit(item)">{{ m.sector }} / {{ m.subsector }}</v-chip>
+                                            <span v-if="m.memo" class="chip-memo">{{ m.memo }}</span>
+                                        </div>
+                                        <v-btn v-if="!membersOf(item.number).length" x-small text color="primary" @click="openEdit(item)">+ 分類</v-btn>
+                                    </template>
+                                    <template v-slot:item.desc="{ item }">
+                                        <div class="ref-text" v-html="fmtDesc(item.desc)"></div>
+                                    </template>
+                                    <template v-slot:item.revenue="{ item }">
+                                        <div class="ref-text">{{ item.revenue }}</div>
+                                    </template>
+                                </v-data-table>
+                            </v-tab-item>
+
+                            <!-- ================= 族群定義 ================= -->
+                            <v-tab-item>
+                                <v-row dense class="mt-2" align="center">
+                                    <v-col cols="12" md="3">
+                                        <v-text-field v-model="sectorSearch" dense outlined hide-details clearable prepend-inner-icon="mdi-magnify" label="族群 / 子族群 / wave"></v-text-field>
+                                    </v-col>
+                                    <v-col>
+                                        <v-btn small color="primary" @click="openSector(null)"><v-icon left small>mdi-plus</v-icon>新增子族群</v-btn>
+                                        <span class="text-caption ml-3">改名成「已存在的族群 + 子族群」= 合併（成員併過去，wave 以目標為準）</span>
+                                    </v-col>
+                                </v-row>
+                                <v-data-table class="mt-2" dense :headers="sectorHeaders" :items="sectorRows" :items-per-page="-1"
+                                    hide-default-footer :search="sectorSearch" group-by="sector">
+                                    <template v-slot:group.header="{ group, headers, toggle, isOpen }">
+                                        <td :colspan="headers.length" class="grey lighten-3">
+                                            <v-btn icon x-small @click="toggle"><v-icon>{{ isOpen ? 'mdi-minus' : 'mdi-plus' }}</v-icon></v-btn>
+                                            <b>{{ group }}</b>
+                                            <span class="text-caption ml-2">{{ subsOf(group).length }} 個子族群，{{ sectorStockCount(group) }} 檔</span>
+                                        </td>
+                                    </template>
+                                    <template v-slot:item.count="{ item }">
+                                        <a @click="showMembers(item)">{{ item.count }}</a>
+                                    </template>
+                                    <template v-slot:item.action="{ item }">
+                                        <v-btn x-small text color="primary" @click="openSector(item)">編輯</v-btn>
+                                        <v-btn x-small text color="red" @click="deleteSector(item)">刪除</v-btn>
+                                    </template>
+                                </v-data-table>
+                            </v-tab-item>
+                        </v-tabs-items>
+                    </template>
+                </v-container>
+            </v-main>
+
+            <!-- ===== 單檔編輯 ===== -->
+            <v-dialog v-model="edit.show" max-width="900" scrollable>
+                <v-card v-if="edit.row">
+                    <v-card-title class="py-2">
+                        <span class="mono mr-2">{{ edit.row.number }}</span> {{ edit.row.name }}
+                        <v-chip x-small class="ml-2">{{ edit.row.market }}</v-chip>
+                        <v-chip x-small class="ml-1">{{ edit.row.type1 }}</v-chip>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-row dense>
+                            <v-col cols="12" md="6">
+                                <div class="text-caption font-weight-bold">TPEx 產業鏈（StockType desc）</div>
+                                <div class="ref-text" style="max-width:none" v-html="fmtDesc(edit.row.desc) || '-'"></div>
+                            </v-col>
+                            <v-col cols="12" md="6">
+                                <div class="text-caption font-weight-bold">營收比重（StockInfo）</div>
+                                <div class="ref-text" style="max-width:none">{{ edit.row.revenue || '-' }}</div>
+                            </v-col>
+                        </v-row>
+                        <v-divider class="my-3"></v-divider>
+                        <div class="text-subtitle-2 mb-1">族群（可多筆）</div>
+                        <v-row dense v-for="(m, i) in edit.items" :key="i" align="center">
+                            <v-col cols="12" md="3">
+                                <v-autocomplete v-model="m.sector" :items="sectorNames" dense outlined hide-details label="族群" @change="m.subsector=''"></v-autocomplete>
+                            </v-col>
+                            <v-col cols="12" md="4">
+                                <v-autocomplete v-model="m.subsector" :items="subsOf(m.sector)" dense outlined hide-details label="子族群"></v-autocomplete>
+                            </v-col>
+                            <v-col cols="10" md="4">
+                                <v-text-field v-model="m.memo" dense outlined hide-details label="memo（自己的註解）"></v-text-field>
+                            </v-col>
+                            <v-col cols="2" md="1">
+                                <v-btn icon small color="red" @click="edit.items.splice(i,1)"><v-icon>mdi-delete</v-icon></v-btn>
+                            </v-col>
+                        </v-row>
+                        <v-btn small text color="primary" class="mt-1" @click="edit.items.push({ sector: '', subsector: '', memo: '' })">
+                            <v-icon left small>mdi-plus</v-icon>新增一筆
+                        </v-btn>
+                        <div class="text-caption mt-2">找不到想要的子族群？到「族群定義」分頁新增。</div>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn text @click="edit.show=false">取消</v-btn>
+                        <v-btn color="primary" @click="applyEdit">套用</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
+            <!-- ===== 子族群編輯 ===== -->
+            <v-dialog v-model="secEdit.show" max-width="520">
+                <v-card>
+                    <v-card-title class="py-2">{{ secEdit.orig ? '編輯子族群' : '新增子族群' }}</v-card-title>
+                    <v-card-text>
+                        <v-combobox v-model="secEdit.sector" :items="sectorNames" dense outlined label="族群（可選既有或輸入新的）" class="mt-2"></v-combobox>
+                        <v-combobox v-model="secEdit.subsector" :items="subsOf(secEdit.sector)" dense outlined label="子族群"></v-combobox>
+                        <v-combobox v-model="secEdit.wave" :items="waveNames" dense outlined label="wave（非 AI 填 NA）"></v-combobox>
+                        <v-alert v-if="secEditMergeTarget" type="warning" dense text>
+                            「{{ secEdit.sector }} / {{ secEdit.subsector }}」已存在：會把 {{ secEdit.orig ? countOf(secEdit.orig) : 0 }} 檔併過去，wave 以目標為準（{{ secEditMergeTarget.wave }}）。
+                        </v-alert>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn text @click="secEdit.show=false">取消</v-btn>
+                        <v-btn color="primary" @click="applySector">套用</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
+            <v-snackbar v-model="snack.show" :color="snack.color" timeout="4000">{{ snack.text }}</v-snackbar>
+        </v-app>
+    </div>
+
+    <script>
+        // ---------- 路徑 ----------
+        const SC_PATH = ['BaseInfo', 'supply_chain.json'];
+        const BASE_PATH = ['BaseInfo', 'StockBaseData.csv'];
+        const TYPE_PATH = ['Result', 'StockType.xlsx'];
+        const INFO_PATH = ['Result', 'StockInfo.xlsx'];
+        const BK_DIR = '［BK］';
+        const SEP = '\u0001';
+
+        // ---------- 資料夾授權記在 IndexedDB（關掉再開不用重選） ----------
+        const idb = {
+            open() {
+                return new Promise((ok, ng) => {
+                    const r = indexedDB.open('UI_supply_chain', 1);
+                    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+                    r.onsuccess = () => ok(r.result);
+                    r.onerror = () => ng(r.error);
+                });
+            },
+            async get(k) {
+                try {
+                    const db = await this.open();
+                    return await new Promise(ok => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ok(null); });
+                } catch (e) { return null; }
+            },
+            async set(k, v) {
+                try {
+                    const db = await this.open();
+                    db.transaction('kv', 'readwrite').objectStore('kv').put(v, k);
+                } catch (e) { /* 存不了就每次重選 */ }
+            },
+        };
+
+        async function fileHandle(root, parts, create = false) {
+            let dir = root;
+            for (const p of parts.slice(0, -1)) dir = await dir.getDirectoryHandle(p, { create });
+            return dir.getFileHandle(parts[parts.length - 1], { create });
+        }
+        async function readSheet(root, parts, opts = {}) {
+            const f = await (await fileHandle(root, parts)).getFile();
+            const wb = XLSX.read(parts[1].endsWith('.csv') ? await f.text() : await f.arrayBuffer(),
+                                 { type: parts[1].endsWith('.csv') ? 'string' : 'array', ...opts });
+            return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: false });
+        }
+        const code = v => String(v ?? '').trim().replace(/\.0$/, '');
+        const pad = n => String(n).padStart(2, '0');
+
+        // 與 Python json.dumps(ensure_ascii=False) 同格式：一筆一行，", " / ": " 分隔，換行沿用原檔的 CRLF
+        function line(o) {
+            return '  {' + Object.keys(o).map(k => JSON.stringify(k) + ': ' + JSON.stringify(o[k])).join(', ') + '}';
+        }
+        function serialize(sectors, members) {
+            return ('{\n "version": 2,\n "sectors": [\n' + sectors.map(line).join(',\n') +
+                    '\n ],\n "members": [\n' + members.map(line).join(',\n') + '\n ]\n}\n').replace(/\n/g, '\r\n');
+        }
+
+        const PALETTE = ['#1565c0', '#2e7d32', '#6a1b9a', '#c62828', '#ef6c00', '#00838f', '#4e342e', '#ad1457', '#283593', '#558b2f', '#00695c', '#5d4037'];
+
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify(),
+            data() {
+                return {
+                    supported: 'showDirectoryPicker' in window,
+                    rootHandle: null, loaded: false, saving: false, error: '', lastModified: 0,
+                    sectors: [], members: [], dirty: 0,
+                    base: {}, typeDesc: {}, info: {},
+                    tab: 0, search: '', statusFilter: '全部', sectorFilter: null, subFilter: null, type1Filter: null,
+                    statusItems: ['全部', '已分類', '未分類', '不在基本資料'],
+                    selected: [], batch: { sector: '', subsector: '' },
+                    sectorSearch: '',
+                    edit: { show: false, row: null, items: [] },
+                    secEdit: { show: false, orig: null, sector: '', subsector: '', wave: 'NA' },
+                    snack: { show: false, text: '', color: 'green' },
+                    stockHeaders: [
+                        { text: '代號', value: 'number', width: 70 },
+                        { text: '名稱', value: 'name', width: 110 },
+                        { text: '市場', value: 'market', width: 50 },
+                        { text: '官方產業', value: 'type1', width: 110 },
+                        { text: '族群 / 子族群（memo）', value: 'groups', sortable: false, width: 300 },
+                        { text: 'TPEx 產業鏈', value: 'desc', sortable: false },
+                        { text: '營收比重', value: 'revenue', sortable: false },
+                    ],
+                    sectorHeaders: [
+                        { text: '族群', value: 'sector' },
+                        { text: '子族群', value: 'subsector' },
+                        { text: 'wave', value: 'wave', width: 90 },
+                        { text: '檔數', value: 'count', width: 70 },
+                        { text: '', value: 'action', sortable: false, width: 130 },
+                    ],
+                };
+            },
+            computed: {
+                memberMap() {                       // number -> [member]
+                    const m = {};
+                    for (const x of this.members) (m[x.number] = m[x.number] || []).push(x);
+                    return m;
+                },
+                countMap() {
+                    const c = {};
+                    for (const x of this.members) { const k = this.keyOf(x); c[k] = (c[k] || 0) + 1; }
+                    return c;
+                },
+                sectorNames() { return [...new Set(this.sectors.map(s => s.sector))]; },
+                waveNames() { return [...new Set(this.sectors.map(s => s.wave))].sort(); },
+                type1Names() { return [...new Set(this.stockRows.map(r => r.type1).filter(Boolean))].sort(); },
+                colorMap() {
+                    const m = {};
+                    this.sectorNames.forEach((s, i) => m[s] = PALETTE[i % PALETTE.length]);
+                    return m;
+                },
+                stockRows() {
+                    const nums = new Set([...Object.keys(this.base), ...this.members.map(m => m.number)]);
+                    return [...nums].map(n => {
+                        const b = this.base[n], inf = this.info[n] || {};
+                        return {
+                            number: n, inBase: !!b,
+                            name: b ? b.name : (inf.name || '(未知)'),
+                            market: b ? b.market : '',
+                            type1: b ? b.type1 : (inf.type1 || ''),
+                            desc: this.typeDesc[n] || '',
+                            revenue: inf.revenue && inf.revenue !== '-' ? inf.revenue : '',
+                        };
+                    });
+                },
+                filteredRows() {
+                    const q = (this.search || '').trim().toLowerCase();
+                    return this.stockRows.filter(r => {
+                        const ms = this.memberMap[r.number] || [];
+                        if (this.statusFilter === '已分類' && !ms.length) return false;
+                        if (this.statusFilter === '未分類' && ms.length) return false;
+                        if (this.statusFilter === '不在基本資料' && r.inBase) return false;
+                        if (this.sectorFilter && !ms.some(m => m.sector === this.sectorFilter && (!this.subFilter || m.subsector === this.subFilter))) return false;
+                        if (this.type1Filter && r.type1 !== this.type1Filter) return false;
+                        if (!q) return true;
+                        const hay = [r.number, r.name, r.type1, r.desc, r.revenue, ...ms.map(m => m.sector + m.subsector + m.memo)].join(' ').toLowerCase();
+                        return q.split(/\s+/).every(t => hay.includes(t));
+                    });
+                },
+                sectorRows() {
+                    return this.sectors.map(s => ({ ...s, count: this.countMap[this.keyOf(s)] || 0, _ref: s }));
+                },
+                secEditMergeTarget() {
+                    const k = this.keyOf({ sector: this.secEdit.sector, subsector: this.secEdit.subsector });
+                    if (this.secEdit.orig && k === this.keyOf(this.secEdit.orig)) return null;
+                    return this.sectors.find(s => this.keyOf(s) === k) || null;
+                },
+            },
+            async mounted() {
+                window.addEventListener('beforeunload', e => { if (this.dirty) { e.preventDefault(); e.returnValue = ''; } });
+                if (!this.supported) return;
+                this.rootHandle = await idb.get('root');
+                if (this.rootHandle && (await this.rootHandle.queryPermission({ mode: 'readwrite' })) === 'granted') {
+                    await this.load();
+                }
+            },
+            methods: {
+                keyOf(x) { return x.sector + SEP + x.subsector; },
+                subsOf(sector) { return this.sectors.filter(s => s.sector === sector).map(s => s.subsector); },
+                membersOf(n) { return this.memberMap[n] || []; },
+                countOf(s) { return this.countMap[this.keyOf(s)] || 0; },
+                sectorStockCount(sector) { return new Set(this.members.filter(m => m.sector === sector).map(m => m.number)).size; },
+                colorOf(s) { return this.colorMap[s] || 'grey'; },
+                fmtDesc(d) {
+                    if (!d) return '';
+                    const esc = String(d).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+                    return esc.split('**').map(s => s.trim()).filter(Boolean).join('<br>');
+                },
+                toast(text, color = 'green') { this.snack = { show: true, text, color }; },
+
+                // ---------- 載入 ----------
+                async pickFolder() {
+                    if (this.dirty && !confirm('有未存檔的變更，確定要換資料夾？')) return;
+                    try {
+                        const h = await window.showDirectoryPicker({ id: 'stock-main', mode: 'readwrite' });
+                        try { await fileHandle(h, SC_PATH); }
+                        catch (e) { this.error = `「${h.name}」裡找不到 BaseInfo/supply_chain.json，請選專案根目錄（Main）。`; return; }
+                        this.rootHandle = h;
+                        await idb.set('root', h);
+                        await this.load();
+                    } catch (e) {
+                        if (e.name !== 'AbortError') this.error = '選擇資料夾失敗：' + e.message;
+                    }
+                },
+                async reload() {
+                    if (this.dirty && !confirm('有未存檔的變更，重新載入會放棄這些變更，確定？')) return;
+                    if ((await this.rootHandle.requestPermission({ mode: 'readwrite' })) !== 'granted') {
+                        this.error = '沒有取得資料夾的讀寫權限'; return;
+                    }
+                    await this.load();
+                },
+                async load() {
+                    this.error = '';
+                    try {
+                        const root = this.rootHandle;
+                        const f = await (await fileHandle(root, SC_PATH)).getFile();
+                        const sc = JSON.parse(await f.text());
+                        if (!sc.sectors || !sc.members) throw new Error('supply_chain.json 不是兩層格式（缺 sectors / members）');
+                        this.lastModified = f.lastModified;
+                        this.sectors = sc.sectors.map(s => ({ sector: s.sector, subsector: s.subsector, wave: s.wave || 'NA' }));
+                        this.members = sc.members.map(m => ({ number: code(m.number), sector: m.sector, subsector: m.subsector, memo: m.memo || '' }));
+
+                        // 參考資料：讀不到就略過，不影響編輯
+                        const warn = [];
+                        try {
+                            const base = {};
+                            for (const r of await readSheet(root, BASE_PATH, { raw: true })) {
+                                const n = code(r['公司代號']);
+                                if (!n) continue;
+                                const t1 = r['Type'] === '上櫃' ? r['上櫃公司產業類別'] : r['上市公司產業類別'];
+                                base[n] = { name: r['公司簡稱'], market: r['Type'], type1: t1 && t1 !== '--' ? t1 : '' };
+                            }
+                            this.base = base;
+                        } catch (e) { warn.push('StockBaseData.csv'); }
+                        try {
+                            const td = {};
+                            for (const r of await readSheet(root, TYPE_PATH)) td[code(r.stock_number)] = r.desc;
+                            this.typeDesc = td;
+                        } catch (e) { warn.push('StockType.xlsx'); }
+                        try {
+                            const inf = {};
+                            for (const r of await readSheet(root, INFO_PATH)) inf[code(r.stock_number)] = { name: r['公司名稱'], type1: r['產業別'], revenue: r['營收比重'] };
+                            this.info = inf;
+                        } catch (e) { warn.push('StockInfo.xlsx'); }
+
+                        this.dirty = 0; this.selected = []; this.loaded = true;
+                        this.toast(`已載入 ${this.sectors.length} 個子族群、${this.members.length} 筆成員` + (warn.length ? `（讀不到：${warn.join('、')}）` : ''),
+                                   warn.length ? 'orange' : 'green');
+                    } catch (e) {
+                        this.error = '載入失敗：' + e.message;
+                    }
+                },
+
+                // ---------- 單檔編輯 ----------
+                openEdit(row) {
+                    this.edit = { show: true, row, items: this.membersOf(row.number).map(m => ({ sector: m.sector, subsector: m.subsector, memo: m.memo })) };
+                    if (!this.edit.items.length) this.edit.items.push({ sector: '', subsector: '', memo: '' });
+                },
+                applyEdit() {
+                    const items = this.edit.items.filter(m => m.sector || m.subsector);
+                    if (items.some(m => !m.sector || !m.subsector)) { this.toast('族群和子族群都要選', 'red'); return; }
+                    const keys = items.map(this.keyOf);
+                    if (new Set(keys).size !== keys.length) { this.toast('同一個子族群重複了', 'red'); return; }
+                    const n = this.edit.row.number;
+                    const before = JSON.stringify(this.membersOf(n).map(m => [m.sector, m.subsector, m.memo]));
+                    const after = JSON.stringify(items.map(m => [m.sector, m.subsector, (m.memo || '').trim()]));
+                    if (before !== after) {
+                        // 保持原本的位置：先在第一筆舊資料的位置放新資料，沒有舊資料就加在最後
+                        const idx = this.members.findIndex(m => m.number === n);
+                        const rest = this.members.filter(m => m.number !== n);
+                        const add = items.map(m => ({ number: n, sector: m.sector, subsector: m.subsector, memo: (m.memo || '').trim() }));
+                        const pos = idx < 0 ? rest.length : this.members.slice(0, idx).filter(m => m.number !== n).length;
+                        rest.splice(pos, 0, ...add);
+                        this.members = rest;
+                        this.dirty++;
+                    }
+                    this.edit.show = false;
+                },
+
+                // ---------- 批次 ----------
+                batchAdd() {
+                    const { sector, subsector } = this.batch;
+                    let n = 0;
+                    for (const r of this.selected) {
+                        if (this.membersOf(r.number).some(m => m.sector === sector && m.subsector === subsector)) continue;
+                        this.members.push({ number: r.number, sector, subsector, memo: '' });
+                        n++;
+                    }
+                    if (n) this.dirty++;
+                    this.toast(`加入 ${n} 檔到 ${sector} / ${subsector}（已在裡面的略過）`);
+                },
+                batchRemove() {
+                    const { sector, subsector } = this.batch;
+                    const sel = new Set(this.selected.map(r => r.number));
+                    const before = this.members.length;
+                    this.members = this.members.filter(m => !(sel.has(m.number) && m.sector === sector && m.subsector === subsector));
+                    const n = before - this.members.length;
+                    if (n) this.dirty++;
+                    this.toast(`從 ${sector} / ${subsector} 移除 ${n} 檔`);
+                },
+
+                // ---------- 族群定義 ----------
+                showMembers(s) {
+                    this.sectorFilter = s.sector; this.subFilter = s.subsector;
+                    this.statusFilter = '全部'; this.search = ''; this.tab = 0;
+                },
+                openSector(s) {
+                    this.secEdit = s ? { show: true, orig: s._ref, sector: s.sector, subsector: s.subsector, wave: s.wave }
+                                     : { show: true, orig: null, sector: '', subsector: '', wave: 'NA' };
+                },
+                applySector() {
+                    const sector = (this.secEdit.sector || '').trim(), subsector = (this.secEdit.subsector || '').trim();
+                    const wave = (this.secEdit.wave || '').trim() || 'NA';
+                    if (!sector || !subsector) { this.toast('族群和子族群都要填', 'red'); return; }
+                    const orig = this.secEdit.orig, target = this.secEditMergeTarget;
+                    if (!orig) {
+                        if (target) { this.toast('這個子族群已經存在', 'red'); return; }
+                        this.sectors.push({ sector, subsector, wave });
+                    } else if (target) {
+                        // 合併：成員改掛到 target，已經在 target 的就丟掉，原定義刪除
+                        if (!confirm(`把「${orig.sector} / ${orig.subsector}」（${this.countOf(orig)} 檔）併入「${sector} / ${subsector}」？`)) return;
+                        const tk = this.keyOf(target), ok = this.keyOf(orig);
+                        const inTarget = new Set(this.members.filter(m => this.keyOf(m) === tk).map(m => m.number));
+                        this.members = this.members.filter(m => !(this.keyOf(m) === ok && inTarget.has(m.number)))
+                            .map(m => this.keyOf(m) === ok ? { ...m, sector, subsector } : m);
+                        this.sectors = this.sectors.filter(s => s !== orig);
+                    } else {
+                        const ok = this.keyOf(orig);
+                        this.members = this.members.map(m => this.keyOf(m) === ok ? { ...m, sector, subsector } : m);
+                        Object.assign(orig, { sector, subsector, wave });
+                        this.sectors = [...this.sectors];
+                    }
+                    this.dirty++;
+                    this.secEdit.show = false;
+                },
+                deleteSector(s) {
+                    const n = this.countOf(s);
+                    if (!confirm(`刪除「${s.sector} / ${s.subsector}」？` + (n ? `\n這 ${n} 檔會一起從此子族群移除。` : ''))) return;
+                    const k = this.keyOf(s);
+                    this.members = this.members.filter(m => this.keyOf(m) !== k);
+                    this.sectors = this.sectors.filter(x => x !== s._ref);
+                    this.dirty++;
+                },
+
+                // ---------- 存檔：檢查 → 備份到［BK］ → 覆蓋 ----------
+                validate() {
+                    const defs = new Set(), errs = [];
+                    for (const s of this.sectors) {
+                        const k = this.keyOf(s);
+                        if (!s.sector || !s.subsector) errs.push('有空白的族群/子族群定義');
+                        if (defs.has(k)) errs.push(`子族群重複定義：${s.sector} / ${s.subsector}`);
+                        defs.add(k);
+                    }
+                    const seen = new Set();
+                    for (const m of this.members) {
+                        if (!/^\w+$/.test(m.number)) errs.push(`代號格式不對：${m.number}`);
+                        if (!defs.has(this.keyOf(m))) errs.push(`${m.number} 的「${m.sector} / ${m.subsector}」沒有定義`);
+                        const k = m.number + SEP + this.keyOf(m);
+                        if (seen.has(k)) errs.push(`${m.number} 重複在 ${m.sector} / ${m.subsector}`);
+                        seen.add(k);
+                    }
+                    return [...new Set(errs)];
+                },
+                async backupName(bk) {
+                    const d = new Date(), ymd = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+                    for (let i = 1; ; i++) {
+                        const name = `supply_chain_${ymd}${i === 1 ? '' : '_' + i}.json`;
+                        try { await bk.getFileHandle(name); } catch (e) { return name; }
+                    }
+                },
+                async save() {
+                    const errs = this.validate();
+                    if (errs.length) { this.error = '存檔前檢查失敗：' + errs.slice(0, 10).join('；'); return; }
+                    this.saving = true; this.error = '';
+                    try {
+                        const root = this.rootHandle;
+                        if ((await root.requestPermission({ mode: 'readwrite' })) !== 'granted') throw new Error('沒有取得資料夾的讀寫權限');
+                        const fh = await fileHandle(root, SC_PATH);
+                        const cur = await fh.getFile();
+                        if (cur.lastModified !== this.lastModified &&
+                            !confirm('supply_chain.json 在你載入後被改過（別的視窗或程式）。仍要覆蓋嗎？\n（原檔一樣會先備份）')) return;
+
+                        const bk = await root.getDirectoryHandle(BK_DIR, { create: true });
+                        const bkName = await this.backupName(bk);
+                        const bw = await (await bk.getFileHandle(bkName, { create: true })).createWritable();
+                        await bw.write(await cur.text());
+                        await bw.close();
+
+                        const w = await fh.createWritable();
+                        await w.write(serialize(this.sectors, this.members));
+                        await w.close();
+
+                        this.lastModified = (await fh.getFile()).lastModified;
+                        this.dirty = 0;
+                        this.toast(`已存檔，原檔備份為 ［BK］/${bkName}`);
+                    } catch (e) {
+                        this.error = '存檔失敗：' + e.message;
+                    } finally {
+                        this.saving = false;
+                    }
+                },
+            },
+        });
+    </script>
+</body>
+
+</html>

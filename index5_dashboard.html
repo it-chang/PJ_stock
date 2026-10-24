@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>產業趨勢看板</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#07090f;color:#c8d8f0;font-family:'Segoe UI','Microsoft JhengHei',sans-serif}
@@ -63,9 +63,15 @@
     .sig-weak    {background:#2e1065;color:#c4b5fd;border:1px solid #6d28d9}
     .sig-rising  {background:#052e16;color:#86efac;border:1px solid #16a34a}
 
-    /* 火花線 */
-    .spark{height:48px;margin-bottom:8px}
-    .spark canvas{width:100%!important;height:48px!important}
+    /* 火花線：線 = 成交金額，柱 = 法人淨買賣 */
+    .spark{height:64px;margin-bottom:8px}
+    .spark canvas{width:100%!important;height:64px!important}
+
+    /* 法人淨額 */
+    .inst-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;font-variant-numeric:tabular-nums}
+    .inst-label{color:#4a6080}
+    .inst-buy{color:#ef4444;font-weight:700}
+    .inst-sell{color:#22c55e;font-weight:700}
 
     /* 底部一行：量 + 強勢% */
     .card-foot{
@@ -115,6 +121,8 @@
   <button class="filter-btn" data-filter="topping">⚠️ 轉弱</button>
   <button class="filter-btn" data-filter="rising">▲ 連漲</button>
   <button class="filter-btn" data-filter="hot">🔥 強勢</button>
+  <button class="filter-btn" data-filter="inflow">💰 量增+法人買</button>
+  <button class="filter-btn" data-filter="outflow">💸 法人賣</button>
   <button class="filter-btn" data-filter="falling">▼ 下跌</button>
 </div>
 
@@ -122,6 +130,8 @@
   <span>排序：</span>
   <button class="sort-btn active" data-sort="signal">訊號強度</button>
   <button class="sort-btn" data-sort="vol">交易量</button>
+  <button class="sort-btn" data-sort="inst">法人淨買</button>
+  <button class="sort-btn" data-sort="inst5">法人5日</button>
   <button class="sort-btn" data-sort="hot">強勢%</button>
   <button class="sort-btn" data-sort="name">名稱</button>
 </div>
@@ -163,6 +173,7 @@ async function init(){
 
   all = Object.entries(raw).map(([name,d])=>{
     const vols = (d.vol||[]).map(v=>v??0);
+    const insts = (d.inst||[]).map(v=>v??0);   // 法人淨買賣（億）
     const hots = (d.hot||[]).map(v=>v??0);
     const total   = d.total||0;
     const todayV  = vols.at(-1)||0;
@@ -172,9 +183,11 @@ async function init(){
     const rising  = vols.length>=3 && vols.at(-1)>vols.at(-2) && vols.at(-2)>vols.at(-3);
     const tc      = d.trend_change||null;
     const hotSec  = d.hot_sector||false;
-    return { name, dates:d.dates||[], vols, hots, total,
+    const todayI  = insts.at(-1)||0;
+    const inst5   = insts.slice(-5).reduce((a,b)=>a+b,0);
+    return { name, dates:d.dates||[], vols, insts, hots, total,
              stockCount: d.stock_count||0,
-             reps:d.rep_stocks||[], todayV, todayH, hotPct,
+             reps:d.rep_stocks||[], todayV, todayH, todayI, inst5, hotPct,
              slope, rising, tc, hotSec };
   });
 
@@ -211,12 +224,16 @@ function render(){
     if(curFilter==='rising')   return s.rising;
     if(curFilter==='hot')      return s.hotSec;
     if(curFilter==='falling')  return s.slope<0;
+    if(curFilter==='inflow')   return s.slope>0 && s.todayI>0;
+    if(curFilter==='outflow')  return s.todayI<0;
     return true;
   });
 
   // 排序
   list.sort((a,b)=>{
     if(curSort==='vol')    return b.todayV - a.todayV;
+    if(curSort==='inst')   return b.todayI - a.todayI;
+    if(curSort==='inst5')  return b.inst5 - a.inst5;
     if(curSort==='hot')    return b.hotPct - a.hotPct;
     if(curSort==='name')   return a.name.localeCompare(b.name,'zh-Hant');
     // signal（預設）：訊號強度 → 今日量
@@ -273,10 +290,17 @@ function cardHTML(s){
 
   const linksHTML = links(s.name).map(l=>`<a class="card-link" href="${l.h}" target="_blank">${l.t}</a>`).join('');
 
+  // 法人：今日 / 近5日（億）
+  const instHTML = `<div class="inst-row">
+      <span><span class="inst-label">法人 </span><span class="${instCls(s.todayI)}">${fmtInst(s.todayI)}</span></span>
+      <span><span class="inst-label">5日 </span><span class="${instCls(s.inst5)}">${fmtInst(s.inst5)}</span></span>
+    </div>`;
+
   return `<div class="${cls}">
     <div class="card-name">${s.name}</div>
     ${sigHTML}
     <div class="spark"><canvas id="sp-${s.name}"></canvas></div>
+    ${instHTML}
     <div class="reps">${repHTML}</div>
     <div class="card-foot">
       <span><span class="vol-label">量 </span><span class="vol-val">${vl}</span></span>
@@ -286,6 +310,9 @@ function cardHTML(s){
     <div class="card-links">${linksHTML}</div>
   </div>`;
 }
+
+function fmtInst(v){ return (v>0?'+':'')+v.toFixed(1)+' 億'; }
+function instCls(v){ return v>0?'inst-buy':v<0?'inst-sell':'inst-label'; }
 
 const charts={};
 function drawSpark(s){
@@ -300,14 +327,22 @@ function drawSpark(s){
             s.rising              ? '#22c55e' :
             s.slope<0             ? '#3b82f6' : '#475569';
 
+  // 法人柱：0 軸置中，正負對稱
+  const iMax = Math.max(...s.insts.map(Math.abs), 0.01);
+
   charts[s.name] = new Chart(el.getContext('2d'),{
-    type:'line',
     data:{
       labels: s.dates.map(d=>d.slice(5)),
       datasets:[{
+        type:'line', yAxisID:'y', order:0,
         data: s.vols, borderColor:c, backgroundColor:c+'18',
-        borderWidth:1.8, pointRadius:3, pointBackgroundColor:c,
+        borderWidth:1.8, pointRadius:2, pointBackgroundColor:c,
         fill:true, tension:0.3
+      },{
+        type:'bar', yAxisID:'y2', order:1,
+        data: s.insts,
+        backgroundColor: s.insts.map(v=>v>=0?'#ef444499':'#22c55e99'),
+        barPercentage:0.6
       }]
     },
     options:{
@@ -317,10 +352,18 @@ function drawSpark(s){
         tooltip:{
           backgroundColor:'#0d1b2e',borderColor:'#1e3a5f',borderWidth:1,
           titleColor:'#7ecfff',bodyColor:'#c8e6ff',padding:6,
-          callbacks:{ label:ctx=>{ const v=ctx.parsed.y; return ' '+(v>=1000?(v/1000).toFixed(1)+'B':v.toFixed(0)+'M'); } }
+          callbacks:{ label:ctx=>{
+            const v=ctx.parsed.y;
+            if(ctx.dataset.yAxisID==='y2') return ' 法人 '+fmtInst(v);
+            return ' 量 '+(v>=1000?(v/1000).toFixed(1)+'B':v.toFixed(0)+'M');
+          } }
         }
       },
-      scales:{x:{display:false},y:{display:false}}
+      scales:{
+        x:{display:false},
+        y:{display:false},
+        y2:{display:false, min:-iMax, max:iMax}
+      }
     }
   });
 }

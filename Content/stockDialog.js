@@ -72,7 +72,7 @@ Vue.component('stock-dialog', {
       return 'index.html?d=A&date='+date+'&type='+val
     },
     urlindex2(item){
-      return window?.location.href.split('/').slice(0, 4).join('/')+'/index2.html?d=' +item?.分類標籤.split('】')[0].replace('【','') +'&date='+ item.日期+'&stockno='+ item.stock_number
+      return this.$baseUrl + '/index2.html?d=' +item?.分類標籤.split('】')[0].replace('【','') +'&date='+ item.日期+'&stockno='+ item.stock_number
     },
   },
 
@@ -129,7 +129,7 @@ Vue.component('stock-dialog', {
         <v-row no-gutters>
           <v-col cols="6">
             <iframe
-            :src="'http://localhost/IT/fundamental.html?stock=' + item.stock_number + '&date='+ item.日期"
+            :src="$baseUrl + '/fundamental.html?stock=' + item.stock_number + '&date='+ item.日期"
             style="height:80vh;width:100%;border:0;"
             ></iframe>
           </v-col>
@@ -184,7 +184,7 @@ Vue.component('stock-dialog', {
             <!-- 下方 iframe（獨立一列） -->
             <v-col cols="12">
               <iframe
-                :src="'http://localhost/IT/trading-journal.html?code=' + item.stock_number + '&date='+ item.日期"
+                :src="$baseUrl + '/trading-journal.html?code=' + item.stock_number + '&date='+ item.日期"
                 style="height:80vh;width:100%;border:0;"
               ></iframe>
             </v-col>
