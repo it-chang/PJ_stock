@@ -152,3 +152,7 @@ Result/StockProfitability_all.xlsx
 
 # 機密設定
 .env
+
+# 網頁要讀的 JSON（推薦紀錄 / 有量追蹤）要上 GitHub Pages
+!Result/recommend/web/*.json
+!Result/volume/web/*.json
