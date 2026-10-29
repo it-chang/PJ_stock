@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>有量追蹤</title>
+  <!-- 資料由 _VolumeSignal.ipynb 產生：Result/volume/web/index.json + YYYY-MM.json（依訊號月份拆檔，只載入勾選的月份） -->
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#07090f;color:#c8d8f0;font-family:'Segoe UI','Microsoft JhengHei',sans-serif;font-size:13px}
+
+    #topbar{background:#0a0f1e;border-bottom:1px solid #1a2d4a;padding:10px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+    #topbar h1{font-size:15px;font-weight:700;color:#7ecfff;letter-spacing:2px}
+    .tbadge{background:#0f1e35;border:1px solid #1a3a5c;color:#7ecfff;font-size:11px;padding:2px 10px;border-radius:3px}
+    .sep{flex:1}
+
+    #rules{padding:10px 18px 0;color:#6a86a8;font-size:12px;line-height:1.8}
+    #rules b{color:#7ecfff;font-weight:600;margin-right:6px}
+    #rules span{background:#0c1020;border:1px solid #1a2d4a;border-radius:3px;padding:1px 8px;margin-right:6px;white-space:nowrap}
+
+    #stats,#reasons{display:flex;gap:8px;padding:12px 18px 0;flex-wrap:wrap}
+    .stat{background:#0c1020;border-left:4px solid #1a3a5c;border-radius:6px;padding:8px 14px;min-width:110px}
+    .stat.obs{border-left-color:#3a2a5c}
+    .stat .k{font-size:11px;color:#6a86a8}
+    .stat .v{font-size:20px;font-weight:700;color:#e6f0ff;font-variant-numeric:tabular-nums}
+    .stat .s{font-size:11px;color:#6a86a8;font-variant-numeric:tabular-nums}
+    .chip{background:#0c1020;border:1px solid #1a2d4a;border-radius:12px;padding:3px 10px;font-size:12px;cursor:pointer;font-variant-numeric:tabular-nums}
+    .chip.active{border-color:#2a6aaa;background:#12233d}
+    .chip .n{color:#6a86a8;margin:0 4px}
+
+    #filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 18px}
+    .filter-btn{background:#0f1e35;border:1px solid #1a3a5c;color:#7ecfff;font-size:12px;padding:4px 12px;border-radius:3px;cursor:pointer;transition:.15s}
+    .filter-btn.active,.filter-btn:hover{background:#1a4a7a;border-color:#2a6aaa;color:#fff}
+    .month-btn .n{opacity:.6;font-size:11px;margin-left:4px}
+    .month-btn .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4caf50;margin-left:4px;vertical-align:middle}
+    select,input{background:#0f1e35;border:1px solid #1a3a5c;color:#c8d8f0;font-size:12px;padding:4px 8px;border-radius:3px}
+    label.chk{display:inline-flex;align-items:center;gap:4px;color:#7ecfff;font-size:12px;cursor:pointer}
+    label.chk input{accent-color:#2a6aaa}
+    .lbl{color:#6a86a8;font-size:12px}
+
+    #wrap{padding:0 18px 24px;overflow-x:auto}
+    table{border-collapse:collapse;width:100%;white-space:nowrap}
+    th{position:sticky;top:0;background:#0a0f1e;color:#7ecfff;font-weight:600;text-align:left;padding:7px 10px;border-bottom:1px solid #1a2d4a;cursor:pointer;user-select:none}
+    th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+    th.obs{color:#b49cff}
+    th .arrow{opacity:.7;font-size:10px}
+    td{padding:6px 10px;border-bottom:1px solid #111a2c}
+    td.obs{background:#0b0a18}
+    tr.row:hover td{background:#0e1630}
+    tr.day td{background:#0b1426;color:#7ecfff;font-weight:700;padding:5px 10px;border-bottom:1px solid #1a2d4a}
+    tr.day .cnt{color:#6a86a8;font-weight:400;margin-left:8px}
+    .st{padding:1px 8px;border-radius:10px;font-size:11px}
+    .st.on{background:#12351f;color:#5fe08a}
+    .st.off{background:#1d2333;color:#8a98b0}
+    .up{color:#ff5a5a}.down{color:#3ecf6e}.muted{color:#5b6f8c}
+    a{color:#7ecfff;text-decoration:none;margin-right:8px}
+    a:hover{text-decoration:underline}
+    #more{display:none;margin:12px auto 0}
+
+    /* 圖表 POP UP */
+    #pop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center}
+    #pop.open{display:flex}
+    #popBox{width:96vw;height:94vh;background:#060d0d;border:1px solid #1a3a5c;border-radius:6px;display:flex;flex-direction:column;overflow:hidden}
+    #popHead{display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid #1a2d4a;background:#0a0f1e}
+    #popTitle{color:#7ecfff;font-weight:700;letter-spacing:1px}
+    #popClose{margin-left:auto}
+    #popFrame{flex:1;border:0;width:100%;background:#060d0d}
+    #msg{padding:24px 18px;color:#6a86a8}
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <h1>🔊 有量追蹤</h1>
+    <span class="tbadge" id="lastDate">資料日 -</span>
+    <span class="tbadge" id="updated">更新 -</span>
+    <span class="sep"></span>
+  </div>
+
+  <div id="rules"></div>
+  <div id="stats"></div>
+  <div id="reasons"></div>
+
+  <div id="filters">
+    <span class="lbl">月份</span><span id="months"></span>
+    <span class="sep"></span>
+    <span class="lbl">狀態</span>
+    <button class="filter-btn active" data-st="">全部</button>
+    <button class="filter-btn" data-st="追蹤中">追蹤中</button>
+    <button class="filter-btn" data-st="離場">離場</button>
+    <label class="chk"><input type="checkbox" id="score50" checked/>score ≥ 50</label>
+    <select id="sector"><option value="">全部族群</option></select>
+    <input id="q" placeholder="代號 / 名稱" size="12"/>
+  </div>
+
+  <div id="msg">載入中…</div>
+  <div id="wrap" style="display:none">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+    <button id="more" class="filter-btn">顯示更多</button>
+  </div>
+
+  <div id="pop">
+    <div id="popBox">
+      <div id="popHead">
+        <span id="popTitle"></span>
+        <a id="popNewTab" href="#" target="_blank">新分頁開啟</a>
+        <button id="popClose" class="filter-btn">✕ 關閉 (Esc)</button>
+      </div>
+      <iframe id="popFrame"></iframe>
+    </div>
+  </div>
+
+<script>
+const DATA_DIR = './Result/volume/web/';
+const PAGE = 300;                 // 一次最多畫幾列，避免資料多時卡頓
+let OBS = [5, 10, 20];            // 觀察期（由 index.json 覆蓋）
+// obs：觀察期欄位（進場後 20 日內不論是否離場都記錄，用來比較離場規則）
+const cols = () => [
+  {k:'訊號日', t:'訊號日'}, {k:'代號', t:'代號'}, {k:'名稱', t:'名稱'}, {k:'族群', t:'族群'},
+  {k:'score', t:'score', num:1}, {k:'量比', t:'量比', num:1}, {k:'漲幅%', t:'漲幅%', num:1},
+  {k:'收盤', t:'收盤', num:1}, {k:'停損', t:'停損', num:1}, {k:'狀態', t:'狀態'},
+  {k:'離場日', t:'離場日'}, {k:'離場原因', t:'離場原因'},
+  {k:'持有天數', t:'天數', num:1}, {k:'報酬%', t:'報酬%', num:1},
+  {k:'最高%', t:'期間最高', num:1, obs:1}, {k:'最低%', t:'期間最低', num:1, obs:1},
+  ...OBS.map(n => ({k:`${n}日%`, t:`抱${n}日`, num:1, obs:1})),
+  {k:'_link', t:'連結', nosort:1},
+];
+
+const state = {index:null, loaded:{}, selected:new Set(), st:'', reason:'', sector:'', q:'', score50:true,
+               sortKey:'訊號日', sortDir:-1, limit:PAGE};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = v => v == null ? '<span class="muted">-</span>' : v.toLocaleString(undefined, {maximumFractionDigits:2});
+const pct = v => v == null ? '<span class="muted">-</span>'
+  : `<span class="${v > 0 ? 'up' : v < 0 ? 'down' : ''}">${v > 0 ? '+' : ''}${v.toFixed(2)}%</span>`;
+const avg = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
+const winRate = a => a.length ? (a.filter(x => x > 0).length / a.length * 100).toFixed(1) + '%' : '-';
+
+async function loadMonth(m){
+  if (!state.loaded[m]) state.loaded[m] = await (await fetch(DATA_DIR + m + '.json', {cache:'no-cache'})).json();
+}
+
+// 不含離場原因篩選（統計卡片 / 原因分布用）
+function baseRows(){
+  let out = [];
+  for (const m of state.selected) out = out.concat(state.loaded[m] || []);
+  const q = state.q.trim();
+  return out.filter(r => (!state.st || r['狀態'] === state.st)
+                      && (!state.score50 || r.score >= 50)
+                      && (!state.sector || r['族群'] === state.sector)
+                      && (!q || r['代號'].includes(q) || (r['名稱'] || '').includes(q)));
+}
+
+function rows(base){
+  const out = base.filter(r => !state.reason || r['離場原因'] === state.reason);
+  const k = state.sortKey, d = state.sortDir;
+  out.sort((a, b) => {
+    const x = a[k], y = b[k];
+    if (x == null || x === '') return 1;
+    if (y == null || y === '') return -1;
+    const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y));
+    return c * d || a['代號'].localeCompare(b['代號']);
+  });
+  return out;
+}
+
+function renderStats(all){
+  const on = all.filter(r => r['狀態'] === '追蹤中');
+  const off = all.filter(r => r['狀態'] === '離場' && r['報酬%'] != null).map(r => r['報酬%']);
+  const a = avg(off);
+  const card = (k, v, s = '', cls = '') => `<div class="stat ${cls}"><div class="k">${k}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+  let html = card('訊號總數', all.length) + card('追蹤中', on.length) + card('已離場', off.length)
+           + card('離場勝率', winRate(off)) + card('離場平均', a == null ? '-' : pct(a));
+  // 觀察期：抱滿 N 日的結果，對照上面「依規則離場」的結果
+  for (const n of OBS) {
+    const v = all.map(r => r[`${n}日%`]).filter(x => x != null);
+    const m = avg(v);
+    html += card(`抱滿 ${n} 日`, m == null ? '-' : pct(m), v.length ? `${v.length} 筆｜勝率 ${winRate(v)}` : '尚無資料', 'obs');
+  }
+  $('stats').innerHTML = html;
+
+  // 離場原因分布（點選可篩選）
+  const g = {};
+  all.filter(r => r['離場原因'] && r['報酬%'] != null).forEach(r => (g[r['離場原因']] ||= []).push(r['報酬%']));
+  $('reasons').innerHTML = Object.entries(g).sort((x, y) => y[1].length - x[1].length).map(([k, v]) =>
+    `<span class="chip ${state.reason === k ? 'active' : ''}" data-reason="${esc(k)}">${esc(k)}<span class="n">${v.length} 筆</span>${pct(avg(v))}</span>`
+  ).join('');
+}
+
+function render(){
+  const base = baseRows();
+  const all = rows(base);
+  renderStats(base);
+  const COLS = cols();
+  $('head').innerHTML = COLS.map(c => {
+    const arrow = c.k === state.sortKey ? `<span class="arrow">${state.sortDir < 0 ? '▼' : '▲'}</span>` : '';
+    return `<th class="${c.num ? 'num' : ''} ${c.obs ? 'obs' : ''}" data-k="${c.nosort ? '' : c.k}">${c.t} ${arrow}</th>`;
+  }).join('');
+
+  const shown = all.slice(0, state.limit);
+  const groupByDay = state.sortKey === '訊號日';
+  const dayCount = {};
+  if (groupByDay) all.forEach(r => dayCount[r['訊號日']] = (dayCount[r['訊號日']] || 0) + 1);
+  let html = '', lastDay = null;
+  for (const r of shown) {
+    if (groupByDay && r['訊號日'] !== lastDay) {
+      lastDay = r['訊號日'];
+      html += `<tr class="day"><td colspan="${COLS.length}">${esc(lastDay)}<span class="cnt">${dayCount[lastDay]} 檔</span></td></tr>`;
+    }
+    const retTxt = r['報酬%'] == null ? '<span class="muted">待進場</span>' : pct(r['報酬%']);
+    html += `<tr class="row">
+      <td>${esc(r['訊號日'])}</td><td>${esc(r['代號'])}</td><td>${esc(r['名稱'])}</td>
+      <td>${esc(r['族群']) || '<span class="muted">-</span>'}</td>
+      <td class="num ${r.score >= 50 ? 'up' : ''}">${fmt(r.score)}</td>
+      <td class="num">${fmt(r['量比'])}</td><td class="num">${pct(r['漲幅%'])}</td>
+      <td class="num">${fmt(r['收盤'])}</td><td class="num">${fmt(r['停損'])}</td>
+      <td><span class="st ${r['狀態'] === '追蹤中' ? 'on' : 'off'}">${esc(r['狀態'])}</span></td>
+      <td>${esc(r['離場日']) || '<span class="muted">-</span>'}</td><td>${esc(r['離場原因']) || '<span class="muted">-</span>'}</td>
+      <td class="num">${fmt(r['持有天數'])}</td><td class="num">${retTxt}</td>
+      <td class="num obs">${pct(r['最高%'])}</td><td class="num obs">${pct(r['最低%'])}</td>
+      ${OBS.map(n => `<td class="num obs">${pct(r[`${n}日%`])}</td>`).join('')}
+      <td>${r.chart ? `<a href="#" data-chart="${esc(r.chart)}" data-title="${esc(r['代號'] + ' ' + r['名稱'])}">圖</a>` : ''}<a href="${esc(r.yahoo)}" target="_blank">Yahoo</a></td>
+    </tr>`;
+  }
+  $('body').innerHTML = html || `<tr><td colspan="${COLS.length}" class="muted" style="padding:20px">沒有符合條件的訊號</td></tr>`;
+  $('more').style.display = all.length > state.limit ? 'block' : 'none';
+  $('more').textContent = `顯示更多（還有 ${all.length - state.limit} 筆）`;
+
+  fillSelect('sector', '全部族群', '族群');
+}
+
+function fillSelect(id, label, key){
+  const vals = [...new Set(Object.values(state.loaded).flat().map(r => r[key]).filter(Boolean))].sort();
+  const sel = $(id), cur = sel.value;
+  sel.innerHTML = `<option value="">${label}</option>` + vals.map(v => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
+}
+
+function renderMonths(){
+  $('months').innerHTML = state.index.months.map(m =>
+    `<button class="filter-btn month-btn ${state.selected.has(m.month) ? 'active' : ''}" data-m="${m.month}">
+       ${m.month}<span class="n">${m.count}</span>${m.active ? '<span class="dot" title="有追蹤中"></span>' : ''}</button>`).join(' ');
+}
+
+async function init(){
+  try {
+    state.index = await (await fetch(DATA_DIR + 'index.json', {cache:'no-cache'})).json();
+  } catch (e) {
+    $('msg').innerHTML = '❌ 無法載入 Result/volume/web/index.json（請先執行 _VolumeSignal.ipynb，並用 http://localhost 開啟本頁）';
+    return;
+  }
+  if (state.index.obs_days) OBS = state.index.obs_days;
+  $('lastDate').textContent = '資料日 ' + (state.index.last_date || '-');
+  $('updated').textContent = '更新 ' + (state.index.updated_at || '-');
+  $('rules').innerHTML = '<b>離場規則</b>' + (state.index.rules || []).map((t, i) => `<span>${i + 1}. ${esc(t)}</span>`).join('');
+  // 預設載入：最新 2 個月 + 仍有「追蹤中」的月份
+  state.index.months.forEach((m, i) => { if (i < 2 || m.active) state.selected.add(m.month); });
+  await Promise.all([...state.selected].map(loadMonth));
+  renderMonths();
+  $('msg').style.display = 'none';
+  $('wrap').style.display = 'block';
+  render();
+}
+
+$('months').addEventListener('click', async e => {
+  const b = e.target.closest('[data-m]'); if (!b) return;
+  const m = b.dataset.m;
+  if (state.selected.has(m)) state.selected.delete(m);
+  else { state.selected.add(m); await loadMonth(m); }
+  state.limit = PAGE; renderMonths(); render();
+});
+document.querySelectorAll('[data-st]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('active', x === b));
+  state.st = b.dataset.st; state.limit = PAGE; render();
+}));
+$('reasons').addEventListener('click', e => {
+  const c = e.target.closest('[data-reason]'); if (!c) return;
+  state.reason = state.reason === c.dataset.reason ? '' : c.dataset.reason; state.limit = PAGE; render();
+});
+$('score50').addEventListener('change', e => { state.score50 = e.target.checked; state.limit = PAGE; render(); });
+$('sector').addEventListener('change', e => { state.sector = e.target.value; state.limit = PAGE; render(); });
+$('q').addEventListener('input', e => { state.q = e.target.value; state.limit = PAGE; render(); });
+$('head').addEventListener('click', e => {
+  const th = e.target.closest('th'); const k = th && th.dataset.k; if (!k) return;
+  state.sortDir = state.sortKey === k ? -state.sortDir : -1; state.sortKey = k; render();
+});
+$('more').addEventListener('click', () => { state.limit += PAGE; render(); });
+
+// 圖表 POP UP
+function openChart(url, title){
+  $('popTitle').textContent = title;
+  $('popNewTab').href = url;
+  $('popFrame').src = url;
+  $('pop').classList.add('open');
+}
+function closeChart(){
+  $('pop').classList.remove('open');
+  $('popFrame').src = 'about:blank';
+}
+$('body').addEventListener('click', e => {
+  const a = e.target.closest('[data-chart]'); if (!a) return;
+  e.preventDefault(); openChart(a.dataset.chart, a.dataset.title);
+});
+$('popClose').addEventListener('click', closeChart);
+$('pop').addEventListener('click', e => { if (e.target === $('pop')) closeChart(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChart(); });
+init();
+</script>
+</body>
+</html>

@@ -29,6 +29,7 @@
 │ %run Untitled.ipynb        每日選股（重構版）
 │   → Result/checkall, checksun_*, check_v, analyze_1~4, summary.json ...
 │ %run _DailySignal.ipynb    每日推薦 + 離場追蹤 → Result/recommend/、LINE 推播
+│ %run _VolumeSignal.ipynb   有量訊號 + 離場追蹤 → Result/volume/（volume.html）
 └────────────────────────────────────────────────────────────┘
                     │
                     ▼
@@ -69,6 +70,7 @@
 | `Main1.ipynb` | **快速更新用**。流程同 Main，但改用 `ThreadPoolExecutor(MAX_WORKERS=8)`、`craw_stock_need_update=False`（已快取的月份不重爬）、`start_month = '2025-12-01'`；跑完只接 `Untitled`，不爬法人、不跑 `_DailySignal` |
 | **`Untitled.ipynb`** | **每日選股流程（重構版）**，被 Main / Main1 最後呼叫。分 9 區：設定 → 工具 → 日期 → 載入 → 特徵 → 統計 → 規則 → 匯出 → 族群檔/summary.json（詳見第 4 節） |
 | **`_DailySignal.ipynb`** | **每日推薦 + 離場追蹤 → LINE**，被 Main 最後呼叫。讀 `DailyFiles` 的「推薦進場」→ 記入推薦紀錄、隔日開盤價進場 → 每日檢查離場（停損最多 -8%、跌破 MA20、獲利 15% 後回落 10% 移動停利、持有滿 20 交易日）→ 推播 LINE。用 `state.json` 記錄處理進度，同一天重跑不會重複推薦或重發；`SEND_LINE=False` 可只印不發 |
+| **`_VolumeSignal.ipynb`** | **有量訊號 + 離場追蹤**，被 Main 在 `_DailySignal` 後呼叫。讀 `checkall` 套用 index.html「有量」條件（成交金額>5日均×1.3、收漲、LevelArea>-50、ma_up_flag≥1）→ 隔日開盤進場 → 用 `DailyFiles` 每日檢查離場（停損＝量K低且最多 -8%、爆量黑K、跌破 MA10、獲利 10% 後回落 7%、持有 20 日、10 日報酬 <5% 滯漲）。另記錄進場後 5/10/20 日報酬與期間最高/最低%，用來調整離場點。不發 LINE；第一次執行用現有 DailyFiles 全部回補 |
 | `_genHtml_run.ipynb` | 跑全部歷史數據重產 HTML 用 |
 
 ### 3.2 共用函式庫（被 `%run` 載入）
@@ -141,6 +143,7 @@
 | `DailyFiles/{日期}.xlsx` | Main / Main1（`_genHtml_cyber`） | Untitled、_DailySignal、`trading-journal.html` |
 | `DailyRunRealTimeStock/{日期}.xlsx` | Main / Main1 | Untitled |
 | `recommend/推薦紀錄.csv`、`recommend/state.json` | _DailySignal（推薦與持倉紀錄、處理進度；不會被 Main 清空） | — |
+| `volume/有量紀錄.csv`、`volume/state.json`、`volume/web/` | _VolumeSignal（有量訊號紀錄、處理進度、網頁 JSON；不會被 Main 清空） | `volume.html` |
 | `checkall/{日期}.xlsx` | Untitled（全市場每日） | `index.html`、`index3.html`、`fundamental.html`、評分 notebook |
 | `check_v/{日期}.xlsx` | Untitled（量能遞增當日） | `index.html`、`menu.html` |
 | `checkmy.xlsx`、`checksunmy.xlsx` | Untitled（持股） | `index.html`、`index2.html` |
@@ -204,7 +207,7 @@ Windows 排程 `StockAuto` 執行 `runScheduler.bat auto`，觸發：平日 15:1
 
 | 工作 | 內容 | 什麼時候跑 |
 |---|---|---|
-| `main` | `Main.ipynb`（內含 `_CrawStockFund`、`Untitled`、`_DailySignal`） | 每個交易日 15:10 後一次 |
+| `main` | `Main.ipynb`（內含 `_CrawStockFund`、`Untitled`、`_DailySignal`、`_VolumeSignal`） | 每個交易日 15:10 後一次 |
 | `revenue` | `_BaseRevenue.ipynb` 月營收 | 每天一次（幾秒，公布後自然更新） |
 | `stockinfo` | `_CrawStockInfo.ipynb`（合併月營收，排在 revenue 後） | 每個交易日 15:10 後一次 |
 | `etf` | `Project_ETF/ETF_Portfolio_Downloader.ipynb` | 每個交易日 18:00 後一次 |
