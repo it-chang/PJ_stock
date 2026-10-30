@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>類股熱力圖</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.min.css" rel="stylesheet">
+    <link href="./Content/stockDialog.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.6.14/dist/vuetify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="./Content/common.js"></script>
+    <script src="./Content/stockDialog.js"></script>
+    <style>
+        .theme--dark.v-application { background: #0e1110; }
+        .hm-wrap { max-width: 1100px; margin: 0 auto; padding: 12px 16px 40px; }
+        .hm-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+        .hm-bar .v-input { flex: 0 0 auto; margin: 0; }
+
+        .hm-head { text-align: center; margin: 18px 0 14px; }
+        .hm-head .sub { color: #9aa5a0; font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+        .hm-head .big { font-weight: 900; line-height: 1.1; }
+        .hm-head .big b { font-size: 72px; }
+        .hm-head .big span { font-size: 34px; margin: 0 22px 0 4px; }
+        .hm-head .breadth { color: #8a948f; font-size: 13px; margin-top: 4px; }
+        .c-up { color: #f0424f; }
+        .c-down { color: #2fd18a; }
+        .c-flat { color: #9aa5a0; }
+
+        .hm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+        .tile {
+            position: relative; border-radius: 8px; padding: 12px 4px 6px; min-height: 66px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; text-align: center; transition: transform .12s, background-color .4s;
+            color: #e8ecea; border: 1px solid rgba(255, 255, 255, .06);
+        }
+        .tile:hover { transform: scale(1.06); z-index: 2; }
+        .tile .nm { font-size: 13px; font-weight: 700; line-height: 1.2; word-break: break-all; }
+        .tile .pct { font-size: 12px; margin-top: 3px; opacity: .9; font-variant-numeric: tabular-nums; }
+        .tile .cnt { position: absolute; right: 5px; top: 3px; font-size: 10px; opacity: .55; }
+        /* 逆勢：和多數類股方向相反的格子 */
+        .tile.contra.up { box-shadow: 0 0 14px 3px rgba(255, 70, 85, .75); border-color: #ff8a93; }
+        .tile.contra.down { box-shadow: 0 0 14px 3px rgba(40, 220, 140, .6); border-color: #6af0b4; }
+
+        .legend { display: flex; justify-content: center; align-items: center; gap: 6px; margin: 16px 0 0; color: #8a948f; font-size: 12px; }
+        .legend i { display: inline-block; width: 22px; height: 12px; border-radius: 3px; }
+
+        .mem-table td { font-variant-numeric: tabular-nums; }
+        .mem-table tr { cursor: pointer; }
+        @media (max-width: 600px) {
+            .hm-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; }
+            .tile .nm { font-size: 12px; }
+            .hm-head .big b { font-size: 52px; }
+            .hm-head .big span { font-size: 26px; margin-right: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+            <div class="hm-wrap">
+                <div class="hm-bar">
+                    <v-btn-toggle v-model="group" mandatory dense>
+                        <v-btn v-for="g in groupNames" :key="g" :value="g" small>{{ g }}</v-btn>
+                    </v-btn-toggle>
+                    <v-select v-model="date" :items="datesDesc" dense outlined hide-details style="width:150px"
+                        label="日期"></v-select>
+                    <v-btn icon @click="togglePlay" :title="playing ? '停止' : '逐日播放'">
+                        <v-icon>{{ playing ? 'mdi-stop' : 'mdi-play' }}</v-icon>
+                    </v-btn>
+                    <v-select v-model="weight" :items="weightItems" dense outlined hide-details style="width:130px"
+                        label="計算"></v-select>
+                    <v-select v-model="flat" :items="flatItems" dense outlined hide-details style="width:120px"
+                        label="平盤"></v-select>
+                    <v-select v-model="sort" :items="sortItems" dense outlined hide-details style="width:130px"
+                        label="排序"></v-select>
+                    <v-spacer></v-spacer>
+                    <span class="c-flat" style="font-size:12px" v-if="data">更新 {{ data.updated }}</span>
+                </div>
+
+                <div v-if="error" class="c-up" style="margin-top:40px;text-align:center">{{ error }}</div>
+
+                <template v-if="data && !error">
+                    <div class="hm-head">
+                        <div class="sub">{{ date }}　{{ tiles.length }} 個類股</div>
+                        <div class="big">
+                            <b class="c-down">{{ stat.down }}</b><span class="c-down">跌</span>
+                            <b class="c-up">{{ stat.up }}</b><span class="c-up">漲</span>
+                            <template v-if="stat.flat"><b class="c-flat" style="font-size:40px">{{ stat.flat }}</b><span class="c-flat" style="font-size:24px">平</span></template>
+                        </div>
+                        <div class="breadth">個股：<span class="c-up">{{ breadth.up }} 漲</span> ／ <span
+                                class="c-down">{{ breadth.down }} 跌</span> ／ {{ breadth.flat }} 平
+                        </div>
+                    </div>
+
+                    <div class="hm-grid">
+                        <div v-for="t in tiles" :key="t.name" class="tile" :class="[t.dir, { contra: t.contra }]"
+                            :style="{ background: t.bg }" @click="openGroup(t)"
+                            :title="`${t.name}  ${fmt(t.avg)}%\n${t.up} 漲 / ${t.down} 跌，成交 ${t.amt.toFixed(1)} 億`">
+                            <span class="cnt">{{ t.n }}</span>
+                            <div class="nm">{{ t.name }}</div>
+                            <div class="pct">{{ fmt(t.avg) }}%</div>
+                        </div>
+                    </div>
+
+                    <div class="legend">
+                        <span>-3%</span>
+                        <i v-for="v in [-3,-2,-1,-0.3,0,0.3,1,2,3]" :key="v" :style="{ background: color(v) }"></i>
+                        <span>+3%</span>
+                        <span style="margin-left:14px">發光框＝逆勢（與多數類股方向相反）</span>
+                    </div>
+                </template>
+            </div>
+
+            <!-- 類股成分股 -->
+            <v-dialog v-model="groupDialog" max-width="560" scrollable>
+                <v-card v-if="current">
+                    <v-card-title>
+                        {{ current.name }}
+                        <span :class="'c-' + current.dir" style="margin-left:10px">{{ fmt(current.avg) }}%</span>
+                        <v-spacer></v-spacer>
+                        <span style="font-size:13px" class="c-flat">{{ current.up }} 漲 / {{ current.down }} 跌</span>
+                    </v-card-title>
+                    <v-card-text style="max-height:70vh">
+                        <!-- 表格標籤要包在 template 裡，否則瀏覽器解析 HTML 時會把 tr/td 移出 v-simple-table -->
+                        <v-simple-table dense class="mem-table"><template v-slot:default>
+                            <thead>
+                                <tr><th>代號</th><th>名稱</th><th class="text-right">漲跌%</th><th class="text-right">成交(億)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="m in current.members" :key="m.id" @click="openStock(m)">
+                                    <td>{{ m.id }}</td>
+                                    <td>{{ m.name }}</td>
+                                    <td class="text-right" :class="'c-' + dirOf(m.q, 0)">{{ fmt(m.q) }}</td>
+                                    <td class="text-right">{{ m.a.toFixed(2) }}</td>
+                                </tr>
+                            </tbody>
+                        </template></v-simple-table>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+
+            <stock-dialog :value="dialog" :item="selectedItem" :checklist="[]" :url="url"
+                @input="dialog = $event" @update-check="() => {}"></stock-dialog>
+        </v-app>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify({ theme: { dark: true } }),
+            data() {
+                return {
+                    data: null,
+                    error: '',
+                    group: '族群',
+                    date: null,
+                    weight: 'amt',
+                    weightItems: [{ text: '金額加權', value: 'amt' }, { text: '等權平均', value: 'eq' }],
+                    flat: 0.3,
+                    flatItems: [0, 0.1, 0.3, 0.5, 1].map(v => ({ text: '±' + v + '%', value: v })),
+                    sort: 'fixed',
+                    sortItems: [{ text: '成交金額', value: 'fixed' }, { text: '漲跌幅', value: 'pct' }, { text: '名稱', value: 'name' }],
+                    playing: null,
+                    groupDialog: false,
+                    current: null,
+                    dialog: false,
+                    selectedItem: null,
+                    url: '',
+                };
+            },
+            computed: {
+                groupNames() { return this.data ? Object.keys(this.data.groups) : []; },
+                datesDesc() { return this.data ? this.data.dates.slice().reverse() : []; },
+                day() { return (this.data && this.data.days[this.date]) || {}; },
+                tiles() {
+                    if (!this.data) return [];
+                    const groups = this.data.groups[this.group] || {};
+                    const list = [];
+                    for (const [name, ids] of Object.entries(groups)) {
+                        const rows = ids.map(id => this.day[id]).filter(Boolean);
+                        if (!rows.length) continue;
+                        const amt = rows.reduce((s, r) => s + r[1], 0);
+                        const avg = this.weight === 'amt' && amt > 0
+                            ? rows.reduce((s, r) => s + r[0] * r[1], 0) / amt
+                            : rows.reduce((s, r) => s + r[0], 0) / rows.length;
+                        list.push({
+                            name, ids, avg, amt, n: rows.length,
+                            up: rows.filter(r => r[0] > 0).length,
+                            down: rows.filter(r => r[0] < 0).length,
+                            dir: this.dirOf(avg, this.flat),
+                            bg: this.color(avg),
+                        });
+                    }
+                    // 成交金額排序用「全部日期的總成交」，播放時格子位置才不會跳動
+                    const total = name => this.totalAmt[name] || 0;
+                    const by = {
+                        fixed: (a, b) => total(b.name) - total(a.name),
+                        pct: (a, b) => b.avg - a.avg,
+                        name: (a, b) => a.name.localeCompare(b.name, 'zh-Hant'),
+                    }[this.sort];
+                    list.sort(by);
+                    const up = list.filter(t => t.dir === 'up').length, down = list.filter(t => t.dir === 'down').length;
+                    const major = down > up ? 'down' : up > down ? 'up' : null;
+                    list.forEach(t => { t.contra = !!major && t.dir !== 'flat' && t.dir !== major; });
+                    return list;
+                },
+                totalAmt() {
+                    const out = {};
+                    if (!this.data) return out;
+                    const groups = this.data.groups[this.group] || {};
+                    for (const [name, ids] of Object.entries(groups)) {
+                        let s = 0;
+                        for (const d of this.data.dates) for (const id of ids) { const r = this.data.days[d][id]; if (r) s += r[1]; }
+                        out[name] = s;
+                    }
+                    return out;
+                },
+                stat() {
+                    const c = { up: 0, down: 0, flat: 0 };
+                    this.tiles.forEach(t => c[t.dir]++);
+                    return c;
+                },
+                breadth() {
+                    const c = { up: 0, down: 0, flat: 0 };
+                    Object.values(this.day).forEach(r => c[this.dirOf(r[0], 0)]++);
+                    return c;
+                },
+            },
+            watch: {
+                group: 'syncUrl',
+                date: 'syncUrl',
+            },
+            created() {
+                this.url = this.$htmlUrl;
+                const p = new URLSearchParams(location.search);
+                fetch('./Result/heatmap.json?t=' + Date.now())
+                    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                    .then(d => {
+                        this.data = d;
+                        if (p.get('g') && d.groups[p.get('g')]) this.group = p.get('g');
+                        this.date = d.dates.includes(p.get('date')) ? p.get('date') : d.dates[d.dates.length - 1];
+                    })
+                    .catch(e => { this.error = '讀取 Result/heatmap.json 失敗（' + e.message + '），請先跑 Untitled.ipynb 第 9-3 區'; });
+            },
+            methods: {
+                dirOf(v, th) { return v > th ? 'up' : v < -th ? 'down' : 'flat'; },
+                fmt(v) { return (v > 0 ? '+' : '') + v.toFixed(2); },
+                color(v) {
+                    // 紅漲綠跌，強度依幅度（3% 封頂）；平盤區間用灰
+                    if (Math.abs(v) <= this.flat) return '#3a3f3d';
+                    const k = Math.min(Math.abs(v) / 3, 1);
+                    const light = 20 + k * 30;
+                    return v > 0 ? `hsl(355, ${55 + k * 35}%, ${light}%)` : `hsl(152, ${45 + k * 30}%, ${light - 4}%)`;
+                },
+                openGroup(t) {
+                    const members = t.ids.filter(id => this.day[id]).map(id => ({
+                        id, name: (this.data.info[id] || [id])[0], q: this.day[id][0], a: this.day[id][1],
+                    })).sort((a, b) => b.q - a.q);
+                    this.current = { ...t, members };
+                    this.groupDialog = true;
+                },
+                openStock(m) {
+                    const type = (this.data.info[m.id] || [])[1] || '';
+                    this.selectedItem = {
+                        stock_number: m.id, stock_name: m.name, Type: type,
+                        Type2: type.endsWith('上市') ? '上市' : '上櫃', 日期: this.date, text_desc: '',
+                        分類標籤: '',   // stockDialog 的 index2 連結會對它 split，沒有這欄整個彈窗標題列會掛掉
+                    };
+                    this.dialog = true;
+                },
+                togglePlay() {
+                    if (this.playing) { clearInterval(this.playing); this.playing = null; return; }
+                    const dates = this.data.dates;
+                    let i = 0;
+                    this.date = dates[0];
+                    this.playing = setInterval(() => {
+                        if (++i >= dates.length) { clearInterval(this.playing); this.playing = null; return; }
+                        this.date = dates[i];
+                    }, 1200);
+                },
+                syncUrl() {
+                    if (!this.date) return;
+                    history.replaceState(null, '', `?g=${encodeURIComponent(this.group)}&date=${this.date}`);
+                },
+            },
+        });
+    </script>
+</body>
+
+</html>

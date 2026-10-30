@@ -1,6 +1,6 @@
 {
- "updated_at": "2026-10-29 21:17",
- "last_date": "2026-10-29",
+ "updated_at": "2026-10-30 17:46",
+ "last_date": "2026-10-30",
  "obs_days": [
   5,
   10,
@@ -17,8 +17,8 @@
  "months": [
   {
    "month": "2026-10",
-   "count": 338,
-   "active": 79
+   "count": 349,
+   "active": 60
   }
  ]
 }

@@ -1,9 +1,12 @@
 //////////////////////////////////////
-//【即時報價】透過 CORS proxy 呼叫 TWSE mis API
+//【即時報價】透過本機 IIS 反向代理呼叫 TWSE mis API
 // REF : https://hackmd.io/@aaronlife/python-ex-stock-by-api
+// IIS（URL Rewrite + ARR）把 /IT/twse/* 轉到 https://mis.twse.com.tw/*，同網域所以沒有 CORS 問題
+// 規則在 web.config，模組安裝見 setup_iis_twse_proxy.ps1
 //////////////////////////////////////
 
-const CORS_PROXY = 'https://corsproxy.io/?url='
+// 以本檔位置（/IT/Content/）推算代理路徑 /IT/twse/，不論頁面在哪一層都適用
+const TWSE_PROXY = new URL('../twse/', document.currentScript.src).href
 
 // data: [{ stock_number, Type2 }]；回傳 TWSE msgArray 合併後的陣列
 async function main(data) {
@@ -12,7 +15,7 @@ async function main(data) {
     const urllist = generateStockApiUrls(_baseInfo, 60);
 
     for (let index = 0; index < urllist.length; index++) {
-        const fullUrl = CORS_PROXY + urllist[index].replace(' ', '') + '&_=' + Date.now();
+        const fullUrl = urllist[index].replace(' ', '') + '&_=' + Date.now();
 
         // 取得資料並合併
         postsdata = postsdata.concat(await getData(fullUrl));
@@ -29,8 +32,8 @@ async function main(data) {
 }
 
 function notifyProxyFailed() {
-    console.warn('即時報價沒有取得任何資料：請確認 corsproxy.io 是否可用，或是否需要付費方案')
-    alert('即時報價取得失敗：corsproxy.io 沒有回應（可能被限流或需要付費方案）')
+    console.warn('即時報價沒有取得任何資料：請確認 IIS 已安裝 URL Rewrite + ARR，且 web.config 的 twse 代理規則有生效')
+    alert('即時報價取得失敗：本機 IIS 代理 /twse/ 沒有回應（請確認 URL Rewrite + ARR 已安裝）')
 }
 
 function generateStockApiUrls(data, size) {
@@ -47,7 +50,7 @@ function generateStockApiUrls(data, size) {
 }
 
 function buildStockApiUrl(targets, type_tse_otc) {
-    let endpoint = 'https://mis.twse.com.tw/stock/api/getStockInfo.jsp';
+    let endpoint = TWSE_PROXY + 'stock/api/getStockInfo.jsp';
     let today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     let channels = targets.map(target => `${type_tse_otc}_${target}.tw_${today}`).join('|');
     return `${endpoint}?ex_ch=${channels}`;

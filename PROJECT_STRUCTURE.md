@@ -153,6 +153,7 @@
 | `analyze_1~2.xlsx` | Untitled（Typelevel 統計樞紐） | `index4.html` |
 | `analyze_3~4.xlsx` | Untitled（族群 sector 統計樞紐） | `index4.html` |
 | `summary.json` | Untitled（族群儀表板） | `index5_dashboard.html` |
+| `heatmap.json` | Untitled 9-3（個股每日漲跌 + 類股/產業/族群/子族群成員；「類股」= 子族群為底、大雜燴子族群改用 StockType 產業鏈細分、不足 `HEATMAP_MIN` 檔往上併，約 85 類） | `heatmap.html` |
 | `StockInfo.xlsx`、`StockType.xlsx`、`StockProfitability*.xlsx` | 基本面 notebooks | Untitled |
 | `profitability/{代號}.xlsx` | `__stockProfitability_2_split` | `fundamental.html` |
 | `fundamental_score_*.xlsx` | `__stockProfitability_3_fundamental_score` | Untitled |
@@ -173,6 +174,7 @@
 | `index3.html` | 「分類解析」：依 Typelevel 分類檢視 `checkall` |
 | `index4.html` | 「產業走勢看板」：Chart.js 繪 `analyze_*.xlsx` 族群走勢 |
 | `index5_dashboard.html` | 「族群動向」：讀 `summary.json` 的族群儀表板 |
+| `heatmap.html` | 「類股熱力圖」：各類股當日漲跌格子圖（紅漲綠跌、逆勢發光），可切換 類股/產業/族群/子族群、金額加權/等權、平盤門檻、逐日播放；點格子看成分股（👑＝類股內市值前 3、不到 8 檔取第 1；「龍頭」＝supply_chain.json 備註寫龍頭；可依漲跌/市值排序），再點開個股彈窗。參數 `?g=族群&date=` |
 | `fundamental.html` | 「基本面分析」：讀 `profitability/{代號}.xlsx` 做 12 項評分與圖表，`?stock=代號` |
 | `trading-journal.html` | 「交易日誌」：讀 `DailyFiles` 與 `TradingJournalData/{代號}.json`，`?code=代號` |
 | `_MyFIN.html` | 【FIM】個人持股/損益月份試算 |
